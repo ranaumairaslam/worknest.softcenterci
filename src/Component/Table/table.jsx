@@ -58,17 +58,17 @@ export default function Tables(){
      <div className="bg-[#fbfbfb] text-[#000000] py-[5px] px-3 rounded-md text-[12px]">
         <div className="Table-Top">
         <h2>Tenant Company Registry</h2>
-        <span>FR-4.4</span>
+        <span className="w-fit bg-[#016472] text-[#a3feff] py-[5px] px-3 rounded-md text-[11px] sm:text-[12px]">FR-4.4</span>
         </div>
-     <div className="Table">
-        <table className="w-[90%] mt-5 border-collapse">
+      <div className="mt-[20px] w-full overflow-x-auto">
+             <table className="min-w-[900px] w-full border-collapse">
              <thead>
                 <tr>
                     
-            <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc] first:rounded-tl-[20px">Company</th>
+            <th className="w-[20%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc] first:rounded-tl-[20px">Company</th>
             <th className="w-[30%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Contact Email</th>
-            <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Register</th>
-            <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Plan</th>
+            <th className="w-[20%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Register</th>
+            <th className="w-[20%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Plan</th>
             <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Active</th>
             <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Suspend</th>
             <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Terminate</th>
