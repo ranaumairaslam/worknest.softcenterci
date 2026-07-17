@@ -31,35 +31,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-2xl font-semibold text-slate-800 tracking-wide">
-          COMPANY DASHBOARD
-        </h1>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Global Search"
-              className="pl-9 pr-4 py-2 rounded-full bg-white border border-slate-200 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            />
-          </div>
-          <button className="relative w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center">
-            <Bell size={16} className="text-slate-500" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] flex items-center justify-center rounded-full bg-rose-500 text-white">5</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-              JD
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-medium text-slate-800">Jane Doe</p>
-              <p className="text-xs text-slate-400">Admin</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         {stats.map((s) => (
           <StatCard

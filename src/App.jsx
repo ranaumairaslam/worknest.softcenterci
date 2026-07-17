@@ -1,8 +1,10 @@
-import React from "react";
-import Dashboard from "./pages/Dashboard";
-
+import LeaderDashboard from "./pages/LeaderDashboard";
+//import Dashboard from "./pages/Dashboard";
+//import TeamDashboard from "./pages/TeamDashboard";
 function App() {
-  return <Dashboard />;
+  return <LeaderDashboard />;
+  //<Dashboard/>;
+ // <TeamDashboard/>
 }
 
 export default App;
