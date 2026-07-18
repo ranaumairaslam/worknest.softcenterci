@@ -1,198 +1,165 @@
 import React from "react";
 import logo from "../src/assets/Softcenteric-logo.png";
 import { navigation } from "./navigation";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, X } from "lucide-react";
+
+const iconButtonBase =
+  "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#A3FEFF]/40";
+
+const navItemBase =
+  "group flex w-full items-center rounded-xl py-3 text-[#d8ffff] transition-all duration-300 ease-in-out hover:bg-[#016472] hover:text-white hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#A3FEFF]/40";
+
+function SidebarNavItem({ item, collapsed, showLabels }) {
+  const Icon = item.icon;
+
+  return (
+    <li>
+      <button
+        type="button"
+        aria-label={item.title}
+        className={`${navItemBase} ${
+          collapsed ? "lg:justify-center lg:px-2 lg:py-3" : "gap-4 px-4"
+        }`}
+      >
+        <Icon
+          size={20}
+          className="shrink-0 text-[#A3FEFF] group-hover:text-white"
+        />
+        {showLabels && <span className="truncate">{item.title}</span>}
+      </button>
+    </li>
+  );
+}
 
 export default function Sidebar({
-  role = "teamMember", 
+  collapsed,
+  mobileOpen,
+  onClose,
+  role = "teamMember",
   company = "WorkNest",
 }) {
   const menu = navigation[role] || [];
+  const showLabels = !collapsed || mobileOpen;
 
   return (
-   <aside
-  className="
-    fixed
-    left-0
-    top-0
-    z-50
-    flex
-    h-screen
-    w-72
-    flex-col
-    justify-between
-    border-r
-    border-[#0d4f5b]
-    bg-gradient-to-b
-    from-[#000304]
-    via-[#03181d]
-    to-[#016472]
-    text-white
-    shadow-2xl
-    
-  "
->
-      
-      
-      <div className="p-6">
-      
-          <div className="flex items-center gap-4 mb-10">
+    <>
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-in-out lg:hidden"
+        />
+      )}
 
-          
-        <div className="w-14 h-14 rounded-xl bg-white shadow-lg flex items-center justify-center">
-            <img
-              src={logo}
-              alt="WorkNest Logo"
-              className="h-10 w-10 object-contain"
-            />
+      <aside
+        className={`
+          fixed top-0 left-0 z-50 flex h-screen w-72 max-w-[85vw] flex-col justify-between
+          border-r border-[#0d4f5b]
+          bg-gradient-to-b from-[#000304] via-[#03181d] to-[#016472]
+          text-white shadow-2xl
+          transition-all duration-300 ease-in-out
+          lg:max-w-none lg:shadow-none
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${collapsed ? "lg:w-20" : "lg:w-72"}
+        `}
+      >
+        <div className={`p-4 sm:p-6 ${collapsed ? "lg:px-2" : ""}`}>
+          <div className="mb-4 flex justify-end lg:hidden">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close sidebar"
+              className={iconButtonBase}
+            >
+              <X size={22} />
+            </button>
           </div>
 
-          <div>
-                 <h2 className="text-xl font-bold tracking-wide text-white">
-              {company}  
-            </h2>
-                 <p className="text-xs text-[#A3FEFF]">
+          <div
+            className={`mb-8 flex items-center sm:mb-10 ${
+              collapsed
+                ? "lg:justify-center lg:gap-0"
+                : "gap-3 sm:gap-4"
+            }`}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg sm:h-14 sm:w-14">
+              <img
+                src={logo}
+                alt="WorkNest Logo"
+                className="h-9 w-9 object-contain sm:h-10 sm:w-10"
+              />
+            </div>
 
-              Project Management
-            </p>
+            {showLabels && (
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-bold tracking-wide text-white sm:text-xl">
+                  {company}
+                </h2>
+                <p className="truncate text-xs text-[#A3FEFF]">
+                  Project Management
+                </p>
+              </div>
+            )}
           </div>
 
+          <ul className="space-y-2">
+            {menu.map((item) => (
+              <SidebarNavItem
+                key={item.title}
+                item={item}
+                collapsed={collapsed}
+                showLabels={showLabels}
+              />
+            ))}
+          </ul>
         </div>
 
-       
-        <ul className="space-y-2">
-          {menu.map((item) => {
-            const Icon = item.icon;
+        <div
+          className={`space-y-2 border-t border-[#0b4c56] p-4 sm:p-5 ${
+            collapsed ? "lg:px-2" : ""
+          }`}
+        >
+          <button
+            type="button"
+            aria-label="Settings"
+            className={`${navItemBase} text-[#A3FEFF] ${
+              collapsed
+                ? "lg:justify-center lg:gap-0 lg:px-2"
+                : "gap-4 px-4"
+            }`}
+          >
+            <Settings size={20} className="shrink-0" />
+            {showLabels && <span>Settings</span>}
+          </button>
 
-            return (
-              <li key={item.title}>
-              <button
-  className="
-    group
-    flex
-    w-full
-    items-center
-    gap-4
-    rounded-xl
-    px-4
-    py-3
-
-    text-[#d8ffff]
-
-    transition-all
-    duration-300
-
-    hover:bg-[#016472]
-    hover:text-white
-    hover:shadow-lg
-     active:scale-95
-  "
->
-
-                  <Icon size={20}
-                          className="text-[#A3FEFF] group-hover:text-white"
-                    />
-                  <span>{item.title}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {/* Bottom */}
-     <div className="border-t border-[#0b4c56] p-5 space-y-2">
-
-        <button
-className="
-flex
-w-full
-items-center
-gap-4
-
-rounded-xl
-
-px-4
-py-3
-
-text-[#A3FEFF]
-
-transition-all
-
-hover:bg-[#016472]
-hover:text-white
- active:scale-95
-"
->
-          <Settings size={20} />
-          <span>Settings</span>
-        </button>
-<button
-  className="
-    group
-    relative
-
-    flex
-    w-full
-    items-center
-    gap-4
-
-    rounded-2xl
-
-    border
-    border-red-500/20
-
-    bg-red-500/5
-
-    px-4
-    py-3.5
-
-    text-red-400
-
-    transition-all
-    duration-300
-    ease-in-out
-
-    hover:border-red-500/40
-    hover:bg-red-500/15
-    hover:text-red-300
-    hover:shadow-lg
-    hover:shadow-red-500/10
-
-    active:scale-95
-  "
->
-  <LogOut
-    size={20}
-    className="
-      transition-transform
-      duration-300
-      group-hover:translate-x-1
-    "
-  />
-
-  <span className="font-medium tracking-wide">
-    Logout
-  </span>
-
-  <div
-    className="
-      ml-auto
-
-      opacity-0
-
-      transition-opacity
-      duration-300
-
-      group-hover:opacity-100
-    "
-  >
-    →
-  </div>
-</button>
-        
-
-      </div>
-    </aside>
+          <button
+            type="button"
+            aria-label="Logout"
+            className={`
+              group relative flex w-full items-center rounded-2xl border border-red-500/20
+              bg-red-500/5 py-3.5 text-red-400 transition-all duration-300 ease-in-out
+              hover:border-red-500/40 hover:bg-red-500/15 hover:text-red-300
+              hover:shadow-lg hover:shadow-red-500/10 active:scale-95
+              focus:outline-none focus:ring-2 focus:ring-red-400/40
+              ${collapsed ? "lg:justify-center lg:px-2" : "gap-4 px-4"}
+            `}
+          >
+            <LogOut
+              size={20}
+              className="shrink-0 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+            />
+            {showLabels && (
+              <>
+                <span className="font-medium tracking-wide">Logout</span>
+                <div className="ml-auto opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
+                  →
+                </div>
+              </>
+            )}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
