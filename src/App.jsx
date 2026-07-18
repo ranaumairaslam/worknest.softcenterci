@@ -1,122 +1,87 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback } from "react";
+import Sidebar from "../components/sidebar.jsx";
+import Navbar from "../components/navbar.jsx";
 
-function App() {
-  const [count, setCount] = useState(0)
+const DESKTOP_BREAKPOINT = 1024;
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+function useIsDesktop(breakpoint = DESKTOP_BREAKPOINT) {
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.innerWidth >= breakpoint
+  );
 
-      <div className="ticks"></div>
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(`(min-width: ${breakpoint}px)`);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+    const handleChange = (event) => {
+      setIsDesktop(event.matches);
+    };
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    setIsDesktop(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [breakpoint]);
+
+  return isDesktop;
 }
 
-export default App
+function App() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const isDesktop = useIsDesktop();
+
+  useEffect(() => {
+    if (isDesktop) {
+      setMobileOpen(false);
+    }
+  }, [isDesktop]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen && !isDesktop ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen, isDesktop]);
+
+  const handleToggle = useCallback(() => {
+    if (isDesktop) {
+      setCollapsed((prev) => !prev);
+    } else {
+      setMobileOpen((prev) => !prev);
+    }
+  }, [isDesktop]);
+
+  const handleCloseMobile = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
+
+  const mainOffsetClass = isDesktop
+    ? collapsed
+      ? "lg:ml-20"
+      : "lg:ml-72"
+    : "ml-0";
+
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-slate-100">
+      <Sidebar
+        collapsed={collapsed}
+        mobileOpen={mobileOpen}
+        onClose={handleCloseMobile}
+      />
+
+      <div
+        className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${mainOffsetClass}`}
+      >
+        <Navbar onToggle={handleToggle} />
+
+        <main className="p-4 sm:p-6">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500 sm:p-10">
+            Your Dashboard Content
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default App;
