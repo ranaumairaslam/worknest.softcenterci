@@ -76,7 +76,7 @@ function App() {
 
         <main className="p-4 sm:p-6">
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500 sm:p-10">
-            Your Dashboard Content
+             Dashboard Content
           </div>
         </main>
       </div>

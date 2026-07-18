@@ -35,7 +35,7 @@ export default function Sidebar({
   collapsed,
   mobileOpen,
   onClose,
-  role = "teamMember",
+  role = "projectLeader",
   company = "WorkNest",
 }) {
   const menu = navigation[role] || [];
