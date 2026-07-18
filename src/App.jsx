@@ -1,3 +1,16 @@
+import Signup from "./Component/SignUp/SignupPage.jsx";
+import Login from "./Component/Login/login.jsx";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/Signup" />} />
+      <Route path="/Signup" element={<Signup />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
+  );
+}
 import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/sidebar.jsx";
 import Navbar from "../components/navbar.jsx";
@@ -76,7 +89,7 @@ function App() {
 
         <main className="p-4 sm:p-6">
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500 sm:p-10">
-             Dashboard Content
+            Your Dashboard Content
           </div>
         </main>
       </div>
