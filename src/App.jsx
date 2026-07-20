@@ -1,60 +1,46 @@
+import { useState, useEffect, useCallback } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Signup from "./Component/SignUp/SignupPage.jsx";
 import Login from "./Component/Login/login.jsx";
-import { Routes, Route, Navigate } from "react-router-dom";
-
-export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/Signup" />} />
-      <Route path="/Signup" element={<Signup />} />
-      <Route path="/login" element={<Login />} />
-    </Routes>
-  );
-}
-import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/sidebar.jsx";
 import Navbar from "../components/navbar.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import LeaderDashboard from "./pages/LeaderDashboard.jsx";
+import TeamDashboard from "./pages/TeamDashboard.jsx";
+import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 
 const DESKTOP_BREAKPOINT = 1024;
+const AUTH_PATHS = ["/login", "/Signup"];
 
-function useIsDesktop(breakpoint = DESKTOP_BREAKPOINT) {
-  const [isDesktop, setIsDesktop] = useState(
-    () => window.innerWidth >= breakpoint
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(
+    () => window.matchMedia(query).matches
   );
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(`(min-width: ${breakpoint}px)`);
+    const mediaQuery = window.matchMedia(query);
+    const handleChange = (event) => setMatches(event.matches);
 
-    const handleChange = (event) => {
-      setIsDesktop(event.matches);
-    };
-
-    setIsDesktop(mediaQuery.matches);
     mediaQuery.addEventListener("change", handleChange);
-
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [breakpoint]);
+  }, [query]);
 
-  return isDesktop;
+  return matches;
 }
 
-function App() {
+function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isDesktop = useIsDesktop();
+  const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
+  const location = useLocation();
+  const sidebarOpen = isDesktop ? false : mobileOpen;
 
   useEffect(() => {
-    if (isDesktop) {
-      setMobileOpen(false);
-    }
-  }, [isDesktop]);
-
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen && !isDesktop ? "hidden" : "";
+    document.body.style.overflow = sidebarOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileOpen, isDesktop]);
+  }, [sidebarOpen]);
 
   const handleToggle = useCallback(() => {
     if (isDesktop) {
@@ -64,9 +50,7 @@ function App() {
     }
   }, [isDesktop]);
 
-  const handleCloseMobile = useCallback(() => {
-    setMobileOpen(false);
-  }, []);
+  const handleCloseMobile = useCallback(() => setMobileOpen(false), []);
 
   const mainOffsetClass = isDesktop
     ? collapsed
@@ -74,27 +58,60 @@ function App() {
       : "lg:ml-72"
     : "ml-0";
 
+  const navbarTitle =
+    {
+      "/dashboard": "Company Dashboard",
+      "/projects": "Project Oversight",
+      "/tasks": "My Tasks",
+      "/super-admin": "Super Admin",
+    }[location.pathname] ?? "WorkNest";
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-100">
       <Sidebar
         collapsed={collapsed}
-        mobileOpen={mobileOpen}
+        mobileOpen={sidebarOpen}
         onClose={handleCloseMobile}
       />
 
       <div
         className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${mainOffsetClass}`}
       >
-        <Navbar onToggle={handleToggle} />
+        <Navbar onToggle={handleToggle} title={navbarTitle} />
 
         <main className="p-4 sm:p-6">
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500 sm:p-10">
-            Your Dashboard Content
-          </div>
+          <Routes>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projects" element={<LeaderDashboard />} />
+            <Route path="/tasks" element={<TeamDashboard />} />
+            <Route path="/super-admin" element={<Admin />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </main>
       </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  const location = useLocation();
+  const isAuthRoute = AUTH_PATHS.includes(location.pathname);
+
+  if (isAuthRoute) {
+    return (
+      <Routes>
+        <Route path="/" element={<Navigate to="/Signup" replace />} />
+        <Route path="/Signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/Signup" replace />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/*" element={<AppLayout />} />
+    </Routes>
+  );
+}

@@ -1,4 +1,3 @@
-import React from "react";
 import KanbanColumn from "./KanbanColumn";
 
 const columns = [
@@ -10,7 +9,7 @@ const columns = [
 
 export default function KanbanBoard({ tasks, onTaskClick }) {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
+    <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:gap-4">
       {columns.map((col) => (
         <KanbanColumn
           key={col.key}

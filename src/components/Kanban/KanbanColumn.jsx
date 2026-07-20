@@ -1,4 +1,3 @@
-import React from "react";
 import TaskCard from "./TaskCard";
 
 const columnStyles = {
@@ -10,7 +9,7 @@ const columnStyles = {
 
 export default function KanbanColumn({ title, statusKey, tasks, onTaskClick }) {
   return (
-    <div className="flex-1 min-w-[220px]">
+    <div className="w-[min(100%,280px)] shrink-0 snap-start sm:min-w-[220px] sm:flex-1">
       <div className={`text-xs font-semibold uppercase tracking-wide px-3 py-2 rounded-lg mb-3 ${columnStyles[statusKey]}`}>
         {title} <span className="opacity-60">({tasks.length})</span>
       </div>

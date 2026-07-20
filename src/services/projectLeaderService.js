@@ -7,11 +7,13 @@ export async function getProjects() {
 }
 
 export async function getProjectTasks(projectId) {
-  return [
+  const tasks = [
     { id: "t1", title: "Alpha Platform Rebrand", status: "todo", assignee: { name: "Sarah 1", avatar: "S1" } },
     { id: "t2", title: "Project Alpha assigned to Web", status: "todo", assignee: { name: "Sarah L.", avatar: "SL" } },
     { id: "t3", title: "System Platform Rebrand", status: "in_progress", assignee: { name: "Sarah L.", avatar: "SL" } },
   ];
+
+  return tasks.map((task) => ({ ...task, projectId }));
 }
 
 export async function getPendingDeliverables() {

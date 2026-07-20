@@ -1,4 +1,3 @@
-import React from "react";
 import { Menu, Search, Bell, LogOut } from "lucide-react";
 
 const iconButtonClass =

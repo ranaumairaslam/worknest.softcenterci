@@ -56,16 +56,11 @@ body {
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  width: 100%;
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+  margin: 0;
+  text-align: left;
   box-sizing: border-box;
-  overflow: hidden; 
 }
 
 h1,
@@ -76,12 +71,11 @@ h2 {
 }
 
 h1 {
- 
   letter-spacing: -1.68px;
-  margin: 32px 0;
+  margin: 0 0 16px;
   @media (max-width: 1024px) {
     font-size: 36px;
-    margin: 20px 0;
+    margin: 0 0 12px;
   }
 }
 h2 {

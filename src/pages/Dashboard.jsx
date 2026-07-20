@@ -1,5 +1,4 @@
-import React from "react";
-import { Search, Bell, BarChart3, Loader2, CheckCircle2 } from "lucide-react";
+import { BarChart3, Loader2, CheckCircle2 } from "lucide-react";
 import StatCard from "../components/Cards/StatCard";
 import QuickActionsCard from "../components/Cards/QuickActionsCard";
 import ListCard from "../components/Cards/ListCard";
@@ -30,7 +29,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 space-y-6">
+    <div className="space-y-6">
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         {stats.map((s) => (

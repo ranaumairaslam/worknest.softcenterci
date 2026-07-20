@@ -1,4 +1,3 @@
-import React from "react";
 import { Plus, Users2, UserPlus } from "lucide-react";
 
 const actions = [

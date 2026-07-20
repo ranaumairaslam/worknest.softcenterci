@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import KanbanBoard from "../components/Kanban/KanbanBoard";
 import DeliverablesReviewModal from "../components/Modals/DeliverablesReviewModal";
@@ -15,13 +15,13 @@ export default function ProjectLeaderDashboard() {
     error,
   } = useProjectLeaderData();
 
-  const [showReview, setShowReview] = useState(true);
+  const [showReview, setShowReview] = useState(false);
 
   if (loading) return <div className="p-6 text-slate-500 text-sm">Loading project…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load project data.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-slate-800">
           MY PROJECT OVERSIGHT <span className="text-xs text-slate-400 font-normal"></span>

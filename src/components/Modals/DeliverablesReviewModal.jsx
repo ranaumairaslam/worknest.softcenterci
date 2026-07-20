@@ -1,12 +1,11 @@
-import React from "react";
 import { X, FileText } from "lucide-react";
 
 export default function DeliverablesReviewModal({ items, onClose, onApprove, onReject }) {
   if (!items) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
+      <div className="max-h-[90svh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm font-semibold text-slate-800">Pending Deliverables Review</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -23,7 +22,7 @@ export default function DeliverablesReviewModal({ items, onClose, onApprove, onR
           {items.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between border-t border-slate-50 pt-3"
+              className="flex flex-col gap-3 border-t border-slate-50 pt-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-[10px] font-medium flex items-center justify-center">
@@ -31,7 +30,7 @@ export default function DeliverablesReviewModal({ items, onClose, onApprove, onR
                 </div>
                 <span className="text-sm text-slate-700">{item.member.name}</span>
               </div>
-<div className="flex items-center gap-3">
+<div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <a
                   href={item.url}
                   target="_blank"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import KanbanBoard from "../components/Kanban/KanbanBoard";
 import TaskDetailModal from "../components/Modals/TaskDetailModal";
@@ -12,7 +12,7 @@ export default function TeamMemberDashboard() {
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load tasks.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-xl font-semibold text-slate-800">
           MY WORK EXECUTION <span className="text-xs text-slate-400 font-normal">FR-5.1</span>

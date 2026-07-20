@@ -1,5 +1,5 @@
-import React from "react";
 import logo from "../src/assets/Softcenteric-logo.png";
+import { NavLink } from "react-router-dom";
 import { navigation } from "./navigation";
 import { Settings, LogOut, X } from "lucide-react";
 
@@ -9,24 +9,31 @@ const iconButtonBase =
 const navItemBase =
   "group flex w-full items-center rounded-xl py-3 text-[#d8ffff] transition-all duration-300 ease-in-out hover:bg-[#016472] hover:text-white hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#A3FEFF]/40";
 
-function SidebarNavItem({ item, collapsed, showLabels }) {
+function SidebarNavItem({ item, collapsed, showLabels, onNavigate }) {
   const Icon = item.icon;
 
   return (
     <li>
-      <button
-        type="button"
+      <NavLink
+        to={item.path}
+        onClick={onNavigate}
         aria-label={item.title}
-        className={`${navItemBase} ${
-          collapsed ? "lg:justify-center lg:px-2 lg:py-3" : "gap-4 px-4"
-        }`}
+        className={({ isActive }) =>
+          `${navItemBase} ${
+            collapsed ? "lg:justify-center lg:px-2 lg:py-3" : "gap-4 px-4"
+          } ${isActive ? "bg-[#016472] text-white shadow-lg" : ""}`
+        }
       >
-        <Icon
-          size={20}
-          className="shrink-0 text-[#A3FEFF] group-hover:text-white"
-        />
-        {showLabels && <span className="truncate">{item.title}</span>}
-      </button>
+        {({ isActive }) => (
+          <>
+            <Icon
+              size={20}
+              className={`shrink-0 ${isActive ? "text-white" : "text-[#A3FEFF] group-hover:text-white"}`}
+            />
+            {showLabels && <span className="truncate">{item.title}</span>}
+          </>
+        )}
+      </NavLink>
     </li>
   );
 }
@@ -35,7 +42,7 @@ export default function Sidebar({
   collapsed,
   mobileOpen,
   onClose,
-  role = "teamMember",
+  role = "companyAdmin",
   company = "WorkNest",
 }) {
   const menu = navigation[role] || [];
@@ -110,6 +117,7 @@ export default function Sidebar({
                 item={item}
                 collapsed={collapsed}
                 showLabels={showLabels}
+                onNavigate={onClose}
               />
             ))}
           </ul>

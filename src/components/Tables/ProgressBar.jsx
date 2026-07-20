@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function ProgressBar({ value }) {
   return (
     <div className="flex items-center gap-2 w-40">
