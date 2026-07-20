@@ -1,4 +1,5 @@
 import { Menu, Search, Bell, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const iconButtonClass =
   "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#016472]/30";
@@ -11,7 +12,10 @@ export default function Navbar({
   notificationcount = 5,
   showsearch = true,
   onToggle,
+  
 }) {
+    const navigate = useNavigate();
+
   return (
     <header className="sticky top-0 z-30 w-full border-b border-slate-200 bg-white px-3 py-3 shadow-sm transition-all duration-300 ease-in-out sm:px-4 sm:py-4 md:px-6">
       <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-4">
@@ -77,6 +81,8 @@ export default function Navbar({
           </div>
 
           <button
+          onClick={() => navigate("/login")}
+
             type="button"
             className="flex shrink-0 items-center gap-2 rounded-xl bg-red-50 px-2.5 py-2 text-red-500 transition-all duration-300 ease-in-out hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400/40 sm:px-3 sm:py-2.5 md:px-4"
             aria-label="Logout"

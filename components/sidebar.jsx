@@ -1,5 +1,5 @@
 import logo from "../src/assets/Softcenteric-logo.png";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { navigation } from "./navigation";
 import { Settings, LogOut, X } from "lucide-react";
 
@@ -11,6 +11,7 @@ const navItemBase =
 
 function SidebarNavItem({ item, collapsed, showLabels, onNavigate }) {
   const Icon = item.icon;
+  
 
   return (
     <li>
@@ -45,6 +46,7 @@ export default function Sidebar({
   role = "companyAdmin",
   company = "WorkNest",
 }) {
+  const navigate = useNavigate();
   const menu = navigation[role] || [];
   const showLabels = !collapsed || mobileOpen;
 
@@ -142,8 +144,11 @@ export default function Sidebar({
           </button>
 
           <button
+          onClick={() => navigate("/login")}
             type="button"
             aria-label="Logout"
+
+            
             className={`
               group relative flex w-full items-center rounded-2xl border border-red-500/20
               bg-red-500/5 py-3.5 text-red-400 transition-all duration-300 ease-in-out

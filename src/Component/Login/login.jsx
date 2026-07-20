@@ -29,6 +29,7 @@ export default function Login() {
               className="h-11 w-full rounded-md border border-gray-300 px-3 text-black transition-all duration-200 hover:border-[#016472] focus:border-[#016472] focus:outline-none focus:ring-2 focus:ring-[#016472]/30"
               type="email"
               autoComplete="email"
+              placeholder="Enter your email"
             />
           </label>
 
@@ -40,6 +41,7 @@ export default function Login() {
               className="h-11 w-full rounded-md border border-gray-300 px-3 text-black transition-all duration-200 hover:border-[#016472] focus:border-[#016472] focus:outline-none focus:ring-2 focus:ring-[#016472]/30"
               type="password"
               autoComplete="current-password"
+              placeholder="••••••••"
             />
           </label>
 
