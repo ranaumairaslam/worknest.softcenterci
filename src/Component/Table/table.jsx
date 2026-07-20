@@ -55,8 +55,8 @@ export default function Tables(){
    return(<>
      
 
-     <div className="bg-[#fbfbfb] text-[#000000] py-[5px] px-3 rounded-md text-[12px]">
-        <div className="Table-Top">
+     <div className="bg-[#fbfbfb] mt-[20px] text-[#000000] py-[5px] px-3 rounded-md text-[12px]">
+        <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3 mb-5">
         <h2>Tenant Company Registry</h2>
         <span className="w-fit bg-[#016472] text-[#a3feff] py-[5px] px-3 rounded-md text-[11px] sm:text-[12px]">FR-4.4</span>
         </div>
@@ -79,13 +79,13 @@ export default function Tables(){
             data.map((item,index)=>(
 
                 <tr key={index}>
-                    <td className="h-[40px] text-sm pt-5 border-b border-black">{item.companyName}</td>
-                    <td className="h-[40px] text-sm pt-5 border-b border-black">{item.companyEmail}</td>
-                    <td className="h-[40px] text-sm pt-5 border-b border-black">{item.companyregister}</td>
-                    <td className="h-[40px] text-sm pt-5 border-b border-black">{item.Plan}</td>
-                    <td className="check-box pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
-                    <td className="check-box  pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
-                    <td className="check-box  pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
+                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.companyName}</td>
+                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.companyEmail}</td>
+                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.companyregister}</td>
+                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.Plan}</td>
+                    <td className="check-box text-center pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
+                    <td className="check-box text-center  pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
+                    <td className="check-box text-center  pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
                     
                     
                     

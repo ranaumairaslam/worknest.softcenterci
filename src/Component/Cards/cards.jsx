@@ -24,7 +24,7 @@ export default function Cards() {
   ];
 
   return (
-    <div className="w-full p-4 sm:p-5 lg:p-6 mt-8 sm:mt-12 lg:mt-[70px]">
+    <div className="w-full p-4 sm:p-5 lg:p-6 mt-8 sm:mt-12 lg:mt-[0px]">
 
               <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3 mb-5">
           <h2 className="text-[18px] sm:text-[20px] lg:text-[22px] font-semibold text-[rgb(9,7,7)]">
