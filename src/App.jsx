@@ -9,6 +9,8 @@ import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 import TeamManagement from "./components/teammangemnt/teamMangement";
+import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
+
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -86,6 +88,10 @@ function AppLayout() {
             <Route path="/teams" element={<TeamManagement />} />
             <Route path="/tasks" element={<TeamDashboard />} />
             <Route path="/super-admin" element={<Admin />} />
+            <Route path="/dashboard" element={<Admin />} />
+            <Route path="/companies" element={<CompanySidebar />} />
+            <Route path="/subscriptions" element={<TeamDashboard />} />
+            <Route path="/reports" element={<Admin />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
               <Route path="/team-management" element={<TeamManagement />} />
 
@@ -117,4 +123,4 @@ export default function App() {
       <Route path="/*" element={<AppLayout />} />
     </Routes>
   );
-}
+} 
