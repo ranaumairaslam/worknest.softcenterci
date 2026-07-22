@@ -18,7 +18,7 @@ export default function Cards() {
     },
     {
       title: "ARR / Revenue",
-      value: "45",
+      value: "$45",
       subTitle: "Monthly Revenue",
     },
   ];

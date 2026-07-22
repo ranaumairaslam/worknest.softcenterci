@@ -62,3 +62,7 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Ignore package files
+package.json
+package-lock.json

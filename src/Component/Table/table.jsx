@@ -60,32 +60,32 @@ export default function Tables(){
         <h2>Tenant Company Registry</h2>
         <span className="w-fit bg-[#016472] text-[#a3feff] py-[5px] px-3 rounded-md text-[11px] sm:text-[12px]">FR-4.4</span>
         </div>
-      <div className="mt-[20px] w-full overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm mt-5 overflow-x-auto">
              <table className="min-w-[900px] w-full border-collapse">
              <thead>
-                <tr>
+                <tr className="bg-gray-50 border-b border-gray-100">
                     
-            <th className="w-[20%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc] first:rounded-tl-[20px">Company</th>
-            <th className="w-[30%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Contact Email</th>
-            <th className="w-[20%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Register</th>
-            <th className="w-[20%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Plan</th>
-            <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Active</th>
-            <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Suspend</th>
-            <th className="w-[10%] text-base bg-[#f2f2f2] text-black p-[15px] text-center border-b border-[#ccc]">Terminate</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Company</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Contact Email</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Register</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Plan</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Active</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Suspend</th>
+            <th className="px-5 py-3.5 text-xs font-semibold text-[black] uppercase tracking-wider whitespace-nowrap">Terminate</th>
             </tr>
             </thead>
         
         <tbody>{
             data.map((item,index)=>(
 
-                <tr key={index}>
-                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.companyName}</td>
-                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.companyEmail}</td>
-                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.companyregister}</td>
-                    <td className="h-[40px] text-center text-sm pt-5 border-b border-black">{item.Plan}</td>
-                    <td className="check-box text-center pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
-                    <td className="check-box text-center  pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
-                    <td className="check-box text-center  pt-5 border-b border-black"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
+                <tr className="border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors duration-150" key={index}>
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 whitespace-nowrap">{item.companyName}</td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 whitespace-nowrap">{item.companyEmail}</td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 whitespace-nowrap">{item.companyregister}</td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 whitespace-nowrap">{item.Plan}</td>
+                    <td className="px-5 py-3.5 text-sm font-medium  whitespace-nowrap"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
+                    <td className="px-5 py-3.5 text-sm font-medium  whitespace-nowrap"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
+                    <td className="px-5 py-3.5 text-sm font-medium  whitespace-nowrap"><input className="w-[18px] h-[18px]" type="checkbox" /></td>
                     
                     
                     
