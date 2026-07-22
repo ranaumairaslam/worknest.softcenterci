@@ -1,122 +1,119 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import Signup from "./Component/SignUp/SignupPage.jsx";
+import Login from "./Component/Login/login.jsx";
+import Sidebar from "../components/sidebar.jsx";
+import Navbar from "../components/navbar.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import LeaderDashboard from "./pages/LeaderDashboard.jsx";
+import TeamDashboard from "./pages/TeamDashboard.jsx";
+import Admin from "./Component/SuperAdmin/superAdmin.jsx";
+import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 
-function App() {
-  const [count, setCount] = useState(0)
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+const DESKTOP_BREAKPOINT = 1024;
+const AUTH_PATHS = ["/login", "/Signup"];
 
-      <div className="ticks"></div>
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(
+    () => window.matchMedia(query).matches
+  );
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const handleChange = (event) => setMatches(event.matches);
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [query]);
+
+  return matches;
 }
 
-export default App
+function AppLayout() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
+  const location = useLocation();
+  const sidebarOpen = isDesktop ? false : mobileOpen;
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
+
+  const handleToggle = useCallback(() => {
+    if (isDesktop) {
+      setCollapsed((prev) => !prev);
+    } else {
+      setMobileOpen((prev) => !prev);
+    }
+  }, [isDesktop]);
+
+  const handleCloseMobile = useCallback(() => setMobileOpen(false), []);
+
+  const mainOffsetClass = isDesktop
+    ? collapsed
+      ? "lg:ml-20"
+      : "lg:ml-72"
+    : "ml-0";
+
+  const navbarTitle =
+    {
+      "/dashboard": "Company Dashboard",
+      "/projects": "Project Oversight",
+      "/tasks": "My Tasks",
+      "/super-admin": "Super Admin",
+    }[location.pathname] ?? "WorkNest";
+
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-slate-100">
+      <Sidebar
+        collapsed={collapsed}
+        mobileOpen={sidebarOpen}
+        onClose={handleCloseMobile}
+      />
+
+      <div
+        className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${mainOffsetClass}`}
+      >
+        <Navbar onToggle={handleToggle} title={navbarTitle} />
+
+        <main className="p-4 sm:p-6">
+          <Routes>
+            <Route path="/dashboard" element={<Admin />} />
+            <Route path="/companies" element={<CompanySidebar />} />
+            <Route path="/subscriptions" element={<TeamDashboard />} />
+            <Route path="/reports" element={<Admin />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const location = useLocation();
+  const isAuthRoute = AUTH_PATHS.includes(location.pathname);
+
+  if (isAuthRoute) {
+    return (
+      <Routes>
+        <Route path="/" element={<Navigate to="/Signup" replace />} />
+        <Route path="/Signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/Signup" replace />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/*" element={<AppLayout />} />
+    </Routes>
+  );
+} 
