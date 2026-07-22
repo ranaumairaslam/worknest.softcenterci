@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
+import TeamManagement from "./components/teammangemnt/teamMangement";
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 
 
@@ -83,11 +84,17 @@ function AppLayout() {
 
         <main className="p-4 sm:p-6">
           <Routes>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/teams" element={<TeamManagement />} />
+            <Route path="/tasks" element={<TeamDashboard />} />
+            <Route path="/super-admin" element={<Admin />} />
             <Route path="/dashboard" element={<Admin />} />
             <Route path="/companies" element={<CompanySidebar />} />
             <Route path="/subscriptions" element={<TeamDashboard />} />
             <Route path="/reports" element={<Admin />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/team-management" element={<TeamManagement />} />
+
           </Routes>
         </main>
       </div>
