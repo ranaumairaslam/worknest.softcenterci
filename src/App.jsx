@@ -9,6 +9,8 @@ import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
+import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.jsx";
+import Pending from "./Component/Subscriptions/pending";
 
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -85,8 +87,9 @@ function AppLayout() {
           <Routes>
             <Route path="/dashboard" element={<Admin />} />
             <Route path="/companies" element={<CompanySidebar />} />
-            <Route path="/subscriptions" element={<TeamDashboard />} />
+            <Route path="/subscriptions" element={<Subscriptionsidebar />} />
             <Route path="/reports" element={<Admin />} />
+            <Route path="/pending" element ={<Pending />}/>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
