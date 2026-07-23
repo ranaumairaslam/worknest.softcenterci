@@ -4,10 +4,11 @@ import Signup from "./Component/SignUp/SignupPage.jsx";
 import Login from "./Component/Login/login.jsx";
 import Sidebar from "../components/sidebar.jsx";
 import Navbar from "../components/navbar.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+//import Dashboard from "./pages/Dashboard.jsx";
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
+import ProjectOversightFull from "./pages/ProjectLeader/ProjectOversightFull";
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -81,8 +82,8 @@ function AppLayout() {
 
         <main className="p-4 sm:p-6">
           <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/projects" element={<LeaderDashboard />} />
+            <Route path="/dashboard" element={<LeaderDashboard/>} />
+            <Route path="/projects" element={<ProjectOversightFull />} />
             <Route path="/tasks" element={<TeamDashboard />} />
             <Route path="/super-admin" element={<Admin />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
