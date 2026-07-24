@@ -11,6 +11,8 @@ import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 import TeamManagement from "./components/teammangemnt/teamMangement";
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 
+import CompanyReports from "./pages/CompanyReports.jsx";
+
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -94,6 +96,8 @@ function AppLayout() {
             <Route path="/reports" element={<Admin />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
               <Route path="/team-management" element={<TeamManagement />} />
+             
+              <Route path="/company-reports" element={<CompanyReports />} />
 
           </Routes>
         </main>
