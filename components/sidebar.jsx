@@ -43,6 +43,7 @@ export default function Sidebar({
   collapsed,
   mobileOpen,
   onClose,
+  role = "projectLeader",
   role = "companyAdmin",
   company = "WorkNest",
 }) {

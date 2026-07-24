@@ -8,6 +8,9 @@ import Dashboard from "./pages/Dashboard.jsx";
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
+import ProjectOversightFull from "./pages/ProjectOversightFull";
+import Reports from "./pages/Reports.jsx"
+import Calendar from "./pages/Calendar.jsx";
 import TeamManagement from "./components/teammangemnt/teamMangement";
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.jsx";
@@ -92,6 +95,8 @@ function AppLayout() {
 
         <main className="p-4 sm:p-6">
           <Routes>
+            <Route path="/dashboard" element={<LeaderDashboard/>} />
+            <Route path="/projects" element={<Dashboard />} />
             <Route path="/dashboard" element={<LeaderDashboard />} />
             <Route path="/teams" element={<TeamManagement />} />
             <Route path="/tasks" element={<TeamDashboard />} />
@@ -102,6 +107,10 @@ function AppLayout() {
             <Route path="/reports" element={<ReportsSidebar />} />
             <Route path="/pending" element ={<Pending />}/>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/project" element={<ProjectOversightFull />} />
+            <Route path="/report" element={<Reports />} />
+            <Route path="/calendar" element={<Calendar />} />
+            
               <Route path="/team-management" element={<TeamManagement />} />
              
               <Route path="/company-reports" element={<CompanyReports />} />
