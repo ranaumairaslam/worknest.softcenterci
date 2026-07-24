@@ -11,6 +11,7 @@ import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.jsx";
 import Pending from "./Component/Subscriptions/pending";
+import ReportsSidebar from "./Component/Reports/reportsSidebar.jsx";
 
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -88,7 +89,7 @@ function AppLayout() {
             <Route path="/dashboard" element={<Admin />} />
             <Route path="/companies" element={<CompanySidebar />} />
             <Route path="/subscriptions" element={<Subscriptionsidebar />} />
-            <Route path="/reports" element={<Admin />} />
+            <Route path="/reports" element={<ReportsSidebar />} />
             <Route path="/pending" element ={<Pending />}/>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
