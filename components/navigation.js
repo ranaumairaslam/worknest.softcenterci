@@ -65,7 +65,7 @@ export const navigation = {
     {
       title: "Projects",
       icon: FolderKanban,
-      path: "/projects",
+      path: "/project",
     },
     {
       title: "Calendar",
@@ -75,7 +75,7 @@ export const navigation = {
     {
       title: "Reports",
       icon: BarChart3,
-      path: "/reports",
+      path: "/report",
     },
   ],
 
