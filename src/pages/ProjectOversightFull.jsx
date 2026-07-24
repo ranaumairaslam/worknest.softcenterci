@@ -1,12 +1,12 @@
+import ProjectHeaderCard from "../components/Cards/ProjectHeaderCard";
+import ProjectTimeline from "../components/Cards/ProjectTimeline";
+import TeamPerformanceCard from "../components/Cards/TeamPerformanceCard";
+import StatCardTrend from "../components/Cards/StatCardTrend";
+import TaskOverviewTable from "../components/Cards/TaskOverviewTable";
+import MiniKanbanPreview from "../components/Cards/MiniKanbanPreview";
+import { useProjectOversightData } from "../hooks/useProjectOversightData";
 
-import ProjectHeaderCard from "../../components/Project/ProjectHeaderCard";
-import ProjectTimeline from "../../components/Project/ProjectTimeline";
-import TeamPerformanceCard from "../../components/Project/TeamPerformanceCard";
-import StatCardTrend from "../../components/Cards/StatCardTrend";
-import TaskOverviewTable from "../../components/Tables/TaskOverviewTable";
-import MiniKanbanPreview from "../../components/Kanban/MiniKanbanPreview";
-import { useProjectOversightData } from "../../hooks/useProjectOversightData";
-
+// this is 
 export default function ProjectOversightFull() {
   const { data, loading, error } = useProjectOversightData();
 
