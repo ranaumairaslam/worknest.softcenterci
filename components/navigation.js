@@ -42,7 +42,7 @@ export const navigation = {
     {
       title: "Teams",
       icon: Users,
-      path: "/teams",
+      path: "/team-management",
     },
     {
       title: "Projects",

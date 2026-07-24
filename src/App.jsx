@@ -11,6 +11,12 @@ import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 import ProjectOversightFull from "./pages/ProjectOversightFull";
 import Reports from "./pages/Reports.jsx"
 import Calendar from "./pages/Calendar.jsx";
+import TeamManagement from "./components/teammangemnt/teamMangement";
+import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
+
+
+import ProjectOversight from "./pages/ProjectOversight";
+
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -86,13 +92,21 @@ function AppLayout() {
           <Routes>
             <Route path="/dashboard" element={<LeaderDashboard/>} />
             <Route path="/projects" element={<Dashboard />} />
+            <Route path="/dashboard" element={<LeaderDashboard />} />
+            <Route path="/teams" element={<TeamManagement />} />
             <Route path="/tasks" element={<TeamDashboard />} />
             <Route path="/super-admin" element={<Admin />} />
+            <Route path="/dashboard" element={<Admin />} />
+            <Route path="/companies" element={<CompanySidebar />} />
+            <Route path="/subscriptions" element={<TeamDashboard />} />
+            <Route path="/reports" element={<Admin />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
             <Route path="/project" element={<ProjectOversightFull />} />
             <Route path="/report" element={<Reports />} />
             <Route path="/calendar" element={<Calendar />} />
             
+              <Route path="/team-management" element={<TeamManagement />} />
+              <Route path="/projects" element={<ProjectOversight />} />
           </Routes>
         </main>
       </div>
@@ -121,4 +135,4 @@ export default function App() {
       <Route path="/*" element={<AppLayout />} />
     </Routes>
   );
-}
+} 

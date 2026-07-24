@@ -26,3 +26,46 @@ dist-ssr
 node_modules/
 package.json
 package-lock.json
+# dependencies
+node_modules/
+
+# build
+dist/
+
+# logs
+*.log
+
+# environment variables
+.env
+.env.local
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# dependencies
+node_modules/
+
+# production
+dist/
+
+# environment variables
+.env
+.env.local
+
+# logs
+*.log
+
+# editor
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Ignore package files
+package.json
+package-lock.json
