@@ -52,7 +52,7 @@ export const navigation = {
     {
       title: "Reports",
       icon: BarChart3,
-      path: "/reports",
+      path: "/company-reports",
     },
   ],
 

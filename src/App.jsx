@@ -17,6 +17,8 @@ import ReportsSidebar from "./Component/Reports/reportsSidebar.jsx";
 
 import ProjectOversight from "./pages/ProjectOversight";
 
+import CompanyReports from "./pages/CompanyReports.jsx";
+
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -101,6 +103,9 @@ function AppLayout() {
             <Route path="/pending" element ={<Pending />}/>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
               <Route path="/team-management" element={<TeamManagement />} />
+             
+              <Route path="/company-reports" element={<CompanyReports />} />
+
               <Route path="/projects" element={<ProjectOversight />} />
           </Routes>
         </main>
