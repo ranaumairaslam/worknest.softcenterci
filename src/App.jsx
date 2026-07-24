@@ -12,6 +12,9 @@ import TeamManagement from "./components/teammangemnt/teamMangement";
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 
 
+import ProjectOversight from "./pages/ProjectOversight";
+
+
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
 
@@ -84,7 +87,7 @@ function AppLayout() {
 
         <main className="p-4 sm:p-6">
           <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<LeaderDashboard />} />
             <Route path="/teams" element={<TeamManagement />} />
             <Route path="/tasks" element={<TeamDashboard />} />
             <Route path="/super-admin" element={<Admin />} />
@@ -94,7 +97,7 @@ function AppLayout() {
             <Route path="/reports" element={<Admin />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
               <Route path="/team-management" element={<TeamManagement />} />
-
+              <Route path="/projects" element={<ProjectOversight />} />
           </Routes>
         </main>
       </div>
