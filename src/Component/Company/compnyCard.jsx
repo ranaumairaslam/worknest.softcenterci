@@ -1,86 +1,132 @@
-import { Building2, Users, TrendingUp, UserCheck,ArrowDown } from "lucide-react";
+import {Building2,Users,TrendingUp,UserCheck, ArrowDown, Search,Download,Clock3,Ban,} from "lucide-react";
 
 export default function CompanyCards() {
   const cards = [
     {
       title: "Total Companies",
       value: "128",
-      subTitle: "Companies",
+      subTitle: "Registered Companies",
+      trend: "+12%",
+      trendColor: "text-green-600",
       icon: Building2,
-      gradient: "from-[#6366f1] to-[#8b5cf6]",
-      bg: "bg-[#eef0ff]",
+      gradient: "from-indigo-500 to-violet-500",
     },
     {
-      title: "Active Account",
-      value: "895",
-      subTitle: "Account",
+      title: "Active Companies",
+      value: "102",
+      subTitle: "Currently Active",
+      trend: "+8%",
+      trendColor: "text-green-600",
       icon: UserCheck,
-      gradient: "from-[#0ea5e9] to-[#06b6d4]",
-      bg: "bg-[#e6f6fd]",
+      gradient: "from-sky-500 to-cyan-500",
     },
     {
       title: "New This Month",
       value: "35",
-      subTitle: "Companies",
+      subTitle: "New Registrations",
+      trend: "+15%",
+      trendColor: "text-green-600",
       icon: TrendingUp,
-      gradient: "from-[#10b981] to-[#34d399]",
-      bg: "bg-[#e7f8f1]",
+      gradient: "from-green-500 to-emerald-500",
     },
     {
-      title: "Avrg Company Size",
-      value: "240",
-      subTitle: "Employees",
+      title: "Total Employees",
+      value: "2,540",
+      subTitle: "Across Companies",
+      trend: "+6%",
+      trendColor: "text-green-600",
       icon: Users,
-      gradient: "from-[#f43f5e] to-[#fb7185]",
-      bg: "bg-[#fdeaee]",
+      gradient: "from-pink-500 to-rose-500",
     },
-    
+    {
+      title: "Pending Approval",
+      value: "08",
+      subTitle: "Waiting Review",
+      trend: "-2%",
+      trendColor: "text-yellow-600",
+      icon: Clock3,
+      gradient: "from-yellow-500 to-orange-500",
+    },
+    {
+      title: "Suspended",
+      value: "05",
+      subTitle: "Inactive Companies",
+      trend: "-1%",
+      trendColor: "text-red-600",
+      icon: Ban,
+      gradient: "from-red-500 to-pink-500",
+    },
   ];
 
   return (
-    <div className="w-full p-4 sm:p-5 lg:p-6">
-                <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-            <h2 className="text-[18px] sm:text-[20px] lg:text-[22px] font-semibold text-gray-800 tracking-wide">
-                Companies
-            </h2>
-            <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 sm:gap-0">
-                <button className="bg-[#016472] text-white sm:mr-[20px] text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg hover:opacity-90 transition-opacity duration-200 shadow-md shadow-indigo-200 w-full sm:w-auto whitespace-nowrap">
-                + Add New Company
-                </button>
-                <button className="flex items-center justify-center gap-2 bg-[#016472] text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg hover:opacity-90 transition-opacity duration-200 shadow-md shadow-indigo-200 w-full sm:w-auto whitespace-nowrap">
-                <ArrowDown size={16} className="shrink-0" />
-                Import Data
-                </button>
-            </div>
-            </div>
+    <div className="w-full p-6">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-5 mb-8">
+      <div>
+          <h2 className="text-3xl font-bold text-gray-800">Company Management</h2>
+          <p className="text-gray-500 mt-1"> Manage all registered companies across the platform.</p>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="flex flex-col md:flex-row gap-3">
+         <button className="bg-[#016472] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#01535e] transition">
+            + Add Company</button>
+
+          <button className="flex items-center gap-2 bg-white border px-5 py-2.5 rounded-lg hover:bg-gray-50 transition">
+            <ArrowDown size={18} />Import</button>
+
+          <button className="flex items-center gap-2 bg-white border px-5 py-2.5 rounded-lg hover:bg-gray-50 transition">
+            <Download size={18} />Export</button>
+
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div
               key={index}
-              className="relative overflow-hidden bg-white border border-gray-100 rounded-2xl p-5 lg:p-[22px] min-h-[160px] transition-all duration-300 hover:-translate-y-2 hover:shadow-xl shadow-sm"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <h4 className="text-[black] text-[16px] sm:text-[19px] font-medium">
-                  {card.title}
-                </h4>
-                <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient}`}
-                >
-                  <Icon size={18} className="text-white" />
+              className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-[#016472] transition-all duration-300">
+               <div className="flex justify-between items-start"><div>
+                 <h4 className="text-gray-500 text-sm font-semibold uppercase tracking-wide">
+                    {card.title}
+                  </h4>
+                    <h1 className="text-4xl font-bold text-gray-900 mt-3">
+                    {card.value}
+                  </h1>
+
+                  <p className="text-gray-500 mt-1">
+                    {card.subTitle}
+                  </p>
+
                 </div>
+
+                <div
+                  className={`w-14 h-14 rounded-full bg-gradient-to-br ${card.gradient} flex items-center justify-center`}
+                >
+                  <Icon size={26} className="text-white" />
+                </div>
+
               </div>
 
-              <h1 className="text-gray-900 text-[32px] sm:text-[40px] lg:text-[44px] mb-2 font-bold tracking-tight">
-                {card.value}
-              </h1>
+              <div className="mt-6 flex items-center justify-between">
 
-              <p className="text-[#2c2a2a] text-[13px] sm:text-[14px]">
-                {card.subTitle}
-              </p>
-              
+                <span className={`${card.trendColor} font-semibold`}>
+                  {card.trend}
+                </span>
+
+                <span className="text-sm text-gray-400">
+                  vs Last Month
+                </span>
+
+              </div>
+              <div className="mt-4">
+                <div className="w-full h-2 rounded-full bg-gray-200">
+
+                  <div className="w-[75%] h-2 rounded-full bg-[#016472]"></div>
+
+                </div>
+
+              </div>
+
             </div>
           );
         })}
