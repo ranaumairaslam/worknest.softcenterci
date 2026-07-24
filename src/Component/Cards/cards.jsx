@@ -1,66 +1,128 @@
-export default function Cards() {
+import {
+  Users,
+  DollarSign,
+  KeyRound,
+  Ticket,
+  Building2,
+  UserCheck,
+  Activity,
+  ShieldCheck,
+} from "lucide-react";
+
+export default function DashboardCards() {
   const cards = [
     {
-      title: "Active Tenants",
-      value: "128",
-      subTitle: "Active Clients",
+      title: "Total Active Users",
+      value: "500K",
+      change: "+0.9%",
+      color: "text-green-500",
+      icon: <Users size={22} />,
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
     },
     {
-      title: "Total Platform Users",
-      value: "4.5k",
-      subTitle: "Registered Users",
+      title: "Monthly Revenue",
+      value: "$275K",
+      change: "+1.7%",
+      color: "text-green-500",
+      icon: <DollarSign size={22} />,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
     },
     {
-      title: "Global System Health",
+      title: "API Token Usage",
+      value: "347K",
+      change: "-2.1%",
+      color: "text-red-500",
+      icon: <KeyRound size={22} />,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+    },
+    {
+      title: "Open Tickets",
+      value: "120",
+      change: "+0.9%",
+      color: "text-green-500",
+      icon: <Ticket size={22} />,
+      iconBg: "bg-yellow-100",
+      iconColor: "text-yellow-600",
+    },
+    {
+      title: "Total Companies",
+      value: "48",
+      change: "+3",
+      color: "text-green-500",
+      icon: <Building2 size={22} />,
+      iconBg: "bg-cyan-100",
+      iconColor: "text-cyan-600",
+    },
+    {
+      title: "Active Employees",
+      value: "2,560",
+      change: "+5%",
+      color: "text-green-500",
+      icon: <UserCheck size={22} />,
+      iconBg: "bg-pink-100",
+      iconColor: "text-pink-600",
+    },
+    {
+      title: "Today's Logins",
+      value: "1,245",
+      change: "+8%",
+      color: "text-green-500",
+      icon: <Activity size={22} />,
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
+    },
+    {
+      title: "System Health",
       value: "99.9%",
-      subTitle: "Uptime Status",
-      green: true,
-    },
-    {
-      title: "ARR / Revenue",
-      value: "$45",
-      subTitle: "Monthly Revenue",
+      change: "Healthy",
+      color: "text-green-500",
+      icon: <ShieldCheck size={22} />,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
     },
   ];
 
   return (
-    <div className="w-full p-4 sm:p-5 lg:p-6 mt-8 sm:mt-12 lg:mt-[0px]">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      {cards.map((card, index) => (
+        <div
+          key={index}
+          className="bg-white border border-gray-200 rounded-xl p-10 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">
+                {card.title}
+              </h3>
 
-              <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3 mb-5">
-          <h2 className="text-[18px] sm:text-[20px] lg:text-[22px] font-semibold text-[rgb(9,7,7)]">
-            GLOBAL PLATFORM OVERVIEW
-          </h2>
+              <h2 className="text-3xl font-bold text-gray-900 mt-3">
+                {card.value}
+              </h2>
 
-          <span className="w-fit bg-[#016472] text-[#a3feff] py-[5px] px-3 rounded-md text-[11px] sm:text-[12px]">
-            FR-1.3
-          </span>
-        </div>
-      
+              <div className="flex items-center gap-2 mt-3">
+                <span className={`text-sm font-semibold ${card.color}`}>
+                  {card.change}
+                </span>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            className={
-              card.green
-                ? "bg-[#0b5f42] border border-[#18b47b] rounded-xl p-5 lg:p-[22px] min-h-[150px] transition-all duration-300 hover:-translate-y-3"
-                : "bg-[#102845] border border-[#1c4261] rounded-xl p-5 lg:p-[22px] min-h-[150px] transition-all duration-300 hover:-translate-y-3"
-            }
-          >
-            <h4 className="text-white text-[14px] sm:text-[15px] lg:text-[16px] mb-5">
-              {card.title}
-            </h4>
+                <span className="text-xs text-gray-500">
+                  Last Month
+                </span>
+              </div>
+            </div>
 
-            <h1 className="text-white text-[32px] sm:text-[40px] lg:text-[48px] mb-3 font-bold">
-              {card.value}
-            </h1>
-
-            <p className="text-white text-[13px] sm:text-[14px]">
-              {card.subTitle}
-            </p>
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center ${card.iconBg}`}
+            >
+              <span className={card.iconColor}>
+                {card.icon}
+              </span>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
