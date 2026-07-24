@@ -7,6 +7,10 @@ import {
   CalendarDays,
   BarChart3,
   Building2,
+  Briefcase,
+  Clock3,
+  FileText,
+  MessageSquare,
 } from "lucide-react";
 
 export const navigation = {
@@ -14,7 +18,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard1",
     },
     {
       title: "Companies",
@@ -37,7 +41,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard2",
     },
     {
       title: "Teams",
@@ -60,7 +64,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard3",
     },
     {
       title: "Projects",
@@ -83,7 +87,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard4",
     },
     {
       title: "My Tasks",
@@ -95,5 +99,26 @@ export const navigation = {
       icon: FolderKanban,
       path: "/projects",
     },
+  ],
+
+  client: [
+    {
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/client-dashboard",
+    },
+    {
+      title: "My Projects",
+      icon: Briefcase,
+      path: "/client-projects",
+    },
+   
+    {
+      title: "Meetings",
+      icon: CalendarDays,
+      path: "/client-meetings",
+    },
+   
+    
   ],
 };

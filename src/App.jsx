@@ -20,6 +20,12 @@ import ProjectOversight from "./pages/ProjectOversight";
 import CompanyReports from "./pages/CompanyReports.jsx";
 
 
+
+import ClientDashboard from "./pages/ClientDashboard.jsx";
+import Meetings from "./pages/Meetings";
+import ProjectsClient from "./pages/ProjectsClient.jsx";
+
+
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
 
@@ -92,11 +98,11 @@ function AppLayout() {
 
         <main className="p-4 sm:p-6">
           <Routes>
-            <Route path="/dashboard" element={<LeaderDashboard />} />
+            <Route path="/dashboard3" element={<LeaderDashboard />} />
             <Route path="/teams" element={<TeamManagement />} />
-            <Route path="/tasks" element={<TeamDashboard />} />
+            <Route path="/dashboard4" element={<TeamDashboard />} />
             <Route path="/super-admin" element={<Admin />} />
-            <Route path="/dashboard" element={<Admin />} />
+            <Route path="/dashboard1" element={<Admin />} />
             <Route path="/companies" element={<CompanySidebar />} />
             <Route path="/subscriptions" element={<Subscriptionsidebar />} />
             <Route path="/reports" element={<ReportsSidebar />} />
@@ -107,6 +113,15 @@ function AppLayout() {
               <Route path="/company-reports" element={<CompanyReports />} />
 
               <Route path="/projects" element={<ProjectOversight />} />
+
+
+               <Route path="/dashboard2" element={<Dashboard />} />
+
+
+              
+                <Route path="/client-dashboard" element={<ClientDashboard />} />
+                <Route path="/client-meetings" element={<Meetings />} />
+                <Route path="/client-projects" element={<ProjectsClient />} />
           </Routes>
         </main>
       </div>
