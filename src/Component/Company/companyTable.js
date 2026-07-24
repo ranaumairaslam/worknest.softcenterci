@@ -7,6 +7,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -17,6 +18,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -27,6 +29,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -37,6 +40,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -47,6 +51,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -57,6 +62,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -67,6 +73,7 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala"
 },
 {
@@ -77,6 +84,55 @@
         owner:"Rana Umair",
         size:"20 Employees",
         revenue:"100$",
+        Buy:"Pending",
+        location:"Wukla Society Arifwala",
+        failed:true
+}, 
+{
+        id:1,
+        name:"SoftCentric",
+        status:"Active",
+        industry:"Software Development",
+        owner:"Rana Umair",
+        size:"20 Employees",
+        revenue:"100$",
+        Buy:"Pending",
+        location:"Wukla Society Arifwala",
+        failed:true
+}, 
+{
+        id:1,
+        name:"SoftCentric",
+        status:"Active",
+        industry:"Software Development",
+        owner:"Rana Umair",
+        size:"20 Employees",
+        revenue:"100$",
+        Buy:"Pending",
+        location:"Wukla Society Arifwala",
+        failed:true
+}, 
+{
+        id:1,
+        name:"SoftCentric",
+        status:"Active",
+        industry:"Software Development",
+        owner:"Rana Umair",
+        size:"20 Employees",
+        revenue:"100$",
+        Buy:"Pending",
+        location:"Wukla Society Arifwala",
+        failed:true
+}, 
+{
+        id:1,
+        name:"SoftCentric",
+        status:"Active",
+        industry:"Software Development",
+        owner:"Rana Umair",
+        size:"20 Employees",
+        revenue:"100$",
+        Buy:"Pending",
         location:"Wukla Society Arifwala",
         failed:true
 }, 
