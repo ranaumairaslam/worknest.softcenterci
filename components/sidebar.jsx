@@ -43,8 +43,7 @@ export default function Sidebar({
   collapsed,
   mobileOpen,
   onClose,
-  role = "projectLeader",
-  role = "companyAdmin",
+  role = "teamMember",
   company = "WorkNest",
 }) {
   const navigate = useNavigate();
