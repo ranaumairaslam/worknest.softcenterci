@@ -87,7 +87,7 @@ export default function RevenueCard() {
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Current Rate (Last 30 Days)
         </p>
-      <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">+$24,500</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">2.1%</h2>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <TrendingDown size={16} className="text-red-600" />
           <span className="text-red-600 font-semibold">

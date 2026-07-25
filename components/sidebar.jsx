@@ -44,8 +44,6 @@ export default function Sidebar({
   mobileOpen,
   onClose,
   role = "superAdmin",
-  role = "projectLeader",
-  role = "companyAdmin",
   company = "WorkNest",
 }) {
   const navigate = useNavigate();
@@ -73,16 +71,14 @@ export default function Sidebar({
           lg:max-w-none lg:shadow-none
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "lg:w-20" : "lg:w-72"}
-        `}
-      >
+        `}>
         <div className={`p-4 sm:p-6 ${collapsed ? "lg:px-2" : ""}`}>
           <div className="mb-4 flex justify-end lg:hidden">
             <button
               type="button"
               onClick={onClose}
               aria-label="Close sidebar"
-              className={iconButtonBase}
-            >
+              className={iconButtonBase}>
               <X size={22} />
             </button>
           </div>
