@@ -17,6 +17,7 @@ import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.j
 import Pending from "./Component/Subscriptions/pending";
 import ReportsSidebar from "./Component/Reports/reportsSidebar.jsx";
 import InvoiceCard from "./Component/Subscriptions/Invoice.jsx"
+import MyTasks from "./pages/MyTasks.jsx";
 
 
 import ProjectOversight from "./pages/ProjectOversight";
@@ -119,6 +120,7 @@ function AppLayout() {
             <Route path="/project" element={<ProjectOversightFull />} />
             <Route path="/report" element={<Reports />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/tasks" element={<MyTasks />} />
             
               <Route path="/team-management" element={<TeamManagement />} />
              

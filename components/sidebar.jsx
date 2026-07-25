@@ -44,6 +44,7 @@ export default function Sidebar({
   mobileOpen,
   onClose,
   role = "superAdmin",
+  role = "teamMember",
   company = "WorkNest",
 }) {
   const navigate = useNavigate();
