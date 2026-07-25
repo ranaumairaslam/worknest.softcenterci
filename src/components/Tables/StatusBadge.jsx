@@ -6,8 +6,10 @@ const styles = {
 
 export default function StatusBadge({ status }) {
   return (
-    <span className={`text-xs font-medium px-3 py-1 rounded-full ${styles[status] || "bg-slate-100 text-slate-600"}`}>
-      {status}
-    </span>
+    <span
+  className={`inline-flex w-28 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${styles[status] || "bg-slate-100 text-slate-600"}`}
+>
+  {status}
+</span>
   );
 }

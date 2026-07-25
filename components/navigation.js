@@ -13,6 +13,42 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+export const roleConfig = {
+  superAdmin: {
+    title: "Super Admin Dashboard",
+    role: "Super Admin",
+    username: "Super Admin",
+    userinitials: "SA",
+  },
+
+  companyAdmin: {
+    title: "Company Dashboard",
+    role: "Company Admin",
+    username: "Company Admin",
+    userinitials: "CA",
+  },
+
+  projectLeader: {
+    title: "Project Dashboard",
+    role: "Project Leader",
+    username: "Project Leader",
+    userinitials: "PL",
+  },
+
+  teamMember: {
+    title: "Team Dashboard",
+    role: "Team Member",
+    username: "Team Member",
+    userinitials: "TM",
+  },
+
+  client: {
+    title: "Client Dashboard",
+    role: "Client",
+    username: "Client",
+    userinitials: "CL",
+  },
+};
 export const navigation = {
   superAdmin: [
     {
@@ -69,7 +105,7 @@ export const navigation = {
     {
       title: "Projects",
       icon: FolderKanban,
-      path: "/projects",
+      path: "/project",
     },
     {
       title: "Calendar",
@@ -79,7 +115,7 @@ export const navigation = {
     {
       title: "Reports",
       icon: BarChart3,
-      path: "/reports",
+      path: "/report",
     },
   ],
 

@@ -1,25 +1,25 @@
 export const clientStats = [
   {
     id: 1,
-    title: "My Projects",
+    title: "Projects",
     value: 3,
     color: "bg-cyan-600",
   },
   {
     id: 2,
-    title: "Average Progress",
+    title: "Progress",
     value: "76%",
     color: "bg-blue-600",
   },
   {
     id: 3,
-    title: "Upcoming Meetings",
+    title: "Meetings",
     value: 2,
     color: "bg-violet-600",
   },
   {
     id: 4,
-    title: "Completed Projects",
+    title: "Projects",
     value: 1,
     color: "bg-green-600",
   },

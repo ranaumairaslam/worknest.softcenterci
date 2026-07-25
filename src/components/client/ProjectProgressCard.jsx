@@ -27,18 +27,18 @@ export default function ProjectProgressCard({ project }) {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
      
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-slate-800">
-            {project.name}
-          </h3>
+     <div className="flex min-h-[90px] items-start justify-between gap-4">
+        <div className="flex-1">
+  <h3 className="min-h-[32px] text-xl font-bold text-slate-800 line-clamp-1">
+    {project.name}
+  </h3>
 
-          <p className="mt-1 text-sm text-slate-500">
-            {project.description}
-          </p>
-        </div>
+  <p className="mt-2 min-h-[40px] text-sm leading-5 text-slate-500 line-clamp-2">
+    {project.description}
+  </p>
+</div>
 
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadge(
@@ -49,7 +49,7 @@ export default function ProjectProgressCard({ project }) {
         </span>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-slate-600">
             Progress
@@ -71,7 +71,7 @@ export default function ProjectProgressCard({ project }) {
       </div>
 
      
-      <div className="mt-6 space-y-4">
+     <div className="mt-5 space-y-4">
         <div className="flex items-center gap-3">
           <UserRound size={18} className="text-cyan-600" />
 
@@ -102,7 +102,7 @@ export default function ProjectProgressCard({ project }) {
       </div>
 
      
-      <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#016472] px-4 py-3 font-semibold text-white transition hover:bg-[#014b55]">
+    <button className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-[#016472] px-4 py-3 font-semibold text-white transition hover:bg-[#014b55]">
         View Details
         <ArrowRight size={18} />
       </button>
