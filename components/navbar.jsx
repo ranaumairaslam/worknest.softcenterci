@@ -6,7 +6,7 @@ const iconButtonClass =
 
 export default function Navbar({
   title = "Company Dashboard",
-  role = "team Member",
+  role = "superAdmin",
   username = "John Doe",
   userinitials = "JD",
   notificationcount = 5,

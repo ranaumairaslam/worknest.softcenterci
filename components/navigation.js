@@ -14,7 +14,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard1",
     },
     {
       title: "Companies",
@@ -37,7 +37,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard2",
     },
     {
       title: "Teams",
@@ -60,7 +60,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard3",
     },
     {
       title: "Projects",
@@ -83,7 +83,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/dashboard4",
     },
     {
       title: "My Tasks",

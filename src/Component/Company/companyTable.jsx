@@ -21,9 +21,7 @@ export default function CompanyTable() {
             </select>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <label className="text-gray-700 font-semibold text-sm shrink-0">
-              Industry:
-            </label>
+            <label className="text-gray-700 font-semibold text-sm shrink-0">Industry:</label>
             <select className="bg-white text-gray-700 text-sm p-2 rounded-lg border border-gray-200 outline-none focus:border-[#016472] transition-colors duration-200 w-full sm:w-auto">
               <option>Technology</option>
             </select>

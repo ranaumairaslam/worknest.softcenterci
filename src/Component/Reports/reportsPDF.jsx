@@ -34,13 +34,13 @@ const reports = [
 export default function ReportsPDF() {
   return (
     <div className="w-full mt-[30px] bg-white border border-gray-200 rounded-2xl shadow-sm">
-        <div className="flex flex-row item">
+        <div className="flex flex-row items-center">
         <div className="px-6 py-5 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-800"> Downloadable Reports</h2>
             <p className="text-sm text-gray-500 mt-1">Scheduled & Pre-Generated Reports</p>
             </div>
-             <button className="bg-[#016472] h-[60px] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#01535e] transition">
-            + Add Company</button>
+             <button className="bg-[#016472]  h-[50px] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#01535e] transition">
+            + Add Report</button>
             </div>
             
         
