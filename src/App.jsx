@@ -20,6 +20,7 @@ import InvoiceCard from "./Component/Subscriptions/Invoice.jsx"
 import MyTasks from "./pages/MyTasks.jsx";
 
 
+
 import ProjectOversight from "./pages/ProjectOversight";
 
 import CompanyReports from "./pages/CompanyReports.jsx";
@@ -29,6 +30,7 @@ import CompanyReports from "./pages/CompanyReports.jsx";
 import ClientDashboard from "./pages/ClientDashboard.jsx";
 import Meetings from "./pages/Meetings";
 import ProjectsClient from "./pages/ProjectsClient.jsx";
+import ClientCalendar from "./pages/ClientCalendar.jsx";
 
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -159,6 +161,7 @@ function AppLayout() {
                 <Route path="/client-dashboard" element={<ClientDashboard />} />
                 <Route path="/client-meetings" element={<Meetings />} />
                 <Route path="/client-projects" element={<ProjectsClient />} />
+                <Route path="/calendar" element={<ClientCalendar />} />
           </Routes>
         </main>
       </div>
