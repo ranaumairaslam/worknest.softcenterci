@@ -25,6 +25,12 @@ import ProjectOversight from "./pages/ProjectOversight";
 import CompanyReports from "./pages/CompanyReports.jsx";
 
 
+
+import ClientDashboard from "./pages/ClientDashboard.jsx";
+import Meetings from "./pages/Meetings";
+import ProjectsClient from "./pages/ProjectsClient.jsx";
+
+
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
 
@@ -74,13 +80,30 @@ function AppLayout() {
       : "lg:ml-72"
     : "ml-0";
 
-  const navbarTitle =
-    {
-      "/dashboard": "Company Dashboard",
-      "/projects": "Project Oversight",
-      "/tasks": "My Tasks",
-      "/super-admin": "Super Admin",
-    }[location.pathname] ?? "WorkNest";
+ const navbarRole =
+  {
+    "/dashboard1": "superAdmin",
+    "/companies": "superAdmin",
+    "/subscriptions": "superAdmin",
+    "/reports": "superAdmin",
+
+    "/dashboard2": "companyAdmin",
+    "/team-management": "companyAdmin",
+    "/projects": "companyAdmin",
+    "/company-reports": "companyAdmin",
+
+    "/dashboard3": "projectLeader",
+    "/project": "projectLeader",
+    "/calendar": "projectLeader",
+    "/report": "projectLeader",
+
+    "/dashboard4": "teamMember",
+    "/tasks": "teamMember",
+
+    "/client-dashboard": "client",
+    "/client-projects": "client",
+    "/client-meetings": "client",
+  }[location.pathname] || "teamMember";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-100">
@@ -93,7 +116,7 @@ function AppLayout() {
       <div
         className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${mainOffsetClass}`}
       >
-        <Navbar onToggle={handleToggle} title={navbarTitle} />
+      <Navbar onToggle={handleToggle} />
 
         <main className="p-4 sm:p-6">
           <Routes>
@@ -102,7 +125,7 @@ function AppLayout() {
             <Route path="/projects" element={<Dashboard />} />
             <Route path="/dashboard" element={<LeaderDashboard />} />
             <Route path="/teams" element={<TeamManagement />} />
-            <Route path="/tasks" element={<TeamDashboard />} />
+            <Route path="/dashboard4" element={<TeamDashboard />} />
             <Route path="/super-admin" element={<Admin />} />
             <Route path="/dashboard1" element={<Admin />} />
             <Route path="/companies" element={<CompanySidebar />} />
@@ -127,6 +150,15 @@ function AppLayout() {
               <Route path="/company-reports" element={<CompanyReports />} />
 
               <Route path="/projects" element={<ProjectOversight />} />
+
+
+               <Route path="/dashboard2" element={<Dashboard />} />
+
+
+              
+                <Route path="/client-dashboard" element={<ClientDashboard />} />
+                <Route path="/client-meetings" element={<Meetings />} />
+                <Route path="/client-projects" element={<ProjectsClient />} />
           </Routes>
         </main>
       </div>
