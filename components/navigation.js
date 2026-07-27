@@ -11,6 +11,7 @@ import {
   Clock3,
   FileText,
   MessageSquare,
+  MessageCircle,
 } from "lucide-react";
 
 export const roleConfig = {
@@ -54,7 +55,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard1",
+      path: "/dashboard-admin",
     },
     {
       title: "Companies",
@@ -77,7 +78,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard2",
+      path: "/dashboard-company",
     },
     {
       title: "Teams",
@@ -100,7 +101,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard3",
+      path: "/dashboard-leader",
     },
     {
       title: "Projects",
@@ -115,7 +116,7 @@ export const navigation = {
     {
       title: "Reports",
       icon: BarChart3,
-      path: "/report",
+      path: "/project-reports",
     },
   ],
 
@@ -123,7 +124,7 @@ export const navigation = {
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard4",
+      path: "/dashboard-team-member",
     },
     {
       title: "My Tasks",
@@ -133,7 +134,7 @@ export const navigation = {
     {
       title: "Projects",
       icon: FolderKanban,
-      path: "/projects",
+      path: "/team-member-projects",
     },
   ],
 
@@ -154,38 +155,49 @@ export const navigation = {
       icon: CalendarDays,
       path: "/client-meetings",
     },
+    {
+  title: "Chat",
+  path: "/chat",
+  icon: MessageCircle,
+}
    
     
   ],
 };
 export const getRoleFromPath = (pathname) => {
   const routes = {
-   
-    "/dashboard1": "superAdmin",
+    // Super Admin
+    "/dashboard-admin": "superAdmin",
     "/companies": "superAdmin",
     "/subscriptions": "superAdmin",
     "/reports": "superAdmin",
+    "/pending": "superAdmin",
 
-    "/dashboard2": "companyAdmin",
+    // Company Admin
+    "/dashboard-company": "companyAdmin",
     "/team-management": "companyAdmin",
     "/projects": "companyAdmin",
     "/company-reports": "companyAdmin",
 
-    
-    "/dashboard3": "projectLeader",
+    // Project Leader
+    "/dashboard-leader": "projectLeader",
     "/project": "projectLeader",
     "/calendar": "projectLeader",
-    "/report": "projectLeader",
+    "/project-reports": "projectLeader",
 
-    
-    "/dashboard4": "teamMember",
+    // Team Member
+    "/dashboard-team-member": "teamMember",
     "/tasks": "teamMember",
+    "/team-member-projects": "teamMember",
 
-   
+    // Client
     "/client-dashboard": "client",
     "/client-projects": "client",
     "/client-meetings": "client",
+
+    // Shared
+    "/chat": "client",
   };
 
-  return routes[pathname] || "teamMember";
+  return routes[pathname] || "superAdmin";
 };

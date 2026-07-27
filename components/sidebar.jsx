@@ -1,4 +1,4 @@
-import logo from "../src/assets/Softcenteric-logo.png";
+
 
 import {
   NavLink,
@@ -109,7 +109,7 @@ export default function Sidebar({
           >
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg sm:h-14 sm:w-14">
               <img
-                src={logo}
+                src="/Softcenteric-logo.png"
                 alt="WorkNest Logo"
                 className="h-9 w-9 object-contain sm:h-10 sm:w-10"
               />

@@ -1,4 +1,4 @@
-import Logo from "../../assets/Softcenteric-logo.png";
+
 import { Link } from "react-router-dom";
 
 export default function Login() {
@@ -7,7 +7,7 @@ export default function Login() {
       <div className="flex w-full max-w-[560px] flex-col items-center rounded-2xl border border-gray-100 bg-white px-4 py-8 shadow-xl shadow-gray-200/70 sm:px-8">
         <div className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl bg-[#d4e5e7] px-4 py-3 shadow-sm">
           <img
-            src={Logo}
+            src="/Softcenteric-logo.png"
             alt="WorkNest logo"
             className="h-10 w-10 shrink-0 object-contain drop-shadow-sm sm:h-12 sm:w-12"
           />
