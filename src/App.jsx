@@ -105,6 +105,7 @@ function AppLayout() {
     "/client-dashboard": "client",
     "/client-projects": "client",
     "/client-meetings": "client",
+    "/client-calendar": "client",
   }[location.pathname] || "teamMember";
 
   return (
@@ -161,7 +162,7 @@ function AppLayout() {
                 <Route path="/client-dashboard" element={<ClientDashboard />} />
                 <Route path="/client-meetings" element={<Meetings />} />
                 <Route path="/client-projects" element={<ProjectsClient />} />
-                <Route path="/calendar" element={<ClientCalendar />} />
+                <Route path="/client-calendar" element={<ClientCalendar />} />
           </Routes>
         </main>
       </div>
