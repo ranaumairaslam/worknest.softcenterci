@@ -16,6 +16,7 @@ import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.jsx";
 import Pending from "./Component/Subscriptions/pending";
 import ReportsSidebar from "./Component/Reports/reportsSidebar.jsx";
+import InvoiceCard from "./Component/Subscriptions/Invoice.jsx"
 import MyTasks from "./pages/MyTasks.jsx";
 
 
@@ -129,8 +130,15 @@ function AppLayout() {
             <Route path="/dashboard1" element={<Admin />} />
             <Route path="/companies" element={<CompanySidebar />} />
             <Route path="/subscriptions" element={<Subscriptionsidebar />} />
+            <Route path="/invoice" element={<InvoiceCard />} />
             <Route path="/reports" element={<ReportsSidebar />} />
             <Route path="/pending" element ={<Pending />}/>
+            <Route path="*" element={<Navigate to="/dashboard1" replace />} />
+            <Route path="/team-management" element={<TeamManagement />} />
+            <Route path="/company-reports" element={<CompanyReports />} />
+            <Route path="/projects" element={<ProjectOversight />} />
+            
+              
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
             <Route path="/project" element={<ProjectOversightFull />} />
             <Route path="/report" element={<Reports />} />

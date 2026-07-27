@@ -1,4 +1,6 @@
 import subscriptionData from "./Subscriptiondata.js";
+import { Link } from "react-router-dom";
+
 
 export default function SubscriptionTable() {
   return (
@@ -55,9 +57,16 @@ export default function SubscriptionTable() {
                 </button>
               </td>
               <td>
-                <div className="flex gap-3 text-blue-600 font-medium">
-                  <button>Manage</button>
-                  <button>Invoice</button>
+             <div className="flex gap-3">
+                  <button className="text-blue-600 font-medium hover:underline">
+                    Manage
+                  </button>
+
+                  <Link to="/invoice">
+                    <button className="bg-[#016472] text-white px-3 py-1 rounded-md hover:bg-[#01515c] transition">
+                      Invoice
+                    </button>
+                  </Link>
                 </div>
               </td>
             </tr>
