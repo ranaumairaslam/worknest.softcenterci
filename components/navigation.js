@@ -158,3 +158,34 @@ export const navigation = {
     
   ],
 };
+export const getRoleFromPath = (pathname) => {
+  const routes = {
+   
+    "/dashboard1": "superAdmin",
+    "/companies": "superAdmin",
+    "/subscriptions": "superAdmin",
+    "/reports": "superAdmin",
+
+    "/dashboard2": "companyAdmin",
+    "/team-management": "companyAdmin",
+    "/projects": "companyAdmin",
+    "/company-reports": "companyAdmin",
+
+    
+    "/dashboard3": "projectLeader",
+    "/project": "projectLeader",
+    "/calendar": "projectLeader",
+    "/report": "projectLeader",
+
+    
+    "/dashboard4": "teamMember",
+    "/tasks": "teamMember",
+
+   
+    "/client-dashboard": "client",
+    "/client-projects": "client",
+    "/client-meetings": "client",
+  };
+
+  return routes[pathname] || "teamMember";
+};

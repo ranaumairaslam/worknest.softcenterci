@@ -115,10 +115,7 @@ function AppLayout() {
       <div
         className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${mainOffsetClass}`}
       >
-       <Navbar
-  onToggle={handleToggle}
-  role={navbarRole}
-/>
+      <Navbar onToggle={handleToggle} />
 
         <main className="p-4 sm:p-6">
           <Routes>

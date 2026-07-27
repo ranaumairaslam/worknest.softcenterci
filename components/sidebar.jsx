@@ -1,7 +1,14 @@
 import logo from "../src/assets/Softcenteric-logo.png";
-import { NavLink, useNavigate } from "react-router-dom";
-import { navigation } from "./navigation";
+
+import {
+  NavLink,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+
 import { Settings, LogOut, X } from "lucide-react";
+
+import { navigation, getRoleFromPath } from "./navigation";
 
 const iconButtonBase =
   "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#A3FEFF]/40";
@@ -11,7 +18,6 @@ const navItemBase =
 
 function SidebarNavItem({ item, collapsed, showLabels, onNavigate }) {
   const Icon = item.icon;
-  
 
   return (
     <li>
@@ -29,8 +35,13 @@ function SidebarNavItem({ item, collapsed, showLabels, onNavigate }) {
           <>
             <Icon
               size={20}
-              className={`shrink-0 ${isActive ? "text-white" : "text-[#A3FEFF] group-hover:text-white"}`}
+              className={`shrink-0 ${
+                isActive
+                  ? "text-white"
+                  : "text-[#A3FEFF] group-hover:text-white"
+              }`}
             />
+
             {showLabels && <span className="truncate">{item.title}</span>}
           </>
         )}
@@ -43,12 +54,15 @@ export default function Sidebar({
   collapsed,
   mobileOpen,
   onClose,
-  role = "client",
-  
   company = "WorkNest",
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Automatically detect role from current route
+  const role = getRoleFromPath(location.pathname);
   const menu = navigation[role] || [];
+
   const showLabels = !collapsed || mobileOpen;
 
   return (
@@ -106,6 +120,7 @@ export default function Sidebar({
                 <h2 className="truncate text-lg font-bold tracking-wide text-white sm:text-xl">
                   {company}
                 </h2>
+
                 <p className="truncate text-xs text-[#A3FEFF]">
                   Project Management
                 </p>
@@ -141,15 +156,14 @@ export default function Sidebar({
             }`}
           >
             <Settings size={20} className="shrink-0" />
+
             {showLabels && <span>Settings</span>}
           </button>
 
           <button
-          onClick={() => navigate("/login")}
             type="button"
+            onClick={() => navigate("/login")}
             aria-label="Logout"
-
-            
             className={`
               group relative flex w-full items-center rounded-2xl border border-red-500/20
               bg-red-500/5 py-3.5 text-red-400 transition-all duration-300 ease-in-out
@@ -163,9 +177,11 @@ export default function Sidebar({
               size={20}
               className="shrink-0 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
             />
+
             {showLabels && (
               <>
                 <span className="font-medium tracking-wide">Logout</span>
+
                 <div className="ml-auto opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
                   →
                 </div>
