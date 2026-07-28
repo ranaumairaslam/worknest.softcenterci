@@ -1,52 +1,55 @@
 import { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+
 import Signup from "./Component/SignUp/SignupPage.jsx";
 import Login from "./Component/Login/login.jsx";
+
 import Sidebar from "../components/sidebar.jsx";
 import Navbar from "../components/navbar.jsx";
+
+import Admin from "./Component/SuperAdmin/superAdmin.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
-import Admin from "./Component/SuperAdmin/superAdmin.jsx";
-import ProjectOversightFull from "./pages/ProjectOversightFull";
-import Reports from "./pages/Reports.jsx"
-import Calendar from "./pages/Calendar.jsx";
-import TeamManagement from "./components/teammangemnt/teamMangement";
+
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.jsx";
 import Pending from "./Component/Subscriptions/pending";
 import ReportsSidebar from "./Component/Reports/reportsSidebar.jsx";
-import InvoiceCard from "./Component/Subscriptions/Invoice.jsx"
-import MyTasks from "./pages/MyTasks.jsx";
 
-
-
+import TeamManagement from "./components/teammangemnt/teamMangement";
 import ProjectOversight from "./pages/ProjectOversight";
-
+import ProjectOversightFull from "./pages/ProjectOversightFull";
 import CompanyReports from "./pages/CompanyReports.jsx";
 
-
+import Reports from "./pages/Reports.jsx";
+import Calendar from "./pages/Calendar.jsx";
+import MyTasks from "./pages/MyTasks.jsx";
+import Chat from "./pages/Chat";
 
 import ClientDashboard from "./pages/ClientDashboard.jsx";
 import Meetings from "./pages/Meetings";
 import ProjectsClient from "./pages/ProjectsClient.jsx";
 import ClientCalendar from "./pages/ClientCalendar.jsx";
 
-
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
 
 function useMediaQuery(query) {
-  const [matches, setMatches] = useState(
-    () => window.matchMedia(query).matches
+  const [matches, setMatches] = useState(() =>
+    window.matchMedia(query).matches
   );
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(query);
-    const handleChange = (event) => setMatches(event.matches);
+    const media = window.matchMedia(query);
 
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
+    const handleChange = (e) => {
+      setMatches(e.matches);
+    };
+
+    media.addEventListener("change", handleChange);
+
+    return () => media.removeEventListener("change", handleChange);
   }, [query]);
 
   return matches;
@@ -54,12 +57,18 @@ function useMediaQuery(query) {
 function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
+
+  const isDesktop = useMediaQuery(
+    `(min-width: ${DESKTOP_BREAKPOINT}px)`
+  );
+
   const location = useLocation();
+
   const sidebarOpen = isDesktop ? false : mobileOpen;
 
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? "hidden" : "";
+
     return () => {
       document.body.style.overflow = "";
     };
@@ -73,7 +82,9 @@ function AppLayout() {
     }
   }, [isDesktop]);
 
-  const handleCloseMobile = useCallback(() => setMobileOpen(false), []);
+  const handleCloseMobile = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
 
   const mainOffsetClass = isDesktop
     ? collapsed
@@ -81,87 +92,156 @@ function AppLayout() {
       : "lg:ml-72"
     : "ml-0";
 
- const navbarRole =
-  {
-    "/dashboard1": "superAdmin",
-    "/companies": "superAdmin",
-    "/subscriptions": "superAdmin",
-    "/reports": "superAdmin",
+  const navbarRole =
+    {
+      "/dashboard-admin": "superAdmin",
+      "/companies": "superAdmin",
+      "/subscriptions": "superAdmin",
+      "/reports": "superAdmin",
+      "/pending": "superAdmin",
 
-    "/dashboard2": "companyAdmin",
-    "/team-management": "companyAdmin",
-    "/projects": "companyAdmin",
-    "/company-reports": "companyAdmin",
+      "/dashboard-company": "companyAdmin",
+      "/team-management": "companyAdmin",
+      "/projects": "companyAdmin",
+      "/company-reports": "companyAdmin",
 
-    "/dashboard3": "projectLeader",
-    "/project": "projectLeader",
-    "/calendar": "projectLeader",
-    "/report": "projectLeader",
+      "/dashboard-leader": "projectLeader",
+      "/project": "projectLeader",
+      "/calendar": "projectLeader",
+      "/project-reports": "projectLeader",
 
-    "/dashboard4": "teamMember",
-    "/tasks": "teamMember",
+      "/dashboard-team-member": "teamMember",
+      "/tasks": "teamMember",
+      "/team-member-projects": "teamMember",
 
-    "/client-dashboard": "client",
-    "/client-projects": "client",
-    "/client-meetings": "client",
-    "/client-calendar": "client",
-  }[location.pathname] || "teamMember";
+      "/client-dashboard": "client",
+      "/client-projects": "client",
+      "/client-meetings": "client",
+
+      "/chat": "teamMember",
+    }[location.pathname] || "superAdmin";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-100">
       <Sidebar
+        role={navbarRole}
         collapsed={collapsed}
         mobileOpen={sidebarOpen}
         onClose={handleCloseMobile}
       />
 
       <div
-        className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${mainOffsetClass}`}
+        className={`min-h-screen transition-all duration-300 ${mainOffsetClass}`}
       >
-      <Navbar onToggle={handleToggle} />
+        <Navbar
+          role={navbarRole}
+          onToggle={handleToggle}
+        />
 
         <main className="p-4 sm:p-6">
           <Routes>
-            <Route path="/dashboard3" element={<LeaderDashboard />} />
-            <Route path="/dashboard" element={<LeaderDashboard/>} />
-            <Route path="/projects" element={<Dashboard />} />
-            <Route path="/dashboard" element={<LeaderDashboard />} />
-            <Route path="/teams" element={<TeamManagement />} />
-            <Route path="/dashboard4" element={<TeamDashboard />} />
-            <Route path="/super-admin" element={<Admin />} />
-            <Route path="/dashboard1" element={<Admin />} />
-            <Route path="/companies" element={<CompanySidebar />} />
-            <Route path="/subscriptions" element={<Subscriptionsidebar />} />
-            <Route path="/invoice" element={<InvoiceCard />} />
-            <Route path="/reports" element={<ReportsSidebar />} />
-            <Route path="/pending" element ={<Pending />}/>
-            <Route path="*" element={<Navigate to="/dashboard1" replace />} />
-            <Route path="/team-management" element={<TeamManagement />} />
-            <Route path="/company-reports" element={<CompanyReports />} />
-            <Route path="/projects" element={<ProjectOversight />} />
+          
+            <Route
+              path="/dashboard-admin"
+              element={<Admin />}
+            />
+            <Route
+              path="/companies"
+              element={<CompanySidebar />}
+            />
+            <Route
+              path="/subscriptions"
+              element={<Subscriptionsidebar />}
+            />
+            <Route
+              path="/reports"
+              element={<ReportsSidebar />}
+            />
+            <Route
+              path="/pending"
+              element={<Pending />}
+            />
+
             
-              
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/project" element={<ProjectOversightFull />} />
-            <Route path="/report" element={<Reports />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/tasks" element={<MyTasks />} />
+            <Route
+              path="/dashboard-company"
+              element={<Dashboard />}
+            />
+            <Route
+              path="/team-management"
+              element={<TeamManagement />}
+            />
+            <Route
+              path="/projects"
+              element={<ProjectOversight />}
+            />
+            <Route
+              path="/company-reports"
+              element={<CompanyReports />}
+            />
+
             
-              <Route path="/team-management" element={<TeamManagement />} />
-             
-              <Route path="/company-reports" element={<CompanyReports />} />
+            <Route
+              path="/dashboard-leader"
+              element={<LeaderDashboard />}
+            />
+            <Route
+              path="/project"
+              element={<ProjectOversightFull />}
+            />
+            <Route
+              path="/calendar"
+              element={<Calendar />}
+            />
+            <Route
+              path="/project-reports"
+              element={<Reports />}
+            />
 
-              <Route path="/projects" element={<ProjectOversight />} />
+            
+            <Route
+              path="/dashboard-team-member"
+              element={<TeamDashboard />}
+            />
+            <Route
+              path="/tasks"
+              element={<MyTasks />}
+            />
+            <Route
+              path="/team-member-projects"
+              element={<ProjectOversight />}
+            />
 
+            
+            <Route
+              path="/client-dashboard"
+              element={<ClientDashboard />}
+            />
+            <Route
+              path="/client-meetings"
+              element={<Meetings />}
+            />
+            <Route
+              path="/client-projects"
+              element={<ProjectsClient />}
+            />
 
-               <Route path="/dashboard2" element={<Dashboard />} />
+            {/* Chat */}
+            <Route
+              path="/chat"
+              element={<Chat />}
+            />
 
-
-              
-                <Route path="/client-dashboard" element={<ClientDashboard />} />
-                <Route path="/client-meetings" element={<Meetings />} />
-                <Route path="/client-projects" element={<ProjectsClient />} />
-                <Route path="/client-calendar" element={<ClientCalendar />} />
+            {/* Default */}
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/dashboard-admin"
+                  replace
+                />
+              }
+            />
           </Routes>
         </main>
       </div>
@@ -171,23 +251,51 @@ function AppLayout() {
 
 export default function App() {
   const location = useLocation();
+
   const isAuthRoute = AUTH_PATHS.includes(location.pathname);
 
   if (isAuthRoute) {
     return (
       <Routes>
-        <Route path="/" element={<Navigate to="/Signup" replace />} />
-        <Route path="/Signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/Signup" replace />} />
+        <Route
+          path="/"
+          element={<Navigate to="/Signup" replace />}
+        />
+
+        <Route
+          path="/Signup"
+          element={<Signup />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="*"
+          element={<Navigate to="/Signup" replace />}
+        />
       </Routes>
     );
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/*" element={<AppLayout />} />
+      <Route
+        path="/"
+        element={
+          <Navigate
+            to="/dashboard-admin"
+            replace
+          />
+        }
+      />
+
+      <Route
+        path="/*"
+        element={<AppLayout />}
+      />
     </Routes>
   );
-} 
+}
