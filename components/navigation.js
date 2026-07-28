@@ -44,11 +44,12 @@ export const roleConfig = {
   },
 
   client: {
-    title: "Client Dashboard",
-    role: "Client",
-    username: "Client",
-    userinitials: "CL",
-  },
+  title: "Client Dashboard",
+  role: "Client",
+  username: "Client",
+  userinitials: "CL",
+},
+  
 };
 export const navigation = {
   superAdmin: [

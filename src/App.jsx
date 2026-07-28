@@ -30,6 +30,7 @@ import Chat from "./pages/Chat";
 import ClientDashboard from "./pages/ClientDashboard.jsx";
 import Meetings from "./pages/Meetings";
 import ProjectsClient from "./pages/ProjectsClient.jsx";
+import ClientCalendar from "./pages/ClientCalendar.jsx";
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -53,7 +54,6 @@ function useMediaQuery(query) {
 
   return matches;
 }
-
 function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

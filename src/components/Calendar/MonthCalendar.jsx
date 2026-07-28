@@ -15,7 +15,7 @@ function toDateKey(year, month, day) {
 }
 
 export default function MonthCalendar({ events }) {
-  const [cursor, setCursor] = useState(new Date(2025, 5, 1)); // June 2025, matches mock data
+  const [cursor, setCursor] = useState(new Date()); // defaults to the actual current month
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
