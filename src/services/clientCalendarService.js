@@ -7,3 +7,8 @@ export async function getClientEvents() {
     { id: "c5", title: "Feedback Session", date: "2025-06-26", type: "meeting" },
   ];
 }
+export async function createEvent(event) {
+  // Later: replace with a real POST request to your backend.
+  console.log("API call: create event", event);
+  return { ...event, id: `c${Date.now()}` };
+}

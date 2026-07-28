@@ -43,11 +43,12 @@ export const roleConfig = {
   },
 
   client: {
-    title: "Client Dashboard",
-    role: "Client",
-    username: "Client",
-    userinitials: "CL",
-  },
+  title: "Client Dashboard",
+  role: "Client",
+  username: "Client",
+  userinitials: "CL",
+},
+  
 };
 export const navigation = {
   superAdmin: [
@@ -153,11 +154,13 @@ export const navigation = {
       title: "Meetings",
       icon: CalendarDays,
       path: "/client-meetings",
-    },   {
-      title: "Calendar",
-      icon: CalendarDays,
-      path: "/calendar",
-    },
+    },   
+    {
+  title: "Calendar",
+  icon: CalendarDays,
+  path: "/client-calendar",
+},
+    
    
     
   ],
@@ -187,8 +190,9 @@ export const getRoleFromPath = (pathname) => {
 
    
     "/client-dashboard": "client",
-    "/client-projects": "client",
-    "/client-meetings": "client",
+"/client-projects": "client",
+"/client-meetings": "client",
+"/client-calendar": "client",
   };
 
   return routes[pathname] || "teamMember";
