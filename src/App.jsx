@@ -51,7 +51,6 @@ function useMediaQuery(query) {
 
   return matches;
 }
-
 function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
