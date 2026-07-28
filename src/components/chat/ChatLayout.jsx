@@ -6,7 +6,7 @@ import { messages as initialMessages } from "../../data/messages";
 export default function ChatLayout() {
   const [selectedChat, setSelectedChat] = useState(null);
 
-  /
+
   const [chatMessages, setChatMessages] = useState(initialMessages);
 
   const handleSendMessage = (text) => {
