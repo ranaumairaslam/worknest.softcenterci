@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  getProjects,
   getProjectSummary,
   getStats,
   getTimeline,
@@ -9,38 +10,64 @@ import {
 } from "../services/projectOversightService";
 
 export function useProjectOversightData() {
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Load the project list once, pick the first one as default.
   useEffect(() => {
     let isMounted = true;
 
-    async function load() {
-      try {
-        const [summary, stats, timeline, team, tasks, kanban] = await Promise.all([
-          getProjectSummary(),
-          getStats(),
-          getTimeline(),
-          getTeamPerformance(),
-          getTaskOverview(),
-          getKanbanPreview(),
-        ]);
+    getProjects()
+      .then((list) => {
         if (isMounted) {
-          setData({ summary, stats, timeline, team, tasks, kanban });
+          setProjects(list);
+          setSelectedProjectId(list[0]?.id ?? null);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (isMounted) setError(err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
+      });
 
-    load();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  return { data, loading, error };
+  // Re-fetch everything whenever the selected project changes.
+  // No setState is called synchronously here — only inside the
+  // resolved promise callback, which the React Compiler allows.
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    let isMounted = true;
+
+    Promise.all([
+      getProjectSummary(selectedProjectId),
+      getStats(),
+      getTimeline(selectedProjectId),
+      getTeamPerformance(selectedProjectId),
+      getTaskOverview(selectedProjectId),
+      getKanbanPreview(selectedProjectId),
+    ])
+      .then(([summary, stats, timeline, team, tasks, kanban]) => {
+        if (isMounted) {
+          setData({ summary, stats, timeline, team, tasks, kanban });
+        }
+      })
+      .catch((err) => {
+        if (isMounted) setError(err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProjectId]);
+
+  // Derived, not stored: loading is true whenever we don't yet have
+  // data for the CURRENTLY selected project (e.g. right after
+  // switching projects, before the new fetch resolves).
+  const loading = !data || data.summary.id !== selectedProjectId;
+
+  return { projects, selectedProjectId, setSelectedProjectId, data, loading, error };
 }

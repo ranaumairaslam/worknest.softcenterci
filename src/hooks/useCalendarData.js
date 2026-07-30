@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getEvents } from "../services/calendarService";
+import { useEffect, useState, useCallback } from "react";
+import { getEvents, createEvent } from "../services/calendarService";
 
 export function useCalendarData() {
   const [events, setEvents] = useState([]);
@@ -25,5 +25,19 @@ export function useCalendarData() {
     };
   }, []);
 
-  return { events, loading, error };
+  const addEvent = useCallback(async (eventInput) => {
+    const tempId = `temp-${Date.now()}`;
+    const optimisticEvent = { ...eventInput, id: tempId };
+    setEvents((prev) => [...prev, optimisticEvent]);
+
+    try {
+      const saved = await createEvent(eventInput);
+      setEvents((prev) => prev.map((e) => (e.id === tempId ? saved : e)));
+    } catch (err) {
+      setEvents((prev) => prev.filter((e) => e.id !== tempId));
+      setError(err);
+    }
+  }, []);
+
+  return { events, loading, error, addEvent };
 }
