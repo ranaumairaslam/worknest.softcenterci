@@ -298,10 +298,8 @@ function AppLayout() {
              
             />
             <Route path="/add-company" element={<AddingCompany />} />
-
-             <Route path="/add-company" element={<AddingCompany />} />
-            <Route path="/meetings" element={<LeaderMeetings />} />
-            <Route path="/team-meetings" element={<TeamMeetings />} />
+              
+             
           </Routes>
         </main> 
               
