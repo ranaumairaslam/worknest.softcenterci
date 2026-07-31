@@ -4,7 +4,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-export default function ProjectProgressCard({ project }) {
+export default function ProjectProgressCard({
+  project,
+  onViewDetails,
+}) {
   const getProgressColor = (progress) => {
     if (progress >= 75) return "bg-emerald-500";
     if (progress >= 40) return "bg-amber-500";
@@ -102,10 +105,13 @@ export default function ProjectProgressCard({ project }) {
       </div>
 
      
-    <button className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-[#016472] px-4 py-3 font-semibold text-white transition hover:bg-[#014b55]">
-        View Details
-        <ArrowRight size={18} />
-      </button>
+    <button
+  onClick={() => onViewDetails(project)}
+  className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-[#016472] px-4 py-3 font-semibold text-white transition hover:bg-[#014b55]"
+>
+  View Details
+  <ArrowRight size={18} />
+</button>
     </div>
   );
 }

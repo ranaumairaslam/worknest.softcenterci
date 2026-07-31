@@ -1,10 +1,15 @@
+import { useState } from "react";
+
 import ProjectProgressCard from "../components/client/ProjectProgressCard";
+import ProjectDetailsModal from "../components/client/ProjectDetailsModal";
+
 import { clientProjects } from "../data/clientDashboardData";
 
 export default function ProjectsClient() {
+  const [selectedProject, setSelectedProject] = useState(null);
+
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-slate-800">
           My Projects
@@ -30,9 +35,15 @@ export default function ProjectsClient() {
           <ProjectProgressCard
             key={project.id}
             project={project}
+            onViewDetails={setSelectedProject}
           />
         ))}
       </div>
+
+      <ProjectDetailsModal
+        project={selectedProject}
+        onClose={() => setSelectedProject(null)}
+      />
     </div>
   );
 }

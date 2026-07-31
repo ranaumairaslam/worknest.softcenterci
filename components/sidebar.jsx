@@ -84,6 +84,7 @@ export default function Sidebar({
           text-white shadow-2xl
           transition-all duration-300 ease-in-out
           lg:max-w-none lg:shadow-none
+          overflow-y-auto 
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "lg:w-20" : "lg:w-72"}
         `}>

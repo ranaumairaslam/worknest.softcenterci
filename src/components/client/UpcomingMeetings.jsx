@@ -6,7 +6,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-export default function UpcomingMeetings({ meetings }) {
+export default function UpcomingMeetings({
+  meetings,
+  onJoinMeeting,
+}) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       {/* Header */}
@@ -100,10 +103,14 @@ export default function UpcomingMeetings({ meetings }) {
             </div>
 
            
-            <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#016472] px-4 py-3 font-semibold text-white transition hover:bg-[#014b55]">
-              Join Meeting
-              <ArrowRight size={18} />
-            </button>
+            <button
+  onClick={() => onJoinMeeting(meeting)}
+  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#016472] px-4 py-3 font-semibold text-white transition hover:bg-[#014b55]"
+>
+  Join Meeting
+  <ArrowRight size={18} />
+</button>
+           
           </div>
         ))}
       </div>

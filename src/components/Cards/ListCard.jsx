@@ -17,7 +17,7 @@ export default function ListCard({ title, items, onAction }) {
             {item.action && (
               <button
                 onClick={() => onAction?.(item)}
-                className="text-xs font-medium text-blue-600 hover:underline shrink-0"
+                className="text-xs font-medium text-[#016472] hover:underline shrink-0"
               >
                 {item.action}
               </button>

@@ -8,10 +8,9 @@ import {
   BarChart3,
   Building2,
   Briefcase,
-  Clock3,
-  FileText,
-  MessageSquare,
   MessageCircle,
+  DollarSign,
+  UserRound,
 } from "lucide-react";
 
 export const roleConfig = {
@@ -78,14 +77,39 @@ export const navigation = {
       path: "/dashboard-company",
     },
     {
+      title: "Projects",
+      icon: FolderKanban,
+      path: "/projects",
+    },
+    {
       title: "Teams",
       icon: Users,
       path: "/team-management",
     },
     {
-      title: "Projects",
-      icon: FolderKanban,
-      path: "/projects",
+      title: "Employees",
+      icon: UserRound,
+      path: "/employees",
+    },
+    {
+      title: "Tasks",
+      icon: CheckSquare,
+      path: "/company-tasks",
+    },
+    {
+      title: "Clients",
+      icon: Building2,
+      path: "/clients",
+    },
+    {
+      title: "Meetings",
+      icon: CalendarDays,
+      path: "/company-meetings",
+    },
+    {
+      title: "Revenue",
+      icon: DollarSign,
+      path: "/revenue",
     },
     {
       title: "Reports",
@@ -196,6 +220,11 @@ export const getRoleFromPath = (pathname) => {
     "/dashboard-company": "companyAdmin",
     "/team-management": "companyAdmin",
     "/projects": "companyAdmin",
+    "/employees": "companyAdmin",
+    "/company-tasks": "companyAdmin",
+    "/clients": "companyAdmin",
+    "/company-meetings": "companyAdmin",
+    "/revenue": "companyAdmin",
     "/company-reports": "companyAdmin",
 
     // Project Leader
