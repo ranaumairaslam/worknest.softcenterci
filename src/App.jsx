@@ -292,7 +292,7 @@ function AppLayout() {
              
             />
             <Route path="/add-company" element={<AddingCompany />} />
-              }/>
+              
              
           </Routes>
         </main>
