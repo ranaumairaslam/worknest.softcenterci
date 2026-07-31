@@ -73,6 +73,7 @@ export const upcomingMeetings = [
     time: "2:00 PM",
     platform: "Google Meet",
     organizer: "Ahmed Khan",
+    meetingLink: "https://meet.google.com/abc-defg-hij",
   },
   {
     id: 2,
@@ -82,6 +83,7 @@ export const upcomingMeetings = [
     time: "11:00 AM",
     platform: "Microsoft Teams",
     organizer: "Ali Raza",
+    meetingLink: "https://teams.microsoft.com/l/meetup-join/xxxx",
   },
 ];
 

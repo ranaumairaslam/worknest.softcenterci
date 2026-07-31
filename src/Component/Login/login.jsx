@@ -1,6 +1,7 @@
 
-import { Link } from "react-router-dom";
 
+import { Link,useNavigate } from "react-router-dom";
+import { useState } from "react";
 export default function Login() {
   const initialvalue={email:"",passowrd:""}
   const [formdata,setformdata]=useState(initialvalue);

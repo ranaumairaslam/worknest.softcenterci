@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   FolderKanban,
   BarChart3,
@@ -6,13 +7,17 @@ import {
 } from "lucide-react";
 
 import ClientStatsCard from "../components/client/ClientStatsCard";
-import { clientStats } from "../data/clientDashboardData";
 import ProjectProgressCard from "../components/client/ProjectProgressCard";
+import ProjectDetailsModal from "../components/client/ProjectDetailsModal";
+
 import {
+  clientStats,
   clientProjects,
 } from "../data/clientDashboardData";
 
 export default function ClientDashboard() {
+  const [selectedProject, setSelectedProject] = useState(null);
+
   const icons = [
     FolderKanban,
     BarChart3,
@@ -37,26 +42,33 @@ export default function ClientDashboard() {
           />
         ))}
       </div>
+
       <div className="mt-10">
-  <div className="mb-6 flex items-center justify-between">
-    <h2 className="text-2xl font-bold text-slate-800">
-      Project Progress
-    </h2>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-slate-800">
+            Project Progress
+          </h2>
 
-    <span className="rounded-full bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-700">
-      {clientProjects.length} Projects
-    </span>
-  </div>
+          <span className="rounded-full bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-700">
+            {clientProjects.length} Projects
+          </span>
+        </div>
 
-  <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-    {clientProjects.map((project) => (
-      <ProjectProgressCard
-        key={project.id}
-        project={project}
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          {clientProjects.map((project) => (
+            <ProjectProgressCard
+              key={project.id}
+              project={project}
+              onViewDetails={setSelectedProject}
+            />
+          ))}
+        </div>
+      </div>
+
+      <ProjectDetailsModal
+        project={selectedProject}
+        onClose={() => setSelectedProject(null)}
       />
-    ))}
-  </div>
-</div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import Sidebar from "../components/sidebar.jsx";
 import Navbar from "../components/navbar.jsx";
 
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import TeamDashboard from "./pages/TeamDashboard.jsx";
 
@@ -17,10 +17,16 @@ import Subscriptionsidebar from "./Component/Subscriptions/SubscriptionSidebar.j
 import Pending from "./Component/Subscriptions/pending";
 import ReportsSidebar from "./Component/Reports/reportsSidebar.jsx";
 
+import Dashboard from "./pages/Dashboard.jsx";
 import TeamManagement from "./components/teammangemnt/teamMangement";
 import ProjectOversight from "./pages/ProjectOversight";
 import ProjectOversightFull from "./pages/ProjectOversightFull";
 import CompanyReports from "./pages/CompanyReports.jsx";
+import Employees from "./pages/Employees.jsx";
+import CompanyTasks from "./pages/CompanyTasks.jsx";
+import Clients from "./pages/Clients.jsx";
+import CompanyMeetings from "./pages/CompanyMeetings.jsx";
+import Revenue from "./pages/Revenue.jsx";
 
 import Reports from "./pages/Reports.jsx";
 import Calendar from "./pages/Calendar.jsx";
@@ -30,7 +36,10 @@ import Chat from "./pages/Chat";
 import ClientDashboard from "./pages/ClientDashboard.jsx";
 import Meetings from "./pages/Meetings";
 import ProjectsClient from "./pages/ProjectsClient.jsx";
-import ClientCalendar from "./pages/ClientCalendar.jsx";
+
+
+
+
 
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
@@ -103,6 +112,11 @@ function AppLayout() {
       "/dashboard-company": "companyAdmin",
       "/team-management": "companyAdmin",
       "/projects": "companyAdmin",
+      "/employees": "companyAdmin",
+      "/company-tasks": "companyAdmin",
+      "/clients": "companyAdmin",
+      "/company-meetings": "companyAdmin",
+      "/revenue": "companyAdmin",
       "/company-reports": "companyAdmin",
 
       "/dashboard-leader": "projectLeader",
@@ -179,8 +193,27 @@ function AppLayout() {
               path="/company-reports"
               element={<CompanyReports />}
             />
+            <Route
+              path="/employees"
+              element={<Employees />}
+            />
+            <Route
+              path="/company-tasks"
+              element={<CompanyTasks />}
+            />
+            <Route
+              path="/clients"
+              element={<Clients />}
+            />
+            <Route
+              path="/company-meetings"
+              element={<CompanyMeetings />}
+            />
+            <Route
+              path="/revenue"
+              element={<Revenue />}
+            />
 
-            
             <Route
               path="/dashboard-leader"
               element={<LeaderDashboard />}
