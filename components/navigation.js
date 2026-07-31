@@ -63,15 +63,11 @@ export const navigation = {
       icon: Building2,
       path: "/companies",
     },
+  
     {
-      title: "Subscriptions",
-      icon: CreditCard,
-      path: "/subscriptions",
-    },
-    {
-      title: "Reports",
+      title: "Revenue",
       icon: BarChart3,
-      path: "/reports",
+      path: "/revenue",
     },
   ],
 

@@ -9,53 +9,58 @@ import {
 
 export const companyCards = [
   {
+    key: "total",
     title: "Total Companies",
-    value: "128",
     subTitle: "Registered Companies",
     trend: "+12%",
     trendColor: "text-green-600",
     icon: Building2,
     gradient: "from-indigo-500 to-violet-500",
   },
+
   {
+    key: "active",
     title: "Active Companies",
-    value: "102",
     subTitle: "Currently Active",
     trend: "+8%",
     trendColor: "text-green-600",
     icon: UserCheck,
     gradient: "from-sky-500 to-cyan-500",
   },
+
   {
+    key: "new",
     title: "New This Month",
-    value: "35",
     subTitle: "New Registrations",
     trend: "+15%",
     trendColor: "text-green-600",
     icon: TrendingUp,
     gradient: "from-green-500 to-emerald-500",
   },
+
   {
+    key: "employees",
     title: "Total Employees",
-    value: "2,540",
     subTitle: "Across Companies",
     trend: "+6%",
     trendColor: "text-green-600",
     icon: Users,
     gradient: "from-pink-500 to-rose-500",
   },
+
   {
+    key: "pending",
     title: "Pending Approval",
-    value: "08",
     subTitle: "Waiting Review",
     trend: "-2%",
     trendColor: "text-yellow-600",
     icon: Clock3,
     gradient: "from-yellow-500 to-orange-500",
   },
+
   {
+    key: "suspended",
     title: "Suspended",
-    value: "05",
     subTitle: "Inactive Companies",
     trend: "-1%",
     trendColor: "text-red-600",
