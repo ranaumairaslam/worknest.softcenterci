@@ -161,6 +161,11 @@ export const navigation = {
       icon: BarChart3,
       path: "/project-reports",
     },
+    {
+  title: "Meetings",
+  icon: CalendarDays,
+  path: "/meetings",
+},
     
   ],
 
@@ -180,6 +185,11 @@ export const navigation = {
       icon: FolderKanban,
       path: "/team-member-projects",
     },
+    {
+  title: "Meetings",
+  icon: CalendarDays,
+  path: "/team-meetings",
+},
   ],
 
   client: [
@@ -237,11 +247,13 @@ export const getRoleFromPath = (pathname) => {
     "/project/team-performance": "projectLeader",
     "/project/tasks": "projectLeader",
     "/project/kanban": "projectLeader",
+    "/meetings": "projectLeader",
 
     // Team Member
     "/dashboard-team-member": "teamMember",
     "/tasks": "teamMember",
     "/team-member-projects": "teamMember",
+    "/team-meetings": "teamMember",
 
     // Client
     "/client-dashboard": "client",
