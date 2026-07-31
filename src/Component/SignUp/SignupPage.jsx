@@ -1,6 +1,3 @@
-
-import { Link,useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -104,9 +101,7 @@ export default function Signup() {
   };
 
   // Google Signup
-  const handleGoogleSignup = () => {
-    alert("Google Signup will be connected soon!");
-  };
+ 
 
   return (
     <div className="relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-black via-[#02191c] to-black">
