@@ -79,7 +79,6 @@ export default function Navbar({
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#016472] text-sm font-semibold text-white">
               {currentRole.userinitials}
             </div>
-
             <div className="hidden md:block">
               <p className="truncate text-sm font-semibold text-slate-800">
                 {currentRole.username}

@@ -62,15 +62,11 @@ export const navigation = {
       icon: Building2,
       path: "/companies",
     },
+  
     {
-      title: "Subscriptions",
-      icon: CreditCard,
-      path: "/subscriptions",
-    },
-    {
-      title: "Reports",
+      title: "Revenue",
       icon: BarChart3,
-      path: "/reports",
+      path: "/revenue",
     },
   ],
 
@@ -133,16 +129,38 @@ export const navigation = {
       icon: FolderKanban,
       path: "/project",
     },
-    {
-      title: "Calendar",
-      icon: CalendarDays,
-      path: "/calendar",
-    },
+     {
+    title: "Tasks",
+    icon: CheckSquare,
+    path: "/project/tasks",
+  },
+   {
+    title: "Team Performance",
+    icon: Users,
+    path: "/project/team-performance",
+  },
+     {
+    title: "Timeline",
+    icon: Clock3,
+    path: "/project/timeline",
+  },
+  
+  {
+    title: "Kanban Board",
+    icon: Briefcase,
+    path: "/project/kanban",
+  },
+  {
+    title: "Calendar",
+    icon: CalendarDays,
+    path: "/calendar",
+  },
     {
       title: "Reports",
       icon: BarChart3,
       path: "/project-reports",
     },
+    
   ],
 
   teamMember: [
@@ -214,6 +232,10 @@ export const getRoleFromPath = (pathname) => {
     "/project": "projectLeader",
     "/calendar": "projectLeader",
     "/project-reports": "projectLeader",
+    "/project/timeline": "projectLeader",
+    "/project/team-performance": "projectLeader",
+    "/project/tasks": "projectLeader",
+    "/project/kanban": "projectLeader",
 
     // Team Member
     "/dashboard-team-member": "teamMember",
