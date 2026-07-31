@@ -1,11 +1,13 @@
-
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import StatCardSimple from "../components/Cards/StatCardSimple";
 import MyTasksTable from "../components/Tables/MyTasksTable";
+import NewTaskModal from "../components/Modals/NewTaskModal";
 import { useMyTasksData } from "../hooks/useMyTasksData";
 
 export default function MyTasks() {
-  const { stats, tasks, loading, error } = useMyTasksData();
+  const { stats, tasks, loading, error, toggleComplete, addTask, removeTask } = useMyTasksData();
+  const [showNewTask, setShowNewTask] = useState(false);
 
   if (loading) return <div className="p-6 text-slate-500 text-sm">Loading tasks…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load tasks.</div>;
@@ -19,7 +21,10 @@ export default function MyTasks() {
             View and manage all your tasks in one place.
           </p>
         </div>
-        <button className="flex items-center gap-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg">
+        <button
+          onClick={() => setShowNewTask(true)}
+          className="flex items-center gap-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg"
+        >
           <Plus size={14} /> New Task
         </button>
       </div>
@@ -30,7 +35,9 @@ export default function MyTasks() {
         ))}
       </div>
 
-      <MyTasksTable tasks={tasks} />
+      <MyTasksTable tasks={tasks} onToggleComplete={toggleComplete} onDelete={removeTask} />
+
+      <NewTaskModal open={showNewTask} onClose={() => setShowNewTask(false)} onCreate={addTask} />
     </div>
   );
 }

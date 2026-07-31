@@ -3,6 +3,7 @@ import {
   getReportStats,
   getTaskStatusBreakdown,
   getProjectProgress,
+  getTeamProgress,
   getRecentReports,
 } from "../services/reportsService";
 
@@ -16,14 +17,15 @@ export function useReportsData() {
 
     async function load() {
       try {
-        const [stats, statusBreakdown, projectProgress, reports] = await Promise.all([
+        const [stats, statusBreakdown, projectProgress, teamProgress, reports] = await Promise.all([
           getReportStats(),
           getTaskStatusBreakdown(),
           getProjectProgress(),
+          getTeamProgress(),
           getRecentReports(),
         ]);
         if (isMounted) {
-          setData({ stats, statusBreakdown, projectProgress, reports });
+          setData({ stats, statusBreakdown, projectProgress, teamProgress, reports });
         }
       } catch (err) {
         if (isMounted) setError(err);
