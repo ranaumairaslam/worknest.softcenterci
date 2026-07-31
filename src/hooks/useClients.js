@@ -5,8 +5,10 @@ import {
   updateClient,
   deleteClient,
 } from "../services/clientService";
+import useRole from "./useRole";
 
 export function useClients() {
+  const role = useRole();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,7 +18,7 @@ export function useClients() {
 
     async function load() {
       try {
-        const data = await getAllClients();
+        const data = await getAllClients(role);
         if (isMounted) setClients(data);
       } catch (err) {
         if (isMounted) setError(err);
@@ -29,16 +31,16 @@ export function useClients() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [role]);
 
   const addClient = async (payload) => {
-    const client = await createClient(payload);
+    const client = await createClient(payload, role);
     setClients((prev) => [client, ...prev]);
     return client;
   };
 
   const editClient = async (id, updates) => {
-    const client = await updateClient(id, updates);
+    const client = await updateClient(id, updates, role);
     if (client) {
       setClients((prev) => prev.map((c) => (c.id === id ? client : c)));
     }
@@ -46,7 +48,7 @@ export function useClients() {
   };
 
   const removeClient = async (id) => {
-    const deleted = await deleteClient(id);
+    const deleted = await deleteClient(id, role);
     if (deleted) {
       setClients((prev) => prev.filter((c) => c.id !== id));
     }

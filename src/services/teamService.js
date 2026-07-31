@@ -73,21 +73,42 @@ let teams = [
   },
 ];
 
-export async function getAllTeams() {
-  return teams.map((team) => ({ ...team, members: [...team.members] }));
+/**
+ * Get all teams. Optional `role` tags the request for auditing or backend filtering.
+ * @param {string} [role] - Optional role performing the request.
+ * @returns {Promise<Array>} teams
+ */
+export async function getAllTeams(role) {
+  console.log("API call: getAllTeams", { role });
+  return teams.map((team) => ({ ...team, members: [...team.members], role: role || undefined }));
 }
 
-export async function getTeamById(id) {
+/**
+ * Get a team by id.
+ * @param {string} id
+ * @param {string} [role]
+ */
+export async function getTeamById(id, role) {
   const team = teams.find((t) => t.id === id);
-  return team ? { ...team, members: [...team.members] } : null;
+  return team ? { ...team, members: [...team.members], role: role || undefined } : null;
 }
 
-export async function getTeamByName(name) {
+/**
+ * Get a team by name.
+ * @param {string} name
+ * @param {string} [role]
+ */
+export async function getTeamByName(name, role) {
   const team = teams.find((t) => t.name === name);
-  return team ? { ...team, members: [...team.members] } : null;
+  return team ? { ...team, members: [...team.members], role: role || undefined } : null;
 }
 
-export async function createTeam(payload) {
+/**
+ * Create a team (mock). Accepts optional `role` for audit metadata.
+ * @param {object} payload
+ * @param {string} [role]
+ */
+export async function createTeam(payload, role) {
   const newTeam = {
     id: `tm${Date.now()}`,
     name: payload.name,
@@ -101,27 +122,47 @@ export async function createTeam(payload) {
     progress: payload.progress || 0,
   };
 
-  teams.push(newTeam);
-  return { ...newTeam, members: [...newTeam.members] };
+  const entry = { ...newTeam, role: role || undefined };
+  teams.push(entry);
+  console.log("API call: createTeam", { role, payload });
+  return { ...entry, members: [...entry.members] };
 }
 
-export async function updateTeam(id, updates) {
+/**
+ * Update a team.
+ * @param {string} id
+ * @param {object} updates
+ * @param {string} [role]
+ */
+export async function updateTeam(id, updates, role) {
   const index = teams.findIndex((t) => t.id === id);
   if (index === -1) return null;
-
-  teams[index] = { ...teams[index], ...updates };
+  teams[index] = { ...teams[index], ...updates, lastModifiedByRole: role || teams[index].lastModifiedByRole };
+  console.log("API call: updateTeam", { id, updates, role });
   return { ...teams[index], members: [...teams[index].members] };
 }
 
-export async function deleteTeam(id) {
+/**
+ * Delete a team.
+ * @param {string} id
+ * @param {string} [role]
+ */
+export async function deleteTeam(id, role) {
   const index = teams.findIndex((t) => t.id === id);
   if (index === -1) return false;
 
   teams.splice(index, 1);
+  console.log("API call: deleteTeam", { id, role });
   return true;
 }
 
-export async function addTeamMember(teamId, employeeId) {
+/**
+ * Add a member to a team.
+ * @param {string} teamId
+ * @param {string} employeeId
+ * @param {string} [role]
+ */
+export async function addTeamMember(teamId, employeeId, role) {
   const team = teams.find((t) => t.id === teamId);
   if (!team) return null;
 
@@ -130,19 +171,33 @@ export async function addTeamMember(teamId, employeeId) {
     team.totalMembers = team.members.length;
   }
 
+  console.log("API call: addTeamMember", { teamId, employeeId, role });
   return { ...team, members: [...team.members] };
 }
 
-export async function removeTeamMember(teamId, employeeId) {
+/**
+ * Remove a team member.
+ * @param {string} teamId
+ * @param {string} employeeId
+ * @param {string} [role]
+ */
+export async function removeTeamMember(teamId, employeeId, role) {
   const team = teams.find((t) => t.id === teamId);
   if (!team) return null;
 
   team.members = team.members.filter((id) => id !== employeeId);
   team.totalMembers = team.members.length;
 
+  console.log("API call: removeTeamMember", { teamId, employeeId, role });
   return { ...team, members: [...team.members] };
 }
 
-export async function assignProjectLeader(teamId, leaderName) {
-  return updateTeam(teamId, { projectLeader: leaderName });
+/**
+ * Assign a project leader for a team.
+ * @param {string} teamId
+ * @param {string} leaderName
+ * @param {string} [role]
+ */
+export async function assignProjectLeader(teamId, leaderName, role) {
+  return updateTeam(teamId, { projectLeader: leaderName }, role);
 }

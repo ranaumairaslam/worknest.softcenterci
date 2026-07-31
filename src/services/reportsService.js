@@ -1,4 +1,9 @@
-export async function getReportStats() {
+/**
+ * Return report statistics. Optional `role` parameter for filtering/auditing.
+ * @param {string} [role]
+ */
+export async function getReportStats(role) {
+  console.log("API call: getReportStats", { role });
   return [
     { id: "total-projects", label: "Total Projects", value: "8", note: "Active Projects", icon: "ClipboardList", color: "indigo" },
     { id: "tasks-completed", label: "Tasks Completed", value: "128", note: "70% of total tasks", icon: "CheckCircle2", color: "emerald" },
@@ -7,7 +12,8 @@ export async function getReportStats() {
   ];
 }
 
-export async function getTaskStatusBreakdown() {
+export async function getTaskStatusBreakdown(role) {
+  console.log("API call: getTaskStatusBreakdown", { role });
   return [
     { label: "Completed", value: 128, percent: 70, color: "#10b981" },
     { label: "In Progress", value: 42, percent: 23, color: "#3b82f6" },
@@ -16,7 +22,8 @@ export async function getTaskStatusBreakdown() {
   ];
 }
 
-export async function getProjectProgress() {
+export async function getProjectProgress(role) {
+  console.log("API call: getProjectProgress", { role });
   return [
     { name: "Website Redesign", value: 82 },
     { name: "Mobile  Application", value: 68 },
@@ -26,7 +33,8 @@ export async function getProjectProgress() {
   ];
 }
 
-export async function getTeamProgress() {
+export async function getTeamProgress(role) {
+  console.log("API call: getTeamProgress", { role });
   return [
     { name: "Sophia Lee", value: 88 },
     { name: "Liam Johnson", value: 72 },
@@ -35,7 +43,8 @@ export async function getTeamProgress() {
   ];
 }
 
-export async function getRecentReports() {
+export async function getRecentReports(role) {
+  console.log("API call: getRecentReports", { role });
   return [
     { id: "r1", name: "Project Progress Report", project: "Website Redesign", generatedBy: "John Leader", date: "Jun 30, 2025", isoDate: "2025-06-30", type: "Progress" },
     { id: "r2", name: "Task Summary Report", project: "Mobile App", generatedBy: "John Leader", date: "Jun 28, 2025", isoDate: "2025-06-28", type: "Summary" },

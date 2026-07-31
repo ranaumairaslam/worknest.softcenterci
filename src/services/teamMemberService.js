@@ -1,4 +1,9 @@
-export async function getMyTasks() {
+/**
+ * Get tasks assigned to the current team member.
+ * @param {string} [role]
+ */
+export async function getMyTasks(role) {
+  console.log("API call: getMyTasks", { role });
   return [
     { id: "t1", title: "Alpha Platform Rebrand 'API Docs'", status: "todo", project: "Alpha Platform Rebrand", assignee: { name: "Sarah L.", avatar: "SL" } },
     { id: "t2", title: "System Deliverable Submission 99.9%", status: "todo", project: "System Platform Rebrand", assignee: { name: "Sarah L.", avatar: "SL" } },
@@ -9,20 +14,29 @@ export async function getMyTasks() {
   ];
 }
 
-export async function getTeamTasks() {
-  const mine = await getMyTasks();
+/**
+ * Get tasks for the team (includes mine and others).
+ * @param {string} [role]
+ */
+export async function getTeamTasks(role) {
+  const mine = await getMyTasks(role);
   const others = [
     { id: "t7", title: "Homepage Development", status: "in_progress", project: "Alpha Platform Rebrand", assignee: { name: "Jane Doe", avatar: "JD" } },
     { id: "t8", title: "API Integration Review", status: "under_review", project: "Project Alpha", assignee: { name: "Jane Doe", avatar: "JD" } },
     { id: "t9", title: "Design Handoff", status: "todo", project: "System Platform Rebrand", assignee: { name: "Noah Smith", avatar: "NS" } },
     { id: "t10", title: "QA Sign-off", status: "completed", project: "Alpha Platform Rebrand", assignee: { name: "Noah Smith", avatar: "NS" } },
   ];
+  console.log("API call: getTeamTasks", { role });
   return [...mine, ...others];
 }
 
-export async function submitTaskWork(taskId, payload) {
-  // Later: replace with a real API call to upload the file/comments
-  // and move the task to the next stage on the backend.
-  console.log("API call: submit task work", taskId, payload);
-  return { taskId, status: "under_review" };
+/**
+ * Submit work for a task (mock).
+ * @param {string} taskId
+ * @param {object} payload
+ * @param {string} [role]
+ */
+export async function submitTaskWork(taskId, payload, role) {
+  console.log("API call: submit task work", { taskId, payload, role });
+  return { taskId, status: "under_review", role: role || undefined };
 }

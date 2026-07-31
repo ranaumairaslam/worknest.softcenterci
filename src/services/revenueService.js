@@ -6,15 +6,31 @@ let revenueRecords = [
   { id: "r5", projectId: "p4", projectName: "Inventory System", amount: 95000, date: "2026-07-15", status: "Received", client: "Vertex Solutions" },
 ];
 
-export async function getAllRevenueRecords() {
-  return revenueRecords.map((r) => ({ ...r }));
+/**
+ * Get all revenue records. Optional role parameter for audit/filtering.
+ * @param {string} [role]
+ */
+export async function getAllRevenueRecords(role) {
+  console.log("API call: getAllRevenueRecords", { role });
+  return revenueRecords.map((r) => ({ ...r, role: role || undefined }));
 }
 
-export async function getRevenueById(id) {
+/**
+ * Get a revenue record by id.
+ * @param {string} id
+ * @param {string} [role]
+ */
+export async function getRevenueById(id, role) {
+  console.log("API call: getRevenueById", { id, role });
   return revenueRecords.find((r) => r.id === id) || null;
 }
 
-export async function createRevenueRecord(payload) {
+/**
+ * Create a revenue record.
+ * @param {object} payload
+ * @param {string} [role]
+ */
+export async function createRevenueRecord(payload, role) {
   const newRecord = {
     id: `r${Date.now()}`,
     projectId: payload.projectId || "",
@@ -25,11 +41,19 @@ export async function createRevenueRecord(payload) {
     client: payload.client || "Unknown",
   };
 
-  revenueRecords.push(newRecord);
-  return { ...newRecord };
+  const entry = { ...newRecord, role: role || undefined };
+  revenueRecords.push(entry);
+  console.log("API call: createRevenueRecord", { role, payload });
+  return { ...entry };
 }
 
-export async function updateRevenueRecord(id, updates) {
+/**
+ * Update a revenue record.
+ * @param {string} id
+ * @param {object} updates
+ * @param {string} [role]
+ */
+export async function updateRevenueRecord(id, updates, role) {
   const index = revenueRecords.findIndex((r) => r.id === id);
   if (index === -1) return null;
 
@@ -39,19 +63,33 @@ export async function updateRevenueRecord(id, updates) {
     amount: updates.amount !== undefined ? Number(updates.amount) : revenueRecords[index].amount,
   };
 
+  revenueRecords[index] = { ...revenueRecords[index], lastModifiedByRole: role || revenueRecords[index].lastModifiedByRole };
+  console.log("API call: updateRevenueRecord", { id, updates, role });
   return { ...revenueRecords[index] };
 }
 
-export async function deleteRevenueRecord(id) {
+/**
+ * Delete a revenue record.
+ * @param {string} id
+ * @param {string} [role]
+ */
+export async function deleteRevenueRecord(id, role) {
   const index = revenueRecords.findIndex((r) => r.id === id);
   if (index === -1) return false;
 
   revenueRecords.splice(index, 1);
+  console.log("API call: deleteRevenueRecord", { id, role });
   return true;
 }
 
-export async function getRevenueSummary(projects, clients) {
-  const records = await getAllRevenueRecords();
+/**
+ * Compute revenue summary across projects/clients; role optional.
+ * @param {Array} projects
+ * @param {Array} clients
+ * @param {string} [role]
+ */
+export async function getRevenueSummary(projects, clients, role) {
+  const records = await getAllRevenueRecords(role);
   const projectRevenue = projects.reduce((sum, project) => sum + (project.revenue || 0), 0);
   const recordTotal = records.reduce((sum, r) => sum + r.amount, 0);
   const totalRevenue = Math.max(projectRevenue, recordTotal);

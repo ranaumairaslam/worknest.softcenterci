@@ -22,17 +22,17 @@ export async function getMyTasks() {
   ];
 }
 
-export async function updateTaskStatus(taskId, status) {
-  console.log("API call: update task status", taskId, status);
-  return { taskId, status };
+export async function updateTaskStatus(taskId, status, role) {
+  console.log("API call: update task status", { taskId, status, role });
+  return { taskId, status, role };
 }
 
-export async function createTask(task) {
-  console.log("API call: create task", task);
-  return { ...task, id: `t${Date.now()}` };
+export async function createTask(task, role) {
+  console.log("API call: create my-task", { task, role });
+  return { ...task, id: `t${Date.now()}`, role: role || undefined };
 }
 
-export async function deleteTask(taskId) {
-  console.log("API call: delete task", taskId);
-  return { taskId, deleted: true };
+export async function deleteTask(taskId, role) {
+  console.log("API call: delete my-task", { taskId, role });
+  return { taskId, deleted: true, role };
 }

@@ -40,8 +40,9 @@ let meetings = [
   },
 ];
 
-export async function getAllMeetings() {
-  return meetings.map((m) => ({ ...m, participants: [...m.participants] }));
+export async function getAllMeetings(role) {
+  console.log("API call: getAllMeetings", { role });
+  return meetings.map((m) => ({ ...m, participants: [...m.participants], role: role || undefined }));
 }
 
 export async function getMeetingById(id) {
@@ -49,7 +50,7 @@ export async function getMeetingById(id) {
   return meeting ? { ...meeting, participants: [...meeting.participants] } : null;
 }
 
-export async function createMeeting(payload) {
+export async function createMeeting(payload, role) {
   const newMeeting = {
     id: `m${Date.now()}`,
     title: payload.title,
@@ -64,11 +65,13 @@ export async function createMeeting(payload) {
     participants: payload.participants || [],
   };
 
-  meetings.push(newMeeting);
-  return { ...newMeeting, participants: [...newMeeting.participants] };
+  const entry = { ...newMeeting, role: role || undefined };
+  meetings.push(entry);
+  console.log("API call: createMeeting", { role, payload });
+  return { ...entry, participants: [...entry.participants] };
 }
 
-export async function updateMeeting(id, updates) {
+export async function updateMeeting(id, updates, role) {
   const index = meetings.findIndex((m) => m.id === id);
   if (index === -1) return null;
 
@@ -76,40 +79,45 @@ export async function updateMeeting(id, updates) {
     ...meetings[index],
     ...updates,
     participants: updates.participants || meetings[index].participants,
+    lastModifiedByRole: role || meetings[index].lastModifiedByRole,
   };
+
+  console.log("API call: updateMeeting", { id, updates, role });
 
   return { ...meetings[index], participants: [...meetings[index].participants] };
 }
 
-export async function deleteMeeting(id) {
+export async function deleteMeeting(id, role) {
   const index = meetings.findIndex((m) => m.id === id);
   if (index === -1) return false;
 
   meetings.splice(index, 1);
+  console.log("API call: deleteMeeting", { id, role });
   return true;
 }
 
-export async function cancelMeeting(id) {
-  return updateMeeting(id, { status: "Cancelled" });
+export async function cancelMeeting(id, role) {
+  return updateMeeting(id, { status: "Cancelled" }, role);
 }
 
-export async function inviteParticipants(id, newParticipants) {
+export async function inviteParticipants(id, newParticipants, role) {
   const meeting = meetings.find((m) => m.id === id);
   if (!meeting) return null;
 
   const combined = [...new Set([...meeting.participants, ...newParticipants])];
-  return updateMeeting(id, { participants: combined });
+  return updateMeeting(id, { participants: combined }, role);
 }
 
-export async function getUpcomingMeetings() {
+export async function getUpcomingMeetings(role) {
+  console.log("API call: getUpcomingMeetings", { role });
   return meetings
     .filter((m) => m.status === "Scheduled")
-    .map((m) => ({ ...m, participants: [...m.participants] }));
+    .map((m) => ({ ...m, participants: [...m.participants], role: role || undefined }));
 }
 
-export async function getMeetingsByType(type) {
-  if (type === "All") return getAllMeetings();
+export async function getMeetingsByType(type, role) {
+  if (type === "All") return getAllMeetings(role);
   return meetings
     .filter((m) => m.type === type)
-    .map((m) => ({ ...m, participants: [...m.participants] }));
+    .map((m) => ({ ...m, participants: [...m.participants], role: role || undefined }));
 }
