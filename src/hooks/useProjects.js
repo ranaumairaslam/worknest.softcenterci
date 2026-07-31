@@ -7,8 +7,10 @@ import {
   markProjectCompleted,
   assignProjectLeader,
 } from "../services/projectService";
+import useRole from "./useRole";
 
 export function useProjects() {
+  const role = useRole();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +20,7 @@ export function useProjects() {
 
     async function load() {
       try {
-        const data = await getAllProjects();
+        const data = await getAllProjects(role);
         if (isMounted) setProjects(data);
       } catch (err) {
         if (isMounted) setError(err);
@@ -31,16 +33,16 @@ export function useProjects() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [role]);
 
   const addProject = async (payload) => {
-    const project = await createProject(payload);
+    const project = await createProject(payload, role);
     setProjects((prev) => [project, ...prev]);
     return project;
   };
 
   const editProject = async (id, updates) => {
-    const project = await updateProject(id, updates);
+    const project = await updateProject(id, updates, role);
     if (project) {
       setProjects((prev) => prev.map((p) => (p.id === id ? project : p)));
     }
@@ -48,7 +50,7 @@ export function useProjects() {
   };
 
   const removeProject = async (id) => {
-    const deleted = await deleteProject(id);
+    const deleted = await deleteProject(id, role);
     if (deleted) {
       setProjects((prev) => prev.filter((p) => p.id !== id));
     }
@@ -56,7 +58,7 @@ export function useProjects() {
   };
 
   const completeProject = async (id) => {
-    const project = await markProjectCompleted(id);
+    const project = await markProjectCompleted(id, role);
     if (project) {
       setProjects((prev) => prev.map((p) => (p.id === id ? project : p)));
     }
@@ -64,7 +66,7 @@ export function useProjects() {
   };
 
   const setProjectLeader = async (id, leaderName) => {
-    const project = await assignProjectLeader(id, leaderName);
+    const project = await assignProjectLeader(id, leaderName, role);
     if (project) {
       setProjects((prev) => prev.map((p) => (p.id === id ? project : p)));
     }

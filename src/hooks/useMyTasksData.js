@@ -5,6 +5,7 @@ import {
   createTask,
   deleteTask,
 } from "../services/myTasksService";
+import useRole from "./useRole";
 
 const statIcons = {
   total: { label: "Total Tasks", note: "All assigned tasks", icon: "ClipboardList", color: "indigo" },
@@ -14,6 +15,7 @@ const statIcons = {
 };
 
 export function useMyTasksData() {
+  const role = useRole();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,11 +59,11 @@ export function useMyTasksData() {
       prev.map((t) => {
         if (t.id !== taskId) return t;
         const newStatus = t.status === "Completed" ? "To Do" : "Completed";
-        updateTaskStatus(taskId, newStatus);
+        updateTaskStatus(taskId, newStatus, role);
         return { ...t, status: newStatus };
       })
     );
-  }, []);
+  }, [role]);
 
   const addTask = useCallback(async (taskInput) => {
     const tempId = `temp-${Date.now()}`;
@@ -69,18 +71,18 @@ export function useMyTasksData() {
     setTasks((prev) => [optimisticTask, ...prev]);
 
     try {
-      const saved = await createTask(taskInput);
+      const saved = await createTask(taskInput, role);
       setTasks((prev) => prev.map((t) => (t.id === tempId ? saved : t)));
     } catch (err) {
       setTasks((prev) => prev.filter((t) => t.id !== tempId));
       setError(err);
     }
-  }, []);
+  }, [role]);
 
   const removeTask = useCallback((taskId) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    deleteTask(taskId);
-  }, []);
+    deleteTask(taskId, role);
+  }, [role]);
 
   return { stats, tasks, loading, error, toggleComplete, addTask, removeTask };
 }

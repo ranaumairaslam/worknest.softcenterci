@@ -40,15 +40,16 @@ let clients = [
   },
 ];
 
-export async function getAllClients() {
-  return clients.map((client) => ({ ...client }));
+export async function getAllClients(role) {
+  console.log("API call: getAllClients", { role });
+  return clients.map((client) => ({ ...client, role: role || undefined }));
 }
 
 export async function getClientById(id) {
   return clients.find((client) => client.id === id) || null;
 }
 
-export async function createClient(payload) {
+export async function createClient(payload, role) {
   const newClient = {
     id: `c${Date.now()}`,
     name: payload.name,
@@ -63,26 +64,26 @@ export async function createClient(payload) {
     lastContact: payload.lastContact || "Today",
   };
 
-  clients.push(newClient);
-  return { ...newClient };
+  const entry = { ...newClient, role: role || undefined };
+  clients.push(entry);
+  console.log("API call: createClient", { role, payload });
+  return { ...entry };
 }
 
-export async function updateClient(id, updates) {
+export async function updateClient(id, updates, role) {
   const index = clients.findIndex((client) => client.id === id);
   if (index === -1) return null;
 
-  clients[index] = {
-    ...clients[index],
-    ...updates,
-  };
-
+  clients[index] = { ...clients[index], ...updates, lastModifiedByRole: role || clients[index].lastModifiedByRole };
+  console.log("API call: updateClient", { id, updates, role });
   return { ...clients[index] };
 }
 
-export async function deleteClient(id) {
+export async function deleteClient(id, role) {
   const index = clients.findIndex((client) => client.id === id);
   if (index === -1) return false;
 
   clients.splice(index, 1);
+  console.log("API call: deleteClient", { id, role });
   return true;
 }

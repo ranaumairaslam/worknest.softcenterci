@@ -129,15 +129,16 @@ let projects = [
   },
 ];
 
-export async function getAllProjects() {
-  return projects.map((p) => ({ ...p }));
+export async function getAllProjects(role) {
+  console.log("API call: getAllProjects", { role });
+  return projects.map((p) => ({ ...p, role: role || undefined }));
 }
 
 export async function getProjectById(id) {
   return projects.find((p) => p.id === id) || null;
 }
 
-export async function createProject(payload) {
+export async function createProject(payload, role) {
   const newProject = {
     id: `p${Date.now()}`,
     name: payload.name,
@@ -155,30 +156,32 @@ export async function createProject(payload) {
     revenue: payload.revenue || 0,
   };
 
-  projects.push(newProject);
-  return { ...newProject };
+  const entry = { ...newProject, role: role || undefined };
+  projects.push(entry);
+  console.log("API call: createProject", { role, payload });
+  return { ...entry };
 }
 
-export async function updateProject(id, updates) {
+export async function updateProject(id, updates, role) {
   const index = projects.findIndex((p) => p.id === id);
   if (index === -1) return null;
-
-  projects[index] = { ...projects[index], ...updates };
+  projects[index] = { ...projects[index], ...updates, lastModifiedByRole: role || projects[index].lastModifiedByRole };
+  console.log("API call: updateProject", { id, updates, role });
   return { ...projects[index] };
 }
 
-export async function deleteProject(id) {
+export async function deleteProject(id, role) {
   const index = projects.findIndex((p) => p.id === id);
   if (index === -1) return false;
-
   projects.splice(index, 1);
+  console.log("API call: deleteProject", { id, role });
   return true;
 }
 
-export async function markProjectCompleted(id) {
-  return updateProject(id, { status: "Completed", progress: 100 });
+export async function markProjectCompleted(id, role) {
+  return updateProject(id, { status: "Completed", progress: 100 }, role);
 }
 
-export async function assignProjectLeader(id, leaderName) {
-  return updateProject(id, { leader: leaderName });
+export async function assignProjectLeader(id, leaderName, role) {
+  return updateProject(id, { leader: leaderName }, role);
 }

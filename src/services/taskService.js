@@ -51,15 +51,16 @@ let tasks = [
   },
 ];
 
-export async function getAllTasks() {
-  return tasks.map((task) => ({ ...task }));
+export async function getAllTasks(role) {
+  console.log("API call: getAllTasks", { role });
+  return tasks.map((task) => ({ ...task, role: role || undefined }));
 }
 
 export async function getTaskById(id) {
   return tasks.find((task) => task.id === id) || null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, role) {
   const newTask = {
     id: `t${Date.now()}`,
     name: payload.name,
@@ -71,27 +72,34 @@ export async function createTask(payload) {
     progress: payload.progress || 0,
   };
 
-  tasks.push(newTask);
-  return { ...newTask };
+  // record the role that triggered the creation for auditing in this mock
+  const entry = { ...newTask, role: role || undefined };
+  tasks.push(entry);
+  console.log("API call: createTask", { role, payload });
+  return { ...entry };
 }
 
-export async function updateTask(id, updates) {
+export async function updateTask(id, updates, role) {
   const index = tasks.findIndex((task) => task.id === id);
   if (index === -1) return null;
 
   tasks[index] = {
     ...tasks[index],
     ...updates,
+    lastModifiedByRole: role || tasks[index].lastModifiedByRole,
   };
+
+  console.log("API call: updateTask", { id, updates, role });
 
   return { ...tasks[index] };
 }
 
-export async function deleteTask(id) {
+export async function deleteTask(id, role) {
   const index = tasks.findIndex((task) => task.id === id);
   if (index === -1) return false;
 
   tasks.splice(index, 1);
+  console.log("API call: deleteTask", { id, role });
   return true;
 }
 
@@ -110,6 +118,7 @@ export async function getTaskStatistics() {
     { total: 0 }
   );
 
+  console.log("API call: getTaskStatistics");
   return [
     { id: "total-tasks", label: "Total Tasks", value: counts.total, note: "Updated live" },
     { id: "pending-tasks", label: "Pending Tasks", value: counts.Pending || 0, note: "Requires action" },

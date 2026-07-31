@@ -29,14 +29,16 @@ export async function getRecentActivity() {
   return activityLog.map((item) => ({ ...item }));
 }
 
-export async function addActivity(entry) {
+export async function addActivity(entry, role) {
   const newEntry = {
     id: `a${Date.now()}`,
     time: entry.time || "Just now",
     type: entry.type,
     message: entry.message,
+    role: role || undefined,
   };
 
   activityLog.unshift(newEntry);
+  console.log("Activity added", { newEntry });
   return { ...newEntry };
 }

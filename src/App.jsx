@@ -114,7 +114,7 @@ function AppLayout() {
     {
       "/dashboard-admin": "superAdmin",
       "/companies": "superAdmin",
-      
+      "/revenue-super-admin": "superAdmin",
       "/reports": "superAdmin",
       
 
@@ -178,7 +178,7 @@ function AppLayout() {
               element={<ReportsSidebar />}
             />
             <Route
-              path="/revenue"
+              path="/revenue-super-admin"
               element={<RevenuePage />}
             />
 
@@ -292,7 +292,7 @@ function AppLayout() {
              
             />
             <Route path="/add-company" element={<AddingCompany />} />
-              }/>
+              
              
           </Routes>
         </main>

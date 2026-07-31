@@ -1,8 +1,8 @@
-export async function getProjects() {
+export async function getProjects(role) {
   return [
-    { id: "p1", name: "Alpha Platform Rebrand" },
-    { id: "p2", name: "Project Alpha" },
-    { id: "p3", name: "System Platform Rebrand" },
+    { id: "p1", name: "Alpha Platform Rebrand", role: role || undefined },
+    { id: "p2", name: "Project Alpha", role: role || undefined },
+    { id: "p3", name: "System Platform Rebrand", role: role || undefined },
   ];
 }
 
@@ -89,7 +89,7 @@ export async function reassignTask(taskId, memberId) {
   console.log("API call: reassign task", taskId, "to member", memberId);
   return { taskId, memberId };
 }
-export async function createProject(project) {
-  console.log("API call: create project", project);
-  return { id: `p${Date.now()}`, name: project.name };
+export async function createProject(project, role) {
+  console.log("API call: create project", { project, role });
+  return { id: `p${Date.now()}`, name: project.name, role: role || undefined };
 }

@@ -6,6 +6,7 @@ import {
   CheckSquare,
   CalendarDays,
   BarChart3,
+  Clock3,
   Building2,
   Briefcase,
   MessageCircle,
@@ -66,7 +67,7 @@ export const navigation = {
     {
       title: "Revenue",
       icon: BarChart3,
-      path: "/revenue",
+      path: "/revenue-super-admin",
     },
   ],
 
@@ -215,6 +216,7 @@ export const getRoleFromPath = (pathname) => {
     "/subscriptions": "superAdmin",
     "/reports": "superAdmin",
     "/pending": "superAdmin",
+   "/revenue-super-admin": "superAdmin",
 
     // Company Admin
     "/dashboard-company": "companyAdmin",

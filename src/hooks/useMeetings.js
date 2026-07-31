@@ -7,8 +7,10 @@ import {
   cancelMeeting,
   inviteParticipants,
 } from "../services/meetingService";
+import useRole from "./useRole";
 
 export function useMeetings() {
+  const role = useRole();
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +20,7 @@ export function useMeetings() {
 
     async function load() {
       try {
-        const data = await getAllMeetings();
+        const data = await getAllMeetings(role);
         if (isMounted) setMeetings(data);
       } catch (err) {
         if (isMounted) setError(err);
@@ -31,16 +33,16 @@ export function useMeetings() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [role]);
 
   const addMeeting = async (payload) => {
-    const meeting = await createMeeting(payload);
+    const meeting = await createMeeting(payload, role);
     setMeetings((prev) => [meeting, ...prev]);
     return meeting;
   };
 
   const editMeeting = async (id, updates) => {
-    const meeting = await updateMeeting(id, updates);
+    const meeting = await updateMeeting(id, updates, role);
     if (meeting) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
     }
@@ -48,7 +50,7 @@ export function useMeetings() {
   };
 
   const removeMeeting = async (id) => {
-    const deleted = await deleteMeeting(id);
+    const deleted = await deleteMeeting(id, role);
     if (deleted) {
       setMeetings((prev) => prev.filter((m) => m.id !== id));
     }
@@ -56,7 +58,7 @@ export function useMeetings() {
   };
 
   const cancelMeetingById = async (id) => {
-    const meeting = await cancelMeeting(id);
+    const meeting = await cancelMeeting(id, role);
     if (meeting) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
     }
@@ -64,7 +66,7 @@ export function useMeetings() {
   };
 
   const inviteToMeeting = async (id, participants) => {
-    const meeting = await inviteParticipants(id, participants);
+    const meeting = await inviteParticipants(id, participants, role);
     if (meeting) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
     }
