@@ -9,3 +9,8 @@ export async function getEvents() {
     { id: "e7", title: "Monthly Report Due", date: "2025-06-30", type: "deadline" },
   ];
 }
+export async function createEvent(event) {
+  // Later: replace with a real POST request to your backend.
+  console.log("API call: create event", event);
+  return { ...event, id: `e${Date.now()}` };
+}

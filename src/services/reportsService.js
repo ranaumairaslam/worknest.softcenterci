@@ -19,18 +19,29 @@ export async function getTaskStatusBreakdown() {
 export async function getProjectProgress() {
   return [
     { name: "Website Redesign", value: 82 },
-    { name: "Mobile App", value: 68 },
+    { name: "Mobile  Application", value: 68 },
     { name: "Marketing Campaign", value: 55 },
     { name: "CRM Integration", value: 34 },
     { name: "Data Dashboard", value: 25 },
   ];
 }
 
+export async function getTeamProgress() {
+  return [
+    { name: "Sophia Lee", value: 88 },
+    { name: "Liam Johnson", value: 72 },
+    { name: "Noah Smith", value: 65 },
+    { name: "Emma Davis", value: 54 },
+  ];
+}
+
 export async function getRecentReports() {
   return [
-    { id: "r1", name: "Project Progress Report", project: "Website Redesign", generatedBy: "John Leader", date: "Jun 30, 2025", type: "Progress" },
-    { id: "r2", name: "Task Summary Report", project: "Mobile App", generatedBy: "John Leader", date: "Jun 28, 2025", type: "Summary" },
-    { id: "r3", name: "Team Performance Report", project: "Marketing Campaign", generatedBy: "John Leader", date: "Jun 25, 2025", type: "Performance" },
-    { id: "r4", name: "Monthly Overview Report", project: "All Projects", generatedBy: "John Leader", date: "Jun 01, 2025", type: "Overview" },
+    { id: "r1", name: "Project Progress Report", project: "Website Redesign", generatedBy: "John Leader", date: "Jun 30, 2025", isoDate: "2025-06-30", type: "Progress" },
+    { id: "r2", name: "Task Summary Report", project: "Mobile App", generatedBy: "John Leader", date: "Jun 28, 2025", isoDate: "2025-06-28", type: "Summary" },
+    { id: "r3", name: "Team Performance Report", project: "Marketing Campaign", generatedBy: "John Leader", date: "Jun 25, 2025", isoDate: "2025-06-25", type: "Performance" },
+    { id: "r4", name: "Monthly Overview Report", project: "All Projects", generatedBy: "John Leader", date: "Jun 01, 2025", isoDate: "2025-06-01", type: "Overview" },
+    { id: "r5", name: "Task Distribution Report", project: "All Projects", generatedBy: "John Leader", date: "Jun 15, 2025", isoDate: "2025-06-15", type: "Summary" },
+    { id: "r6", name: "Overdue Tasks Report", project: "CRM Integration", generatedBy: "John Leader", date: "Jun 10, 2025", isoDate: "2025-06-10", type: "Overview" },
   ];
 }

@@ -32,6 +32,11 @@ import Meetings from "./pages/Meetings";
 import ProjectsClient from "./pages/ProjectsClient.jsx";
 import ClientCalendar from "./pages/ClientCalendar.jsx";
 
+import ProjectTimelinePage from "./pages/ProjectTimelinePage.jsx";
+import TeamPerformancePage from "./pages/TeamPerformancePage.jsx";
+import TaskOverviewPage from "./pages/TaskOverviewPage.jsx";
+import KanbanBoardPage from "./pages/KanbanBoardPage.jsx";
+
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login", "/Signup"];
 
@@ -197,6 +202,11 @@ function AppLayout() {
               path="/project-reports"
               element={<Reports />}
             />
+             <Route path="/project/timeline" element={<ProjectTimelinePage />} />
+<Route path="/project/team-performance" element={<TeamPerformancePage />} />
+<Route path="/project/tasks" element={<TaskOverviewPage />} />
+<Route path="/project/kanban" element={<KanbanBoardPage />} 
+            />
 
             
             <Route
@@ -240,8 +250,8 @@ function AppLayout() {
                   to="/dashboard-admin"
                   replace
                 />
-              }
-            />
+              }/>
+             
           </Routes>
         </main>
       </div>
