@@ -8,6 +8,8 @@ import {
   inviteParticipants,
 } from "../services/meetingService";
 import useRole from "./useRole";
+import { useEffect, useState, useCallback } from "react";
+import { getMeetings, createMeeting, updateMeeting, cancelMeeting } from "../services/meetingsService";
 
 export function useMeetings() {
   const role = useRole();
@@ -21,15 +23,17 @@ export function useMeetings() {
     async function load() {
       try {
         const data = await getAllMeetings(role);
+    getMeetings()
+      .then((data) => {
         if (isMounted) setMeetings(data);
-      } catch (err) {
+      })
+      .catch((err) => {
         if (isMounted) setError(err);
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) setLoading(false);
-      }
-    }
+      });
 
-    load();
     return () => {
       isMounted = false;
     };
@@ -45,9 +49,18 @@ export function useMeetings() {
     const meeting = await updateMeeting(id, updates, role);
     if (meeting) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
+  const addMeeting = useCallback(async (meetingInput) => {
+    const tempId = `temp-${Date.now()}`;
+    setMeetings((prev) => [...prev, { ...meetingInput, id: tempId }]);
+
+    try {
+      const saved = await createMeeting(meetingInput);
+      setMeetings((prev) => prev.map((m) => (m.id === tempId ? saved : m)));
+    } catch (err) {
+      setMeetings((prev) => prev.filter((m) => m.id !== tempId));
+      setError(err);
     }
-    return meeting;
-  };
+  }, []);
 
   const removeMeeting = async (id) => {
     const deleted = await deleteMeeting(id, role);
@@ -61,26 +74,33 @@ export function useMeetings() {
     const meeting = await cancelMeeting(id, role);
     if (meeting) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
+  const editMeeting = useCallback(async (id, updates) => {
+    const previous = meetings;
+    setMeetings((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+
+    try {
+      await updateMeeting(id, updates);
+    } catch (err) {
+      setMeetings(previous);
+      setError(err);
     }
-    return meeting;
-  };
+  }, [meetings]);
+
+  const removeMeeting = useCallback(async (id) => {
+    const previous = meetings;
+    setMeetings((prev) => prev.filter((m) => m.id !== id));
 
   const inviteToMeeting = async (id, participants) => {
     const meeting = await inviteParticipants(id, participants, role);
     if (meeting) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
+    try {
+      await cancelMeeting(id);
+    } catch (err) {
+      setMeetings(previous);
+      setError(err);
     }
-    return meeting;
-  };
+  }, [meetings]);
 
-  return {
-    meetings,
-    loading,
-    error,
-    addMeeting,
-    editMeeting,
-    removeMeeting,
-    cancelMeetingById,
-    inviteToMeeting,
-  };
+  return { meetings, loading, error, addMeeting, editMeeting, removeMeeting };
 }

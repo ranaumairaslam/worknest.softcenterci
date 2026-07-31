@@ -50,6 +50,9 @@ import TeamPerformancePage from "./pages/TeamPerformancePage.jsx";
 import TaskOverviewPage from "./pages/TaskOverviewPage.jsx";
 import KanbanBoardPage from "./pages/KanbanBoardPage.jsx";
 
+import LeaderMeetings from "./pages/Meetings.jsx";
+import TeamMeetings from "./pages/TeamMeetings.jsx";
+
 const DESKTOP_BREAKPOINT = 1024;
 const AUTH_PATHS = ["/login","/Signup","/terms","/privacy-policy",];
 
@@ -132,10 +135,13 @@ function AppLayout() {
       "/project": "projectLeader",
       "/calendar": "projectLeader",
       "/project-reports": "projectLeader",
+      "/meetings": "projectLeader",
+
 
       "/dashboard-team-member": "teamMember",
       "/tasks": "teamMember",
       "/team-member-projects": "teamMember",
+      "/team-meetings": "teamMember",
 
       "/client-dashboard": "client",
       "/client-projects": "client",
@@ -295,7 +301,10 @@ function AppLayout() {
               
              
           </Routes>
-        </main>
+        </main> 
+              
+             
+          
       </div>
     </div>
   );
