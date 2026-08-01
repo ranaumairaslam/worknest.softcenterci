@@ -75,6 +75,18 @@ let tasks = [
     assigneeId: null,
     progress: 20,
   },
+  {
+    id: "t6",
+    name: "Mobile App UI Polish",
+    project: "Mobile Banking App",
+    projectId: "p5",
+    priority: "Medium",
+    status: "In Progress",
+    dueDate: "2026-08-05",
+    assignee: "Fatima Sheikh",
+    assigneeId: "e7",
+    progress: 50,
+  },
 ];
 
 async function resolveTaskPayload(payload) {

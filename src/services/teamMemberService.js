@@ -1,6 +1,6 @@
-import { getCurrentUser } from "./authContext";
-import { getTasksByAssignee, getAllTasks } from "./taskService";
-import { getAllProjects } from "./projectService";
+import { getCurrentUser } from "./authContext.js";
+import { getTasksByAssignee, getAllTasks } from "./taskService.js";
+import { getAllProjects } from "./projectService.js";
 
 function mapTaskForKanban(task) {
   const statusMap = {
