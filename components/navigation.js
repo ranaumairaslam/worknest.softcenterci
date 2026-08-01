@@ -3,7 +3,7 @@ import {
   Users,
   FolderKanban,
   CreditCard,
-  Clock3,
+  
   CheckSquare,
   CalendarDays,
   BarChart3,

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import useRole from "./useRole";
+
 import {
   getAllMeetings,
   createMeeting,
@@ -7,12 +9,10 @@ import {
   cancelMeeting,
   inviteParticipants,
 } from "../services/meetingService";
-import useRole from "./useRole";
-import { useEffect, useState, useCallback } from "react";
-import { getMeetings, createMeeting, updateMeeting, cancelMeeting } from "../services/meetingsService";
 
 export function useMeetings() {
   const role = useRole();
+
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,19 +20,25 @@ export function useMeetings() {
   useEffect(() => {
     let isMounted = true;
 
-    async function load() {
+    async function loadMeetings() {
       try {
         const data = await getAllMeetings(role);
-    getMeetings()
-      .then((data) => {
-        if (isMounted) setMeetings(data);
-      })
-      .catch((err) => {
-        if (isMounted) setError(err);
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
+
+        if (isMounted) {
+          setMeetings(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadMeetings();
 
     return () => {
       isMounted = false;
@@ -41,66 +47,72 @@ export function useMeetings() {
 
   const addMeeting = async (payload) => {
     const meeting = await createMeeting(payload, role);
+
     setMeetings((prev) => [meeting, ...prev]);
+
     return meeting;
   };
 
   const editMeeting = async (id, updates) => {
     const meeting = await updateMeeting(id, updates, role);
-    if (meeting) {
-      setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
-  const addMeeting = useCallback(async (meetingInput) => {
-    const tempId = `temp-${Date.now()}`;
-    setMeetings((prev) => [...prev, { ...meetingInput, id: tempId }]);
 
-    try {
-      const saved = await createMeeting(meetingInput);
-      setMeetings((prev) => prev.map((m) => (m.id === tempId ? saved : m)));
-    } catch (err) {
-      setMeetings((prev) => prev.filter((m) => m.id !== tempId));
-      setError(err);
+    if (meeting) {
+      setMeetings((prev) =>
+        prev.map((m) => (m.id === id ? meeting : m))
+      );
     }
-  }, []);
+
+    return meeting;
+  };
 
   const removeMeeting = async (id) => {
     const deleted = await deleteMeeting(id, role);
+
     if (deleted) {
-      setMeetings((prev) => prev.filter((m) => m.id !== id));
+      setMeetings((prev) =>
+        prev.filter((m) => m.id !== id)
+      );
     }
+
     return deleted;
   };
 
   const cancelMeetingById = async (id) => {
     const meeting = await cancelMeeting(id, role);
+
     if (meeting) {
-      setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
-  const editMeeting = useCallback(async (id, updates) => {
-    const previous = meetings;
-    setMeetings((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
-
-    try {
-      await updateMeeting(id, updates);
-    } catch (err) {
-      setMeetings(previous);
-      setError(err);
+      setMeetings((prev) =>
+        prev.map((m) => (m.id === id ? meeting : m))
+      );
     }
-  }, [meetings]);
 
-  const removeMeeting = useCallback(async (id) => {
-    const previous = meetings;
-    setMeetings((prev) => prev.filter((m) => m.id !== id));
+    return meeting;
+  };
 
   const inviteToMeeting = async (id, participants) => {
-    const meeting = await inviteParticipants(id, participants, role);
-    if (meeting) {
-      setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
-    try {
-      await cancelMeeting(id);
-    } catch (err) {
-      setMeetings(previous);
-      setError(err);
-    }
-  }, [meetings]);
+    const meeting = await inviteParticipants(
+      id,
+      participants,
+      role
+    );
 
-  return { meetings, loading, error, addMeeting, editMeeting, removeMeeting };
+    if (meeting) {
+      setMeetings((prev) =>
+        prev.map((m) => (m.id === id ? meeting : m))
+      );
+    }
+
+    return meeting;
+  };
+
+  return {
+    meetings,
+    loading,
+    error,
+    addMeeting,
+    editMeeting,
+    removeMeeting,
+    cancelMeetingById,
+    inviteToMeeting,
+  };
 }

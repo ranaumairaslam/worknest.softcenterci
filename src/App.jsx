@@ -36,8 +36,9 @@ import MyTasks from "./pages/MyTasks.jsx";
 import Chat from "./pages/Chat";
 
 import ClientDashboard from "./pages/ClientDashboard.jsx";
-import Meetings from "./pages/Meetings";
+
 import ProjectsClient from "./pages/ProjectsClient.jsx";
+import Meetings from  "./pages/Meetings.jsx";
 
 
 
@@ -280,6 +281,10 @@ function AppLayout() {
             <Route
               path="/chat"
               element={<Chat />}
+            />
+            <Route
+              path="/meetings"
+              element={<Meetings />}
             />
 
            
