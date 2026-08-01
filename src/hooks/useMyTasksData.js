@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  getMyTasks,
-  updateTaskStatus,
+  getTasksByAssignee,
+  updateTask,
   createTask,
   deleteTask,
-} from "../services/myTasksService";
+} from "../services/taskService";
+import { getActor } from "../services/authContext";
+import { subscribeDataChange } from "../utils/eventBus";
 import useRole from "./useRole";
 
 const statIcons = {
@@ -20,31 +22,32 @@ export function useMyTasksData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const actor = getActor(role);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const user = actor;
+      const data = await getTasksByAssignee(user.employeeId, role);
+      setTasks(data);
+      setError(null);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [role, actor.employeeId]);
+
   useEffect(() => {
-    let isMounted = true;
+    load();
+    return subscribeDataChange(load);
+  }, [load]);
 
-    getMyTasks()
-      .then((data) => {
-        if (isMounted) setTasks(data);
-      })
-      .catch((err) => {
-        if (isMounted) setError(err);
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Live stats derived from the actual current task list.
   const stats = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter((t) => t.status === "Completed").length;
     const inProgress = tasks.filter((t) => t.status === "In Progress").length;
-    const todo = tasks.filter((t) => t.status === "To Do").length;
+    const todo = tasks.filter((t) => t.status === "Pending" || t.status === "To Do").length;
 
     return [
       { id: "total", value: String(total), ...statIcons.total },
@@ -54,35 +57,25 @@ export function useMyTasksData() {
     ];
   }, [tasks]);
 
-  const toggleComplete = useCallback((taskId) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const newStatus = t.status === "Completed" ? "To Do" : "Completed";
-        updateTaskStatus(taskId, newStatus, role);
-        return { ...t, status: newStatus };
-      })
-    );
-  }, [role]);
+  const toggleComplete = useCallback(async (taskId) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const newStatus = task.status === "Completed" ? "Pending" : "Completed";
+    const updated = await updateTask(taskId, { status: newStatus }, actor);
+    if (updated) {
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+    }
+  }, [tasks, actor]);
 
   const addTask = useCallback(async (taskInput) => {
-    const tempId = `temp-${Date.now()}`;
-    const optimisticTask = { ...taskInput, id: tempId };
-    setTasks((prev) => [optimisticTask, ...prev]);
+    const saved = await createTask(taskInput, actor);
+    setTasks((prev) => [saved, ...prev]);
+  }, [actor]);
 
-    try {
-      const saved = await createTask(taskInput, role);
-      setTasks((prev) => prev.map((t) => (t.id === tempId ? saved : t)));
-    } catch (err) {
-      setTasks((prev) => prev.filter((t) => t.id !== tempId));
-      setError(err);
-    }
-  }, [role]);
-
-  const removeTask = useCallback((taskId) => {
+  const removeTask = useCallback(async (taskId) => {
+    await deleteTask(taskId, actor);
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    deleteTask(taskId, role);
-  }, [role]);
+  }, [actor]);
 
-  return { stats, tasks, loading, error, toggleComplete, addTask, removeTask };
+  return { stats, tasks, loading, error, toggleComplete, addTask, removeTask, refresh: load };
 }

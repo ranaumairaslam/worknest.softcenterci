@@ -9,7 +9,8 @@ let clients = [
     size: "120 Employees",
     revenue: "$1.2M",
     location: "Lahore, PK",
-    projects: 5,
+    projects: 2,
+    projectIds: ["p1", "p5"],
     lastContact: "2026-07-22",
   },
   {
@@ -22,7 +23,8 @@ let clients = [
     size: "85 Employees",
     revenue: "$920K",
     location: "Karachi, PK",
-    projects: 3,
+    projects: 2,
+    projectIds: ["p2", "p4"],
     lastContact: "2026-07-18",
   },
   {
@@ -36,17 +38,23 @@ let clients = [
     revenue: "$540K",
     location: "Islamabad, PK",
     projects: 2,
+    projectIds: ["p3", "p6"],
     lastContact: "2026-07-20",
   },
 ];
 
 export async function getAllClients(role) {
-  console.log("API call: getAllClients", { role });
-  return clients.map((client) => ({ ...client, role: role || undefined }));
+  return clients.map((client) => ({ ...client, projectIds: [...(client.projectIds || [])], role: role || undefined }));
 }
 
 export async function getClientById(id) {
-  return clients.find((client) => client.id === id) || null;
+  const client = clients.find((c) => c.id === id);
+  return client ? { ...client, projectIds: [...(client.projectIds || [])] } : null;
+}
+
+export async function getClientByName(name) {
+  const client = clients.find((c) => c.name === name);
+  return client ? { ...client, projectIds: [...(client.projectIds || [])] } : null;
 }
 
 export async function createClient(payload, role) {
@@ -60,13 +68,13 @@ export async function createClient(payload, role) {
     size: payload.size || "Unknown",
     revenue: payload.revenue || "$0",
     location: payload.location || "Unknown",
-    projects: payload.projects || 0,
+    projects: 0,
+    projectIds: [],
     lastContact: payload.lastContact || "Today",
   };
 
   const entry = { ...newClient, role: role || undefined };
   clients.push(entry);
-  console.log("API call: createClient", { role, payload });
   return { ...entry };
 }
 
@@ -75,15 +83,43 @@ export async function updateClient(id, updates, role) {
   if (index === -1) return null;
 
   clients[index] = { ...clients[index], ...updates, lastModifiedByRole: role || clients[index].lastModifiedByRole };
-  console.log("API call: updateClient", { id, updates, role });
-  return { ...clients[index] };
+  return { ...clients[index], projectIds: [...(clients[index].projectIds || [])] };
 }
 
 export async function deleteClient(id, role) {
   const index = clients.findIndex((client) => client.id === id);
   if (index === -1) return false;
-
   clients.splice(index, 1);
-  console.log("API call: deleteClient", { id, role });
   return true;
+}
+
+export async function linkProject(clientId, projectId) {
+  const client = clients.find((c) => c.id === clientId);
+  if (!client) return null;
+
+  if (!client.projectIds) client.projectIds = [];
+  if (!client.projectIds.includes(projectId)) {
+    client.projectIds.push(projectId);
+    client.projects = client.projectIds.length;
+  }
+
+  return { ...client, projectIds: [...client.projectIds] };
+}
+
+export async function unlinkProject(clientId, projectId) {
+  const client = clients.find((c) => c.id === clientId);
+  if (!client) return null;
+
+  client.projectIds = (client.projectIds || []).filter((id) => id !== projectId);
+  client.projects = client.projectIds.length;
+
+  return { ...client, projectIds: [...client.projectIds] };
+}
+
+export async function getProjectsByClient(clientId) {
+  const client = await getClientById(clientId);
+  if (!client) return [];
+  const { getProjectById } = await import("./projectService");
+  const projects = await Promise.all((client.projectIds || []).map((id) => getProjectById(id)));
+  return projects.filter(Boolean);
 }

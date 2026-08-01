@@ -10,6 +10,7 @@ import {
   reassignTask,
   createProject,
 } from "../services/projectLeaderService";
+import { subscribeDataChange } from "../utils/eventBus";
 import useRole from "./useRole";
 
 export function useProjectLeaderData() {
@@ -23,19 +24,27 @@ export function useProjectLeaderData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Tracks project ids created locally (not backed by the mock
-  // service's hardcoded data), so we know to skip fetching for them
-  // and just show an empty board instead.
+  // Tracks project ids created locally for optimistic UI
   const localProjectIds = useRef(new Set());
+
+  const reloadProjects = useCallback(() => {
+    getProjects(role).then((projectList) => {
+      setProjects(projectList);
+      if (!projectList.find((p) => p.id === selectedProjectId)) {
+        setSelectedProjectId(projectList[0]?.id ?? null);
+      }
+    });
+  }, [role, selectedProjectId]);
+
+  useEffect(() => subscribeDataChange(reloadProjects), [reloadProjects]);
 
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([getProjects(role), getTeamMembers()])
-      .then(([projectList, members]) => {
+    getProjects(role)
+      .then((projectList) => {
         if (isMounted) {
           setProjects(projectList);
-          setTeamMembers(members);
           setSelectedProjectId(projectList[0]?.id ?? null);
         }
       })
@@ -55,36 +64,24 @@ export function useProjectLeaderData() {
     if (!selectedProjectId) return;
     let isMounted = true;
 
-    // Newly created (local-only) projects have no mock data behind
-    // them — show an empty board instead of falling back to p1's data.
-    if (localProjectIds.current.has(selectedProjectId)) {
-      setTasks([]);
-      setDeliverables([]);
-      setStats([
-        { id: "team-members", label: "Team Members", value: "0", note: "Active" },
-        { id: "in-progress", label: "Tasks in Progress", value: "0", note: "This project" },
-        { id: "overdue", label: "Overdue Tasks", value: "0", note: "Needs attention" },
-        { id: "completion", label: "Completion", value: "0%", note: "Just created" },
-      ]);
-      return;
-    }
-
     Promise.all([
-      getProjectTasks(selectedProjectId),
-      getPendingDeliverables(selectedProjectId),
-      getTeamProgressStats(selectedProjectId),
-    ]).then(([taskList, deliverableList, statList]) => {
+      getProjectTasks(selectedProjectId, role),
+      getPendingDeliverables(selectedProjectId, role),
+      getTeamProgressStats(selectedProjectId, role),
+      getTeamMembers(selectedProjectId),
+    ]).then(([taskList, deliverableList, statList, members]) => {
       if (isMounted) {
         setTasks(taskList);
         setDeliverables(deliverableList);
         setStats(statList);
+        setTeamMembers(members);
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [selectedProjectId]);
+  }, [selectedProjectId, role]);
 
   const handleApprove = useCallback(async (item, comment) => {
     setDeliverables((prev) => prev.filter((d) => d.id !== item.id));
