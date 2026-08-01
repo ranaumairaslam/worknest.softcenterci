@@ -3,7 +3,7 @@ import {
   Users,
   FolderKanban,
   CreditCard,
-  Clock3,
+
   CheckSquare,
   CalendarDays,
   BarChart3,
@@ -165,7 +165,7 @@ export const navigation = {
     {
   title: "Meetings",
   icon: CalendarDays,
-  path: "/meetings",
+  path: "/meetingss",
 },
     
   ],
@@ -249,7 +249,7 @@ export const getRoleFromPath = (pathname) => {
     "/project/team-performance": "projectLeader",
     "/project/tasks": "projectLeader",
     "/project/kanban": "projectLeader",
-    "/meetings": "projectLeader",
+    "/meetingss": "projectLeader",
 
     // Team Member
     "/dashboard-team-member": "teamMember",
