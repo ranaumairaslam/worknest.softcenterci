@@ -1,5 +1,5 @@
-import { getTeamByName, addTeamMember, removeTeamMember } from "./teamService";
-import { getProjectById } from "./projectService";
+import { getTeamByName, addTeamMember, removeTeamMember } from "./teamService.js";
+import { getProjectById } from "./projectService.js";
 
 let employees = [
   {
@@ -178,6 +178,10 @@ export async function getEmployeeById(id) {
   return employees.find((employee) => employee.id === id) || null;
 }
 
+export async function getEmployeeByName(name) {
+  return employees.find((employee) => employee.name === name) || null;
+}
+
 export async function createEmployee(payload) {
   const newEmployee = {
     id: `e${Date.now()}`,
@@ -293,13 +297,34 @@ export async function assignToProject(employeeId, projectId) {
   if (!Array.isArray(employee.projects)) {
     employee.projects = [];
   }
+  if (!Array.isArray(employee.assignedProjectIds)) {
+    employee.assignedProjectIds = [];
+  }
 
   if (!employee.projects.includes(projectId)) {
     employee.projects.push(projectId);
-    employee.tasksAssigned = (employee.tasksAssigned || 0) + 1;
+    employee.assignedProjectIds.push(projectId);
   }
 
   return { ...employee };
+}
+
+export async function unassignFromProject(employeeId, projectId) {
+  const employeeIndex = employees.findIndex((employee) => employee.id === employeeId);
+  if (employeeIndex === -1) return null;
+
+  const employee = employees[employeeIndex];
+  employee.projects = (employee.projects || []).filter((id) => id !== projectId);
+  employee.assignedProjectIds = (employee.assignedProjectIds || []).filter((id) => id !== projectId);
+
+  return { ...employee };
+}
+
+export async function incrementTasksAssigned(employeeId) {
+  const employeeIndex = employees.findIndex((employee) => employee.id === employeeId);
+  if (employeeIndex === -1) return null;
+  employees[employeeIndex].tasksAssigned = (employees[employeeIndex].tasksAssigned || 0) + 1;
+  return { ...employees[employeeIndex] };
 }
 
 export async function getAll() {

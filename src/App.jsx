@@ -287,8 +287,15 @@ function AppLayout() {
               element={<Meetings />}
             />
 
-           
-            
+          
+            <Route
+  path="/meetingss"
+  element={<LeaderMeetings />}
+/>
+<Route
+  path="/team-meetings"
+  element={<TeamMeetings />}
+/>
              
 
             {/* Default */}

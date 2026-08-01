@@ -1,17 +1,18 @@
 import { Menu, Search, Bell, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { roleConfig, getRoleFromPath } from "./navigation";
+import { useNotifications } from "../src/hooks/useNotifications";
 
 const iconButtonClass =
   "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#016472]/30";
 
 export default function Navbar({
-  notificationcount = 5,
   showsearch = true,
   onToggle,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { unreadCount: notificationcount } = useNotifications();
 
   const role = getRoleFromPath(location.pathname);
   const currentRole = roleConfig[role];

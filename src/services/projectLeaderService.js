@@ -1,95 +1,112 @@
+import { getAllProjects, createProject as createCanonicalProject } from "./projectService";
+import { getTasksByProject, updateTask } from "./taskService";
+import { getProjectById } from "./projectService";
+import { getEmployeeById } from "./employeeService";
+import { getActor } from "./authContext";
+import { computeLiveStats } from "../utils/projectStats";
+
+const STATUS_MAP = {
+  Pending: "todo",
+  "In Progress": "in_progress",
+  Review: "under_review",
+  "Under Review": "under_review",
+  Completed: "completed",
+  Rejected: "in_progress",
+};
+
+function mapTaskForLeader(task) {
+  const initials = (task.assignee || "?")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return {
+    id: task.id,
+    title: task.name,
+    status: STATUS_MAP[task.status] || "todo",
+    assignee: { name: task.assignee, avatar: initials },
+  };
+}
+
 export async function getProjects(role) {
-  return [
-    { id: "p1", name: "Alpha Platform Rebrand", role: role || undefined },
-    { id: "p2", name: "Project Alpha", role: role || undefined },
-    { id: "p3", name: "System Platform Rebrand", role: role || undefined },
-  ];
+  return getAllProjects(role);
 }
 
-export async function getProjectTasks(projectId) {
-  const taskSets = {
-    p1: [
-      { id: "t1", title: "Alpha Platform Rebrand", status: "todo", assignee: { name: "Sarah L.", avatar: "SL" } },
-      { id: "t4", title: "API Docs Review", status: "under_review", assignee: { name: "Sarah Member", avatar: "SM" } },
-      { id: "t5", title: "Design Handoff", status: "completed", assignee: { name: "Sarah L.", avatar: "SL" } }, 
-    ],
-    p2: [
-      { id: "t2", title: "Project Alpha assigned to Web", status: "todo", assignee: { name: "Jane Doe", avatar: "JD" } },
-      { id: "t6", title: "Task Deliverable Submission", status: "under_review", assignee: { name: "Sarah L. (TM)", avatar: "SL" } },
-    ],
-    p3: [
-      { id: "t3", title: "System Platform Rebrand", status: "in_progress", assignee: { name: "Sarah L.", avatar: "SL" } },
-      { id: "t7", title: "System Health Check", status: "under_review", assignee: { name: "Jane Doe", avatar: "JD" } },
-    ],
-  };
-
-  return taskSets[projectId] ?? taskSets.p1;
+export async function getProjectTasks(projectId, role) {
+  const tasks = await getTasksByProject(projectId, role);
+  return tasks.map(mapTaskForLeader);
 }
 
-export async function getPendingDeliverables(projectId) {
-  const deliverableSets = {
-    p1: [
-      { id: "d1", taskId: "t4", member: { name: "Sarah Member", avatar: "SM" }, fileLabel: "Attached files", linkLabel: "link/ZIP", url: "https://documents.com/ZIP" },
-    ],
-    p2: [
-      { id: "d2", taskId: "t6", member: { name: "Sarah L. (TM)", avatar: "SL" }, fileLabel: "Attached files", linkLabel: "link/ZIP", url: "https://documents.com/ZIP" },
-    ],
-    p3: [
-      { id: "d3", taskId: "t7", member: { name: "Jane Doe", avatar: "JD" }, fileLabel: "Attached files", linkLabel: "link/ZIP", url: "https://documents.com/ZIP" },
-    ],
-  };
-
-  return deliverableSets[projectId] ?? deliverableSets.p1;
+export async function getPendingDeliverables(projectId, role) {
+  const tasks = await getTasksByProject(projectId, role);
+  return tasks
+    .filter((t) => t.status === "Review" || t.status === "Under Review")
+    .map((t) => ({
+      id: `d-${t.id}`,
+      taskId: t.id,
+      member: {
+        name: t.assignee,
+        avatar: (t.assignee || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
+      },
+      fileLabel: "Attached files",
+      linkLabel: "link/ZIP",
+      url: "https://documents.com/ZIP",
+    }));
 }
 
-export async function approveDeliverable(id, comment) {
-  console.log("API call: approve deliverable", id, "comment:", comment);
+export async function approveDeliverable(id, comment, role) {
+  const taskId = id.replace(/^d-/, "");
+  await updateTask(taskId, { status: "Completed", progress: 100 }, getActor(role));
   return { id, status: "approved", comment };
 }
 
-export async function rejectDeliverable(id, comment) {
-  console.log("API call: reject deliverable", id, "comment:", comment);
+export async function rejectDeliverable(id, comment, role) {
+  const taskId = id.replace(/^d-/, "");
+  await updateTask(taskId, { status: "In Progress", progress: 50 }, getActor(role));
   return { id, status: "rejected", comment };
 }
 
-export async function getTeamProgressStats(projectId) {
-  const statSets = {
-    p1: [
-      { id: "team-members", label: "Team Members", value: "3", note: "Active" },
-      { id: "in-progress", label: "Tasks in Progress", value: "1", note: "This project" },
-      { id: "overdue", label: "Overdue Tasks", value: "0", note: "Needs attention" },
-      { id: "completion", label: "Completion", value: "50%", note: "+8% this week" },
-    ],
-    p2: [
-      { id: "team-members", label: "Team Members", value: "2", note: "Active" },
-      { id: "in-progress", label: "Tasks in Progress", value: "0", note: "This project" },
-      { id: "overdue", label: "Overdue Tasks", value: "1", note: "Needs attention" },
-      { id: "completion", label: "Completion", value: "20%", note: "-2% this week" },
-    ],
-    p3: [
-      { id: "team-members", label: "Team Members", value: "2", note: "Active" },
-      { id: "in-progress", label: "Tasks in Progress", value: "1", note: "This project" },
-      { id: "overdue", label: "Overdue Tasks", value: "0", note: "Needs attention" },
-      { id: "completion", label: "Completion", value: "35%", note: "+5% this week" },
-    ],
-  };
+export async function getTeamProgressStats(projectId, role) {
+  const [project, tasks] = await Promise.all([
+    getProjectById(projectId),
+    getTasksByProject(projectId, role),
+  ]);
 
-  return statSets[projectId] ?? statSets.p1;
-}
-
-export async function getTeamMembers() {
-  return [
-    { id: "m1", name: "Sarah L.", avatar: "SL" },
-    { id: "m2", name: "Jane Doe", avatar: "JD" },
-    { id: "m3", name: "Sarah Member", avatar: "SM" },
+  const baseStats = [
+    { id: "team-members", label: "Team Members", value: String(project?.members || 0), note: "Active" },
+    { id: "in-progress", label: "Tasks in Progress", value: "0", note: "This project" },
+    { id: "overdue", label: "Overdue Tasks", value: "0", note: "Needs attention" },
+    { id: "completion", label: "Completion", value: "0%", note: "Live" },
   ];
+
+  const mappedTasks = tasks.map((t) => ({
+    ...t,
+    status: t.status === "In Progress" ? "In Progress" : t.status,
+  }));
+
+  return computeLiveStats(baseStats, mappedTasks);
 }
 
-export async function reassignTask(taskId, memberId) {
-  console.log("API call: reassign task", taskId, "to member", memberId);
-  return { taskId, memberId };
+export async function getTeamMembers(projectId) {
+  const project = await getProjectById(projectId);
+  if (!project?.memberIds?.length) return [];
+
+  const members = await Promise.all(project.memberIds.map((id) => getEmployeeById(id)));
+  return members.filter(Boolean).map((m) => ({
+    id: m.id,
+    name: m.name,
+    avatar: m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
+  }));
 }
+
+export async function reassignTask(taskId, memberId, role) {
+  const member = await getEmployeeById(memberId);
+  if (!member) return { taskId, memberId };
+  return updateTask(taskId, { assignee: member.name, assigneeId: member.id }, getActor(role));
+}
+
 export async function createProject(project, role) {
-  console.log("API call: create project", { project, role });
-  return { id: `p${Date.now()}`, name: project.name, role: role || undefined };
+  return createCanonicalProject(project, getActor(role));
 }
