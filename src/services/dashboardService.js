@@ -1,10 +1,10 @@
-import { getAllProjects } from "./projectService";
-import { getAllTeams } from "./teamService";
-import { getAllEmployees } from "./employeeService";
-import { getAllClients } from "./clientService";
-import { getAllTasks, getTaskStatistics } from "./taskService";
-import { getRevenueSummary } from "./revenueService";
-import { getRecentActivity } from "./activityService";
+import { getAllProjects } from "./projectService.js";
+import { getAllTeams } from "./teamService.js";
+import { getAllEmployees } from "./employeeService.js";
+import { getAllClients } from "./clientService.js";
+import { getAllTasks, getTaskStatistics } from "./taskService.js";
+import { getRevenueSummary } from "./revenueService.js";
+import { getRecentActivity } from "./activityService.js";
 
 export async function getStats() {
   const [projects, teams, employees, clients, taskStats, revenueData] = await Promise.all([
