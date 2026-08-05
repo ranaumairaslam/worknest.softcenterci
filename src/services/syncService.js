@@ -1,6 +1,6 @@
-import { addActivity } from "./activityService";
-import { createNotifications, NOTIFICATION_TYPES } from "./notificationService";
-import { emitDataChange } from "../utils/eventBus";
+import { addActivity } from "./activityService.js";
+import { createNotifications, NOTIFICATION_TYPES } from "./notificationService.js";
+import { emitDataChange } from "../utils/eventBus.js";
 
 export async function onProjectCreated(project, actor) {
   const notifications = [];

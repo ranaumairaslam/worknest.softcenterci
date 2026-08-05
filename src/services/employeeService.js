@@ -1,5 +1,5 @@
-import { getTeamByName, addTeamMember, removeTeamMember } from "./teamService";
-import { getProjectById } from "./projectService";
+import { getTeamByName, addTeamMember, removeTeamMember } from "./teamService.js";
+import { getProjectById } from "./projectService.js";
 
 let employees = [
   {

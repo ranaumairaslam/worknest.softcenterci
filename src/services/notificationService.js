@@ -1,5 +1,6 @@
-import { normalizeFilters } from "./authContext";
-import { filterNotifications } from "../utils/roleFilter";
+import { normalizeFilters } from "./authContext.js";
+import { filterNotifications } from "../utils/roleFilter.js";
+import { emitDataChange } from "../utils/eventBus.js";
 
 let notifications = [];
 
@@ -52,6 +53,7 @@ export async function createNotifications(items) {
   for (const item of items) {
     created.push(await createNotification(item));
   }
+  emitDataChange("notification");
   return created;
 }
 
@@ -59,6 +61,7 @@ export async function markAsRead(id) {
   const index = notifications.findIndex((n) => n.id === id);
   if (index === -1) return null;
   notifications[index].read = true;
+  emitDataChange("notification");
   return { ...notifications[index] };
 }
 
@@ -66,6 +69,7 @@ export async function markAllAsRead(recipientId) {
   notifications.forEach((n) => {
     if (n.recipientId === recipientId) n.read = true;
   });
+  emitDataChange("notification");
   return true;
 }
 

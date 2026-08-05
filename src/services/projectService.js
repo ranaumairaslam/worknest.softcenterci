@@ -1,14 +1,14 @@
-import { getTeamByName, linkProject as linkTeamProject, unlinkProject as unlinkTeamProject } from "./teamService";
-import { getClientByName, linkProject as linkClientProject, unlinkProject as unlinkClientProject } from "./clientService";
-import { getEmployeeByName, assignToProject as assignEmployeeToProject, unassignFromProject } from "./employeeService";
-import { normalizeFilters, getActor } from "./authContext";
-import { filterProjects } from "../utils/roleFilter";
+import { getTeamByName, linkProject as linkTeamProject, unlinkProject as unlinkTeamProject } from "./teamService.js";
+import { getClientByName, linkProject as linkClientProject, unlinkProject as unlinkClientProject } from "./clientService.js";
+import { getEmployeeByName, assignToProject as assignEmployeeToProject, unassignFromProject } from "./employeeService.js";
+import { normalizeFilters, getActor } from "./authContext.js";
+import { filterProjects } from "../utils/roleFilter.js";
 import {
   onProjectCreated,
   onProjectUpdated,
   onProjectDeleted,
   onProjectCompleted,
-} from "./syncService";
+} from "./syncService.js";
 
 let projects = [
   {
