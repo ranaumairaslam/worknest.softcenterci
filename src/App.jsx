@@ -38,6 +38,7 @@ import Chat from "./pages/Chat";
 import ClientDashboard from "./pages/ClientDashboard.jsx";
 import Meetings from "./pages/Meetings";
 import ProjectsClient from "./pages/ProjectsClient.jsx";
+import { ProfileProvider } from "../components/ProfileContext.jsx";
 
 
 
@@ -52,9 +53,10 @@ import KanbanBoardPage from "./pages/KanbanBoardPage.jsx";
 
 import LeaderMeetings from "./pages/Meetings.jsx";
 import TeamMeetings from "./pages/TeamMeetings.jsx";
+import Settings from "../components/Setting.jsx";
 
 const DESKTOP_BREAKPOINT = 1024;
-const AUTH_PATHS = ["/login","/Signup","/terms","/privacy-policy",];
+const AUTH_PATHS = ["/login", "/Signup", "/terms", "/privacy-policy",];
 
 function useMediaQuery(query) {
   const [matches, setMatches] = useState(() =>
@@ -112,208 +114,234 @@ function AppLayout() {
       ? "lg:ml-20"
       : "lg:ml-72"
     : "ml-0";
+  
 
-  const navbarRole =
-    {
-      "/dashboard-admin": "superAdmin",
-      "/companies": "superAdmin",
-      "/revenue-super-admin": "superAdmin",
-      "/reports": "superAdmin",
-      
+  const getRole = () => {
 
-      "/dashboard-company": "companyAdmin",
-      "/team-management": "companyAdmin",
-      "/projects": "companyAdmin",
-      "/employees": "companyAdmin",
-      "/company-tasks": "companyAdmin",
-      "/clients": "companyAdmin",
-      "/company-meetings": "companyAdmin",
-      "/revenue": "companyAdmin",
-      "/company-reports": "companyAdmin",
+const savedRole = localStorage.getItem("userRole");
 
-      "/dashboard-leader": "projectLeader",
-      "/project": "projectLeader",
-      "/calendar": "projectLeader",
-      "/project-reports": "projectLeader",
-      "/meetings": "projectLeader",
+if(location.pathname === "/settings" && savedRole){
+return savedRole;
+}
+
+return (
+{
+"/dashboard-admin": "superAdmin",
+"/companies": "superAdmin",
+"/revenue-super-admin": "superAdmin",
+"/reports": "superAdmin",
+
+"/dashboard-company": "companyAdmin",
+"/team-management": "companyAdmin",
+"/projects": "companyAdmin",
+"/employees": "companyAdmin",
+"/company-tasks": "companyAdmin",
+"/clients": "companyAdmin",
+"/company-meetings": "companyAdmin",
+"/revenue": "companyAdmin",
+"/company-reports": "companyAdmin",
+
+"/dashboard-leader": "projectLeader",
+"/project": "projectLeader",
+"/calendar": "projectLeader",
+"/project-reports": "projectLeader",
+"/meetings": "projectLeader",
+
+"/dashboard-team-member": "teamMember",
+"/tasks": "teamMember",
+"/team-member-projects": "teamMember",
+"/team-meetings": "teamMember",
+
+"/client-dashboard": "client",
+"/client-projects": "client",
+"/client-meetings": "client",
+
+"/chat": "teamMember",
+
+}[location.pathname] || "superAdmin"
+);
+
+};
 
 
-      "/dashboard-team-member": "teamMember",
-      "/tasks": "teamMember",
-      "/team-member-projects": "teamMember",
-      "/team-meetings": "teamMember",
-
-      "/client-dashboard": "client",
-      "/client-projects": "client",
-      "/client-meetings": "client",
-
-      "/chat": "teamMember",
-    }[location.pathname] || "superAdmin";
+const navbarRole = getRole();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-100">
-      <Sidebar
-        role={navbarRole}
-        collapsed={collapsed}
-        mobileOpen={sidebarOpen}
-        onClose={handleCloseMobile}
-      />
-
-      <div
-        className={`min-h-screen transition-all duration-300 ${mainOffsetClass}`}
-      >
-        <Navbar
+    
+      <div className="min-h-screen overflow-x-hidden bg-slate-100">
+        <Sidebar
           role={navbarRole}
-          onToggle={handleToggle}
+          collapsed={collapsed}
+          mobileOpen={sidebarOpen}
+          onClose={handleCloseMobile}
         />
 
-        <main className="p-4 sm:p-6">
-          <Routes>
-          
-            <Route
-              path="/dashboard-admin"
-              element={<Admin />}
-            />
-            <Route
-              path="/companies"
-              element={<CompanySidebar />}
-            />
-          
-            <Route
-              path="/reports"
-              element={<ReportsSidebar />}
-            />
-            <Route
-              path="/revenue-super-admin"
-              element={<RevenuePage />}
-            />
+        <div
+          className={`min-h-screen transition-all duration-300 ${mainOffsetClass}`}
+        >
+          <Navbar
+            role={navbarRole}
+            onToggle={handleToggle}
+          />
 
-            
-            <Route
-              path="/dashboard-company"
-              element={<Dashboard />}
-            />
-            <Route
-              path="/team-management"
-              element={<TeamManagement />}
-            />
-            <Route
-              path="/projects"
-              element={<ProjectOversight />}
-            />
-            <Route
-              path="/company-reports"
-              element={<CompanyReports />}
-            />
-            <Route
-              path="/employees"
-              element={<Employees />}
-            />
-            <Route
-              path="/company-tasks"
-              element={<CompanyTasks />}
-            />
-            <Route
-              path="/clients"
-              element={<Clients />}
-            />
-            <Route
-              path="/company-meetings"
-              element={<CompanyMeetings />}
-            />
-            <Route
-              path="/revenue"
-              element={<Revenue />}
-            />
+          <main className="p-4 sm:p-6">
+            <Routes>
 
-            <Route
-              path="/dashboard-leader"
-              element={<LeaderDashboard />}
-            />
-            <Route
-              path="/project"
-              element={<ProjectOversightFull />}
-            />
-            <Route
-              path="/calendar"
-              element={<Calendar />}
-            />
-            <Route
-              path="/project-reports"
-              element={<Reports />}
-            />
-             <Route path="/project/timeline" element={<ProjectTimelinePage />} />
-<Route path="/project/team-performance" element={<TeamPerformancePage />} />
-<Route path="/project/tasks" element={<TaskOverviewPage />} />
-<Route path="/project/kanban" element={<KanbanBoardPage />} 
-            />
+              <Route
+                path="/dashboard-admin"
+                element={<Admin />}
+              />
+              <Route
+                path="/companies"
+                element={<CompanySidebar />}
+              />
 
-            
-            <Route
-              path="/dashboard-team-member"
-              element={<TeamDashboard />}
-            />
-            <Route
-              path="/tasks"
-              element={<MyTasks />}
-            />
-            <Route
-              path="/team-member-projects"
-              element={<ProjectOversight />}
-            />
+              <Route
+                path="/reports"
+                element={<ReportsSidebar />}
+              />
+              <Route
+                path="/revenue-super-admin"
+                element={<RevenuePage />}
+              />
 
-            
-            <Route
-              path="/client-dashboard"
-              element={<ClientDashboard />}
-            />
-            <Route
-              path="/client-meetings"
-              element={<Meetings />}
-            />
-            <Route
-              path="/client-projects"
-              element={<ProjectsClient />}
-            />
 
-            {/* Chat */}
-            <Route
-              path="/chat"
-              element={<Chat />}
-            />
+              <Route
+                path="/dashboard-company"
+                element={<Dashboard />}
+              />
+              <Route
+                path="/team-management"
+                element={<TeamManagement />}
+              />
+              <Route
+                path="/projects"
+                element={<ProjectOversight />}
+              />
+              <Route
+                path="/company-reports"
+                element={<CompanyReports />}
+              />
+              <Route
+                path="/employees"
+                element={<Employees />}
+              />
+              <Route
+                path="/company-tasks"
+                element={<CompanyTasks />}
+              />
+              <Route
+                path="/clients"
+                element={<Clients />}
+              />
+              <Route
+                path="/company-meetings"
+                element={<CompanyMeetings />}
+              />
+              <Route
+                path="/revenue"
+                element={<Revenue />}
+              />
 
-          
-            <Route
-  path="/meetingss"
-  element={<LeaderMeetings />}
-/>
-<Route
-  path="/team-meetings"
-  element={<TeamMeetings />}
-/>
+              <Route
+                path="/dashboard-leader"
+                element={<LeaderDashboard />}
+              />
+              <Route
+                path="/project"
+                element={<ProjectOversightFull />}
+              />
+              <Route
+                path="/calendar"
+                element={<Calendar />}
+              />
+              <Route
+                path="/project-reports"
+                element={<Reports />}
+              />
+
              
+              <Route path="/project/timeline" element={<ProjectTimelinePage />} />
+              <Route path="/project/team-performance" element={<TeamPerformancePage />} />
+              <Route path="/project/tasks" element={<TaskOverviewPage />} />
+              <Route path="/project/kanban" element={<KanbanBoardPage />} />
 
-            {/* Default */}
-            <Route
-              path="*"
-              element={
-                <Navigate
-                  to="/dashboard-admin"
-                  replace
-                />
-              }
-             
-            />
-            <Route path="/add-company" element={<AddingCompany />} />
-              
-             
-          </Routes>
-        </main> 
-              
-             
-          
+
+
+              <Route
+                path="/dashboard-team-member"
+                element={<TeamDashboard />}
+              />
+              <Route
+                path="/tasks"
+                element={<MyTasks />}
+              />
+              <Route
+                path="/team-member-projects"
+                element={<ProjectOversight />}
+              />
+
+
+              <Route
+                path="/client-dashboard"
+                element={<ClientDashboard />}
+              />
+              <Route
+                path="/client-meetings"
+                element={<Meetings />}
+              />
+              <Route
+                path="/client-projects"
+                element={<ProjectsClient />}
+              />
+
+              {/* Chat */}
+              <Route
+                path="/chat"
+                element={<Chat />}
+              />
+
+
+              <Route
+                path="/meetingss"
+                element={<LeaderMeetings />}
+              />
+              <Route
+                path="/team-meetings"
+                element={<TeamMeetings />}
+              />
+
+
+              {/* Default */}
+              <Route
+                path="*"
+                element={
+                  <Navigate
+                    to="/dashboard-admin"
+                    replace
+                  />
+                }
+
+              />
+              <Route path="/add-company" element={<AddingCompany />} />
+              <Route path="/dashboard-super-admin" element={<Admin />} />
+              <Route path="/dashboard-company" element={<Dashboard />} />
+              <Route path="/dashboard-team" element={<TeamDashboard />} />
+
+              console.log("NAVBAR ROLE:", navbarRole);
+
+              <Route path="/settings" element={<Settings role={navbarRole} />} />
+
+
+            </Routes>
+
+          </main>
+
+
+
+        </div>
       </div>
-    </div>
+    
   );
 }
 
@@ -339,16 +367,16 @@ export default function App() {
           path="/login"
           element={<Login />}
         />
-         <Route
-              path="/privacy-policy"
-              element={<PrivacyPolicy />}
-            />
+        <Route
+          path="/privacy-policy"
+          element={<PrivacyPolicy />}
+        />
 
-            <Route
-              path="/terms"
-              element={<TermsAndConditions />}
-            />
-        
+        <Route
+          path="/terms"
+          element={<TermsAndConditions />}
+        />
+
 
         <Route
           path="*"
