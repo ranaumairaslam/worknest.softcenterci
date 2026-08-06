@@ -12,8 +12,7 @@ import {
   BarChart3,
   ShieldCheck,
 } from "lucide-react";
-
-
+import { login } from "../../services/authService.js";
 
 export default function Login() {
   const initialvalue = {
@@ -24,6 +23,7 @@ export default function Login() {
   const [formdata, setformdata] = useState(initialvalue);
   const [error, seterror] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -60,13 +60,21 @@ export default function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     seterror(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      navigate("/dashboard");
+      setLoading(true);
+      try {
+        const response = await login(formdata.email.trim(), formdata.password);
+        navigate(response.dashboardRoute || '/dashboard-company');
+      } catch (err) {
+        seterror({ form: err.message || 'Login failed' });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -277,6 +285,12 @@ export default function Login() {
               )}
             </label>
 
+            {error.form && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+                {error.form}
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 text-gray-400">
                 <input
@@ -293,9 +307,10 @@ export default function Login() {
 
             <button
               type="submit"
-              className="mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#016472] to-cyan-400 text-base font-semibold text-black shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:shadow-cyan-400/50 active:scale-[0.98]"
+              disabled={loading}
+              className="mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#016472] to-cyan-400 text-base font-semibold text-black shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:shadow-cyan-400/50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Login
+              {loading ? 'Signing in…' : 'Login'}
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>

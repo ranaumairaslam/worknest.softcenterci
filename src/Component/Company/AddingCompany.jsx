@@ -1,30 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Upload, FileImage, X } from "lucide-react";
-
-const STORAGE_KEY = "worknest_companies";
+import { createCompany, updateSuperAdminCompany } from "../../services/superAdminService.js";
 
 export default function AddCompany() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const editId = searchParams.get("edit");
-
-  const getCompanies = () => {
-    try {
-      const savedCompanies = localStorage.getItem(STORAGE_KEY);
-      if (!savedCompanies) return [];
-      const parsedCompanies = JSON.parse(savedCompanies);
-      return Array.isArray(parsedCompanies) ? parsedCompanies : [];
-    } catch (error) {
-      console.error("Error loading companies:", error);
-      return [];
-    }
-  };
-
-  const existingCompanies = getCompanies();
-  const companyToEdit = existingCompanies.find(
-    (company) => String(company.id) === String(editId)
-  );
+  const location = useLocation();
+  const companyToEdit = location.state?.company || null;
 
   const [formData, setFormData] = useState({
     companyName: companyToEdit?.name || "",
@@ -46,7 +28,7 @@ export default function AddCompany() {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const isEditMode = Boolean(editId && companyToEdit);
+  const isEditMode = Boolean(companyToEdit);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -135,61 +117,28 @@ export default function AddCompany() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const companies = getCompanies();
-
-    if (isEditMode) {
-      const updatedCompanies = companies.map((company) => {
-        if (String(company.id) !== String(editId)) return company;
-
-        return {
-          ...company,
-          name: formData.companyName.trim(),
+    try {
+      if (isEditMode) {
+        await updateSuperAdminCompany(companyToEdit.id, {
+          companyName: formData.companyName.trim(), ownerName: formData.owner.trim(),
+          industry: formData.industry, phone: "", address: formData.location.trim(),
           status: formData.status,
-          industry: formData.industry,
-          owner: formData.owner.trim(),
-          email: formData.email.trim(),
-          password: formData.password,
-          size: formData.size.trim(),
-          revenue: `$${formData.revenue}`,
-          location: formData.location.trim(),
-          paymentStatus: formData.paymentStatus,
-          receipt: formData.receipt,
-          receiptName: formData.receiptName
-        };
-      });
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCompanies));
-      window.dispatchEvent(new CustomEvent("companiesUpdated", { detail: updatedCompanies }));
-      alert("Company updated successfully!");
-      navigate("/companies");
-      return;
+        });
+      } else {
+        await createCompany({
+          companyName: formData.companyName.trim(), ownerName: formData.owner.trim(),
+          email: formData.email.trim(), password: formData.password,
+          industry: formData.industry, address: formData.location.trim(),
+        });
+      }
+      navigate("/companies", { replace: true, state: { refreshCompanies: Date.now() } });
+    } catch (error) {
+      setErrors({ submit: error.message || "Unable to save company." });
     }
-
-    const newCompany = {
-      id: Date.now(),
-      name: formData.companyName.trim(),
-      status: formData.status,
-      industry: formData.industry,
-      owner: formData.owner.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-      size: formData.size.trim(),
-      revenue: `$${formData.revenue}`,
-      location: formData.location.trim(),
-      paymentStatus: formData.paymentStatus,
-      receipt: formData.receipt,
-      receiptName: formData.receiptName
-    };
-
-    const updatedCompanies = [...companies, newCompany];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCompanies));
-    window.dispatchEvent(new CustomEvent("companiesUpdated", { detail: updatedCompanies }));
-    alert("Company added successfully!");
-    navigate("/companies");
   };
 
   return (
@@ -209,6 +158,7 @@ export default function AddCompany() {
 
       <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm">
         <form onSubmit={handleSubmit} noValidate>
+          {errors.submit && <p className="mx-5 mt-5 rounded-lg bg-red-50 p-3 text-sm text-red-600">{errors.submit}</p>}
           <div className="px-5 sm:px-8 py-5 border-b border-gray-200">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Company Information</h2>
             <p className="text-sm text-gray-500 mt-1">Enter the details and login credentials for the company.</p>
