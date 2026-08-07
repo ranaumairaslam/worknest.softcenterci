@@ -4,10 +4,12 @@ import Companiesdata from "../Company/companyTable.js";
 
 const STORAGE_KEY = "worknest_companies";
 
-export default function DashboardCards() {
-  const [companies, setCompanies] = useState([]);
+export default function DashboardCards({ stats, companies: propCompanies }) {
+  const [localCompanies, setLocalCompanies] = useState([]);
+  const companies = propCompanies || localCompanies;
 
   const loadCompanies = () => {
+    if (propCompanies) return;
     try {
       const savedCompanies = localStorage.getItem(STORAGE_KEY);
 
@@ -17,30 +19,31 @@ export default function DashboardCards() {
           JSON.stringify(Companiesdata)
         );
 
-        setCompanies(Companiesdata);
+        setLocalCompanies(Companiesdata);
         return;
       }
 
       const parsedCompanies = JSON.parse(savedCompanies);
 
       if (Array.isArray(parsedCompanies)) {
-        setCompanies(parsedCompanies);
+        setLocalCompanies(parsedCompanies);
         return;
       }
 
-      setCompanies(Companiesdata);
+      setLocalCompanies(Companiesdata);
     } catch (error) {
       console.error("Error loading companies:", error);
-      setCompanies(Companiesdata);
+      setLocalCompanies(Companiesdata);
     }
   };
 
   useEffect(() => {
+    if (propCompanies) return;
     loadCompanies();
 
     const handleCompaniesUpdated = (event) => {
       if (event.detail) {
-        setCompanies(event.detail);
+        setLocalCompanies(event.detail);
       } else {
         loadCompanies();
       }
@@ -67,7 +70,7 @@ export default function DashboardCards() {
         loadCompanies
       );
     };
-  }, []);
+  }, [propCompanies]);
 
   // =========================
   // COMPANY COUNTS
@@ -171,15 +174,15 @@ export default function DashboardCards() {
   // =========================
 
   const cardValues = {
-    totalUsers: activeEmployees,
+    totalUsers: stats?.total_users ?? activeEmployees,
 
     monthlyRevenue: `$${monthlyRevenue.toLocaleString(
       "en-US"
     )}`,
 
-    totalCompanies,
+    totalCompanies: stats?.total_companies ?? totalCompanies,
 
-    activeEmployees,
+    activeEmployees: stats?.total_users ?? activeEmployees,
 
     pendingCompanies,
 

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Trash2, Pencil, Eye, X, MapPin, Mail, User, Building2, CreditCard, FileImage } from "lucide-react";
-import Companiesdata from "./companyTable.js";
-
-const STORAGE_KEY = "worknest_companies";
+import { setSuperAdminCompanyStatus } from "../../services/superAdminService.js";
 const ROWS_PER_PAGE = 5;
 
 function highlightMatch(text, query) {
@@ -13,45 +12,8 @@ function highlightMatch(text, query) {
   return parts.map((part, index) => part.toLowerCase() === searchQuery.toLowerCase() ? <mark key={index} className="bg-[#a3feff] text-[#016472] rounded px-0.5">{part}</mark> : part);
 }
 
-function getCompaniesFromStorage() {
-  try {
-    const savedCompanies = localStorage.getItem(STORAGE_KEY);
-    if (!savedCompanies) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Companiesdata));
-      return Companiesdata;
-    }
-    const parsedCompanies = JSON.parse(savedCompanies);
-    if (!Array.isArray(parsedCompanies)) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Companiesdata));
-      return Companiesdata;
-    }
-    const mergedCompanies = parsedCompanies.map((savedCompany) => {
-      const latestCompany = Companiesdata.find((company) => company.id === savedCompany.id);
-      if (latestCompany) {
-        return {
-          ...latestCompany,
-          ...savedCompany,
-          password: savedCompany.password ?? latestCompany.password ?? "",
-          paymentStatus: savedCompany.paymentStatus ?? latestCompany.paymentStatus ?? "Pending",
-          receipt: savedCompany.receipt ?? latestCompany.receipt ?? null,
-        };
-      }
-      return savedCompany;
-    });
-    Companiesdata.forEach((latestCompany) => {
-      const exists = mergedCompanies.some((company) => company.id === latestCompany.id);
-      if (!exists) mergedCompanies.push(latestCompany);
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedCompanies));
-    return mergedCompanies;
-  } catch (error) {
-    console.error("Error loading companies:", error);
-    return Companiesdata;
-  }
-}
-
-export default function CompanyTable() {
-  const [companies, setCompanies] = useState(() => getCompaniesFromStorage());
+export default function CompanyTable({ companies = [], onChanged }) {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [industryFilter, setIndustryFilter] = useState("All");
@@ -60,33 +22,15 @@ export default function CompanyTable() {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const loadCompanies = () => {
-    setCompanies(getCompaniesFromStorage());
-  };
-
-  useEffect(() => {
-    const handleCompaniesUpdated = (event) => {
-      if (event.detail && Array.isArray(event.detail)) setCompanies(event.detail);
-      else loadCompanies();
-    };
-    const handleStorage = () => loadCompanies();
-    window.addEventListener("companiesUpdated", handleCompaniesUpdated);
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      window.removeEventListener("companiesUpdated", handleCompaniesUpdated);
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, []);
-
-  const deleteCompany = (id) => {
-    setCompanies((prevCompanies) => {
-      const updatedCompanies = prevCompanies.filter((company) => company.id !== id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCompanies));
-      window.dispatchEvent(new CustomEvent("companiesUpdated", { detail: updatedCompanies }));
-      return updatedCompanies;
-    });
-    setDeleteId(null);
-    if (selectedCompany?.id === id) setSelectedCompany(null);
+  const deleteCompany = async (id) => {
+    try {
+      await setSuperAdminCompanyStatus(id, "inactive");
+      setDeleteId(null);
+      if (selectedCompany?.id === id) setSelectedCompany(null);
+      await onChanged?.();
+    } catch (error) {
+      window.alert(error.message || "Unable to deactivate company.");
+    }
   };
 
   const filteredCompanies = companies.filter((company) => {
@@ -198,7 +142,7 @@ export default function CompanyTable() {
                 <td className="px-5 py-3.5">
                   <div className="flex items-center justify-center gap-3">
                     <button type="button" onClick={() => setSelectedCompany(company)} className="inline-flex items-center justify-center hover:scale-110 transition" title="View Details"><Eye size={18} className="text-[#016472]" /></button>
-                    <button type="button" onClick={() => window.location.href = `/add-company?edit=${company.id}`} className="inline-flex items-center justify-center hover:scale-110 transition" title="Edit Company"><Pencil size={18} className="text-gray-600" /></button>
+                    <button type="button" onClick={() => navigate('/add-company', { state: { company } })} className="inline-flex items-center justify-center hover:scale-110 transition" title="Edit Company"><Pencil size={18} className="text-gray-600" /></button>
                     <button type="button" onClick={() => setDeleteId(company.id)} className="inline-flex items-center justify-center hover:scale-110 transition" title="Delete Company"><Trash2 size={18} className="text-red-500" /></button>
                   </div>
                 </td>
@@ -254,7 +198,7 @@ export default function CompanyTable() {
 
             <div className="px-5 sm:px-7 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button type="button" onClick={() => setSelectedCompany(null)} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100">Close</button>
-              <button type="button" onClick={() => window.location.href = `/add-company?edit=${selectedCompany.id}`} className="px-5 py-2.5 bg-[#016472] text-white rounded-lg text-sm font-medium hover:bg-[#01535e]">Edit Company</button>
+              <button type="button" onClick={() => navigate('/add-company', { state: { company: selectedCompany } })} className="px-5 py-2.5 bg-[#016472] text-white rounded-lg text-sm font-medium hover:bg-[#01535e]">Edit Company</button>
             </div>
           </div>
         </div>

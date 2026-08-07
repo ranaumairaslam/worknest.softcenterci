@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { validateEmployeeForm } from "../../utils/employeeForm";
 
 export default function EmployeeModal({
   open,
@@ -6,7 +7,8 @@ export default function EmployeeModal({
   teams = [],
   onClose,
   onSubmit,
-}) {const initialForm = employee
+}) {
+  const initialForm = employee
   ? {
       name: employee.name,
       email: employee.email,
@@ -28,18 +30,36 @@ export default function EmployeeModal({
       phone: "",
     };
   const [form, setForm] = useState(initialForm);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     setForm(initialForm);
+    setFormError("");
   }, [employee]);
 
   if (!open) return null;
 
-  const handleSubmit = () => {
-    if (!form.name.trim() || !form.email.trim() || !form.role.trim()) return;
+  const handleFieldChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (formError) setFormError("");
+  };
 
+  const handleSubmit = () => {
+    const trimmedTeam = form.team.trim();
+    const validationError = validateEmployeeForm(form);
+
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    setFormError("");
     onSubmit?.({
       ...form,
+      name: form.name.trim(),
+      email: form.email.trim(),
+      role: form.role.trim(),
+      team: trimmedTeam,
       id: employee?.id,
     });
   };
@@ -56,21 +76,16 @@ export default function EmployeeModal({
             className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Full Name"
             value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            onChange={(e) => handleFieldChange("name", e.target.value)}
           />
 
         <select
   className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-[#016472]"
   value={form.role}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      role: e.target.value,
-    })
-  }
+  onChange={(e) => handleFieldChange("role", e.target.value)}
 >
   
-  <option>Project Leader</option>
+  <option>Team Leader</option>
   <option>Team Member</option>
 </select>
           <input
@@ -78,30 +93,20 @@ export default function EmployeeModal({
             className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Email Address"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(e) => handleFieldChange("email", e.target.value)}
           />
 <input
   type="password"
   className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-[#016472]"
   placeholder="Password"
   value={form.password}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      password: e.target.value,
-    })
-  }
+  onChange={(e) => handleFieldChange("password", e.target.value)}
 /><select
   className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-[#016472]"
   value={form.team}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      team: e.target.value,
-    })
-  }
+  onChange={(e) => handleFieldChange("team", e.target.value)}
 >
-  <option value="">Select Team</option>
+  <option value="">Select Team (Optional)</option>
 
   {teams.map((team) => (
     <option
@@ -117,30 +122,31 @@ export default function EmployeeModal({
             className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Phone"
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => handleFieldChange("phone", e.target.value)}
           />
 
          <input
   type="date"
   className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-[#016472]"
   value={form.joinedAt}
-  onChange={(e) =>
-    setForm({
-      ...form,
-      joinedAt: e.target.value,
-    })
-  }
+  onChange={(e) => handleFieldChange("joinedAt", e.target.value)}
 />
           <select
             className="w-full rounded-lg border p-3 outline-none focus:ring-2 focus:ring-blue-500"
             value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
+            onChange={(e) => handleFieldChange("status", e.target.value)}
           >
             <option>Active</option>
             <option>Inactive</option>
             <option>On Leave</option>
           </select>
         </div>
+
+        {formError ? (
+          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {formError}
+          </div>
+        ) : null}
 
         <div className="mt-6 flex justify-end gap-3">
           <button

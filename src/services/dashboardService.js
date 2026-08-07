@@ -1,63 +1,65 @@
-import { getAllProjects } from "./projectService.js";
-import { getAllTeams } from "./teamService.js";
-import { getAllEmployees } from "./employeeService.js";
-import { getAllClients } from "./clientService.js";
-import { getAllTasks, getTaskStatistics } from "./taskService.js";
-import { getRevenueSummary } from "./revenueService.js";
-import { getRecentActivity } from "./activityService.js";
+import { get } from './apiClient.js';
 
-export async function getStats() {
-  const [projects, teams, employees, clients, taskStats, revenueData] = await Promise.all([
-    getAllProjects(),
-    getAllTeams(),
-    getAllEmployees(),
-    getAllClients(),
-    getTaskStatistics(),
-    getRevenueSummary(await getAllProjects(), await getAllClients()),
-  ]);
+const DASHBOARD_ROUTE = '/company/dashboard';
 
-  const activeTasks = (taskStats.find((s) => s.id === "in-progress-tasks")?.value || 0) +
-    (taskStats.find((s) => s.id === "pending-tasks")?.value || 0) +
-    (taskStats.find((s) => s.id === "review-tasks")?.value || 0);
+async function fetchDashboardData() {
+  const response = await get(DASHBOARD_ROUTE);
+  return response?.data || {};
+}
 
-  const completedTasks = taskStats.find((s) => s.id === "completed-tasks")?.value || 0;
-  const pendingTasks = taskStats.find((s) => s.id === "pending-tasks")?.value || 0;
+function buildStats(data) {
+  const projects = data.projects || {};
+  const teams = data.teams || {};
+  const employees = data.employees || {};
+  const tasks = data.tasks || {};
 
   return [
-    { id: "total-projects", label: "Total Projects", value: String(projects.length), note: `${projects.filter((p) => p.status === "Active").length} active` },
-    { id: "total-teams", label: "Total Teams", value: String(teams.length), note: `${teams.filter((t) => t.status === "Active").length} active` },
-    { id: "total-employees", label: "Total Employees", value: String(employees.length), note: `${employees.filter((e) => e.status === "Active").length} active` },
-    { id: "total-clients", label: "Total Clients", value: String(clients.length), note: `${clients.filter((c) => c.status === "Active").length} active` },
-    { id: "active-tasks", label: "Active Tasks", value: String(activeTasks), note: "In progress & review" },
-    { id: "completed-tasks", label: "Completed Tasks", value: String(completedTasks), note: "Finished work" },
-    { id: "pending-tasks", label: "Pending Tasks", value: String(pendingTasks), note: "Requires action" },
-    { id: "total-revenue", label: "Total Revenue", value: `$${(revenueData.totalRevenue / 1000).toFixed(0)}K`, note: "Company revenue" },
+    { id: 'total-projects', label: 'Total Projects', value: String(projects.total_projects || 0), note: `${projects.active_projects || 0} active` },
+    { id: 'total-teams', label: 'Total Teams', value: String(teams.total_teams || 0), note: 'All teams' },
+    { id: 'total-employees', label: 'Total Employees', value: String(employees.total_employees || 0), note: 'All employees' },
+    { id: 'total-clients', label: 'Total Clients', value: String(data.clients || 0), note: 'All clients' },
+    { id: 'active-tasks', label: 'Active Tasks', value: String(tasks.active_tasks || 0), note: 'In progress' },
+    { id: 'completed-tasks', label: 'Completed Tasks', value: String(tasks.completed_tasks || 0), note: 'Finished work' },
+    { id: 'pending-tasks', label: 'Pending Tasks', value: String(tasks.pending_tasks || 0), note: 'Requires action' },
+    { id: 'total-revenue', label: 'Total Revenue', value: `$${Number(data.total_revenue || 0).toLocaleString()}`, note: 'Company revenue' },
   ];
 }
 
+function buildProjectProgress(data) {
+  return (data.project_progress || []).map((project) => ({
+    name: project.project_name || 'Unknown Project',
+    team: project.team_name || 'Unassigned',
+    status: project.status || 'Unknown',
+    progress: Number(project.progress || 0),
+  }));
+}
+
+function buildRevenueOverview(data) {
+  return {
+    totalRevenue: Number(data.total_revenue || 0),
+    revenuePerProject: data.project_progress || [],
+  };
+}
+
+export async function getStats() {
+  return buildStats(await fetchDashboardData());
+}
+
 export async function getProjectProgress() {
-  const projects = await getAllProjects();
-  return projects
-    .filter((p) => p.status !== "Completed")
-    .slice(0, 6)
-    .map((p) => ({
-      name: p.name,
-      team: p.team,
-      status: p.status,
-      progress: p.progress,
-    }));
+  return buildProjectProgress(await fetchDashboardData());
 }
 
 export async function getInvitations() {
-  const activity = await getRecentActivity();
-  return activity.slice(0, 5).map((item, index) => ({
+  const response = await get('/company/notifications');
+  return (response?.data || []).slice(0, 5).map((item, index) => ({
     id: index + 1,
     primary: item.message || item.text || item.description,
   }));
 }
 
 export async function getTeamOverview() {
-  const employees = await getAllEmployees();
+  const response = await get('/company/employees', { limit: 5 });
+  const employees = response?.data || [];
   return employees.slice(0, 5).map((emp) => ({
     id: emp.id,
     primary: `${emp.name} (${emp.role})`,
@@ -67,18 +69,29 @@ export async function getTeamOverview() {
 }
 
 export async function getRevenueOverview() {
-  const [projects, clients] = await Promise.all([getAllProjects(), getAllClients()]);
-  return getRevenueSummary(projects, clients);
+  return buildRevenueOverview(await fetchDashboardData());
 }
 
 export async function getDashboardSummary() {
-  const [stats, projects, invitations, team, revenue] = await Promise.all([
-    getStats(),
-    getProjectProgress(),
-    getInvitations(),
-    getTeamOverview(),
-    getRevenueOverview(),
+  const [data, notifications, employees] = await Promise.all([
+    fetchDashboardData(),
+    get('/company/notifications'),
+    get('/company/employees', { limit: 5 }),
   ]);
 
-  return { stats, projects, invitations, team, revenue };
+  return {
+    stats: buildStats(data),
+    projects: buildProjectProgress(data),
+    invitations: (notifications?.data || []).slice(0, 5).map((item, index) => ({
+      id: item.id || index + 1,
+      primary: item.message || item.text || item.description || 'No recent activity',
+    })),
+    team: (employees?.data || []).map((employee) => ({
+      id: employee.id,
+      primary: `${employee.name} (${employee.role})`,
+      secondary: employee.email,
+      action: employee.status,
+    })),
+    revenue: buildRevenueOverview(data),
+  };
 }

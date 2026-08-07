@@ -5,12 +5,14 @@ import {
   updateEmployee,
   deleteEmployee,
   assignToTeam,
+  getCompanyTeams,
 } from "../services/employeeService";
 
 export function useEmployees() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [teams, setTeams] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -18,8 +20,16 @@ export function useEmployees() {
     async function loadEmployees() {
       try {
         const data = await getAllEmployees();
+        let availableTeams = [];
+        try {
+          availableTeams = await getCompanyTeams();
+        } catch {
+          // Do not hide the employee list if the optional team lookup fails.
+        }
         if (!isMounted) return;
+        setError(null);
         setEmployees(data);
+        setTeams(availableTeams);
       } catch (err) {
         if (!isMounted) return;
         setError(err);
@@ -38,11 +48,12 @@ export function useEmployees() {
   const addEmployee = async (payload) => {
     setLoading(true);
     try {
-      const employee = await createEmployee(payload);
+      const created = await createEmployee(payload);
+      const { credentials, ...employee } = created;
+      setError(null);
       setEmployees((prev) => [employee, ...prev]);
-      return employee;
+      return { employee, credentials };
     } catch (err) {
-      setError(err);
       throw err;
     } finally {
       setLoading(false);
@@ -53,10 +64,12 @@ export function useEmployees() {
     setLoading(true);
     try {
       const employee = await updateEmployee(id, updates);
-      setEmployees((prev) => prev.map((item) => (item.id === id ? employee : item)));
+      setError(null);
+      setEmployees((prev) =>
+        prev.map((item) => (item.id === id ? employee : item)),
+      );
       return employee;
     } catch (err) {
-      setError(err);
       throw err;
     } finally {
       setLoading(false);
@@ -68,11 +81,11 @@ export function useEmployees() {
     try {
       const deleted = await deleteEmployee(id);
       if (deleted) {
+        setError(null);
         setEmployees((prev) => prev.filter((item) => item.id !== id));
       }
       return deleted;
     } catch (err) {
-      setError(err);
       throw err;
     } finally {
       setLoading(false);
@@ -84,11 +97,13 @@ export function useEmployees() {
     try {
       const employee = await assignToTeam(employeeId, teamName);
       if (employee) {
-        setEmployees((prev) => prev.map((item) => (item.id === employeeId ? employee : item)));
+        setError(null);
+        setEmployees((prev) =>
+          prev.map((item) => (item.id === employeeId ? employee : item)),
+        );
       }
       return employee;
     } catch (err) {
-      setError(err);
       throw err;
     } finally {
       setLoading(false);
@@ -97,6 +112,7 @@ export function useEmployees() {
 
   return {
     employees,
+    teams,
     loading,
     error,
     addEmployee,
