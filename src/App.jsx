@@ -39,7 +39,7 @@ import ClientDashboard from "./pages/ClientDashboard.jsx";
 
 import ProjectsClient from "./pages/ProjectsClient.jsx";
 import { ProfileProvider } from "../components/ProfileContext.jsx";
-import Meetings from  "./pages/Meetings.jsx";
+>>>>>>>>> Temporary merge branch 2
 
 
 
@@ -245,31 +245,30 @@ const navbarRole = getRole();
                 element={<Revenue />}
               />
 
-            <Route
-              path="/dashboard-leader"
-              element={<LeaderDashboard />}
-            />
-            <Route
-              path="/project"
-              element={<ProjectOversightFull />}
-            />
-            <Route
-              path="/calendar"
-              element={<Calendar />}
-            />
-            <Route
-              path="/project-reports"
-              element={<Reports />}
-            />
-             <Route path="/project/timeline" element={<ProjectTimelinePage />} />
-<Route path="/project/team-performance" element={<TeamPerformancePage />} />
-<Route path="/project/tasks" element={<TaskOverviewPage />} />
-<Route path="/project/kanban" element={<KanbanBoardPage />} 
-            />
-            <Route
-  path="/landing"
-  element={<LandingPage />}
-/>
+              <Route
+                path="/dashboard-leader"
+                element={<LeaderDashboard />}
+              />
+              <Route
+                path="/project"
+                element={<ProjectOversightFull />}
+              />
+              <Route
+                path="/calendar"
+                element={<Calendar />}
+              />
+              <Route
+                path="/project-reports"
+                element={<Reports />}
+              />
+>>>>>>>>> Temporary merge branch 2
+
+             
+              <Route path="/project/timeline" element={<ProjectTimelinePage />} />
+              <Route path="/project/team-performance" element={<TeamPerformancePage />} />
+              <Route path="/project/tasks" element={<TaskOverviewPage />} />
+              <Route path="/project/kanban" element={<KanbanBoardPage />} />
+
 
 
               <Route
