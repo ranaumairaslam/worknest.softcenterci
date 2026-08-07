@@ -55,9 +55,10 @@ import KanbanBoardPage from "./pages/KanbanBoardPage.jsx";
 import LeaderMeetings from "./pages/Meetings.jsx";
 import TeamMeetings from "./pages/TeamMeetings.jsx";
 import Settings from "../components/Setting.jsx";
+import LandingPage from "./LandingPage/LandingPage.jsx";
 
 const DESKTOP_BREAKPOINT = 1024;
-const AUTH_PATHS = ["/login", "/Signup", "/terms", "/privacy-policy",];
+const AUTH_PATHS = ["/landing","/login", "/signup", "/terms", "/privacy-policy",];
 
 function useMediaQuery(query) {
   const [matches, setMatches] = useState(() =>
@@ -244,38 +245,31 @@ const navbarRole = getRole();
                 element={<Revenue />}
               />
 
-              <Route
-                path="/dashboard-leader"
-                element={<LeaderDashboard />}
-              />
-              <Route
-                path="/project"
-                element={<ProjectOversightFull />}
-              />
-              <Route
-                path="/calendar"
-                element={<Calendar />}
-              />
-              <Route
-                path="/project-reports"
-                element={<Reports />}
-              />
-            {/* Chat */}
             <Route
-              path="/chat"
-              element={<Chat />}
+              path="/dashboard-leader"
+              element={<LeaderDashboard />}
             />
             <Route
-              path="/meetings"
-              element={<Meetings />}
+              path="/project"
+              element={<ProjectOversightFull />}
             />
-
-             
-              <Route path="/project/timeline" element={<ProjectTimelinePage />} />
-              <Route path="/project/team-performance" element={<TeamPerformancePage />} />
-              <Route path="/project/tasks" element={<TaskOverviewPage />} />
-              <Route path="/project/kanban" element={<KanbanBoardPage />} />
-
+            <Route
+              path="/calendar"
+              element={<Calendar />}
+            />
+            <Route
+              path="/project-reports"
+              element={<Reports />}
+            />
+             <Route path="/project/timeline" element={<ProjectTimelinePage />} />
+<Route path="/project/team-performance" element={<TeamPerformancePage />} />
+<Route path="/project/tasks" element={<TaskOverviewPage />} />
+<Route path="/project/kanban" element={<KanbanBoardPage />} 
+            />
+            <Route
+  path="/landing"
+  element={<LandingPage />}
+/>
 
 
               <Route
@@ -310,6 +304,15 @@ const navbarRole = getRole();
                 path="/chat"
                 element={<Chat />}
               />
+            {/* Chat */}
+            <Route
+              path="/chat"
+              element={<Chat />}
+            />
+            <Route
+              path="/meetings"
+              element={<Meetings />}
+            />
 
 
               <Route
@@ -338,7 +341,7 @@ const navbarRole = getRole();
               <Route path="/dashboard-company" element={<Dashboard />} />
               <Route path="/dashboard-team" element={<TeamDashboard />} />
 
-              console.log("NAVBAR ROLE:", navbarRole);
+              <Route path="/dashboard-client" element={<ClientDashboard />} />
 
               <Route path="/settings" element={<Settings role={navbarRole} />} />
 
@@ -359,39 +362,22 @@ export default function App() {
   const location = useLocation();
 
   const isAuthRoute = AUTH_PATHS.includes(location.pathname);
+  
 
   if (isAuthRoute) {
     return (
       <Routes>
-        <Route
-          path="/"
-          element={<Navigate to="/Signup" replace />}
-        />
+        <Route path="/" element={<Navigate to="/landing" replace />} />
 
-        <Route
-          path="/Signup"
-          element={<Signup />}
-        />
+        <Route path="/landing" element={<LandingPage />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-        <Route
-          path="/privacy-policy"
-          element={<PrivacyPolicy />}
-        />
+        <Route path="/signup" element={<Signup />} />
 
-        <Route
-          path="/terms"
-          element={<TermsAndConditions />}
-        />
+        <Route path="/login" element={<Login />} />
 
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
-        <Route
-          path="*"
-          element={<Navigate to="/Signup" replace />}
-        />
+        <Route path="/terms" element={<TermsAndConditions />} />
       </Routes>
     );
   }
