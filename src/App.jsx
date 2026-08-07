@@ -39,7 +39,7 @@ import ClientDashboard from "./pages/ClientDashboard.jsx";
 
 import ProjectsClient from "./pages/ProjectsClient.jsx";
 import { ProfileProvider } from "../components/ProfileContext.jsx";
->>>>>>>>> Temporary merge branch 2
+
 
 
 
@@ -261,7 +261,7 @@ const navbarRole = getRole();
                 path="/project-reports"
                 element={<Reports />}
               />
->>>>>>>>> Temporary merge branch 2
+
 
              
               <Route path="/project/timeline" element={<ProjectTimelinePage />} />
