@@ -1,18 +1,18 @@
-import { Menu, Search, Bell, LogOut } from "lucide-react";
+import { Menu, Bell, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { roleConfig, getRoleFromPath } from "./navigation";
 import { useNotifications } from "../src/hooks/useNotifications";
+import { useProfile } from "./ProfileContext";
 import { logout } from "../src/services/authService.js";
 
 const iconButtonClass =
   "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#016472]/30";
 
-export default function Navbar({
-  showsearch = true,
-  onToggle,
-}) {
+export default function Navbar({ onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { profile } = useProfile();
   const { unreadCount: notificationcount } = useNotifications();
 
   const role = getRoleFromPath(location.pathname);
@@ -21,7 +21,7 @@ export default function Navbar({
   return (
     <header className="sticky top-0 z-30 w-full border-b border-slate-200 bg-white px-3 py-3 shadow-sm transition-all duration-300 ease-in-out sm:px-4 sm:py-4 md:px-6">
       <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-4">
-        
+
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <button
             type="button"
@@ -43,25 +43,8 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Right */}
         <div className="flex shrink-0 items-center gap-2 md:gap-3 lg:gap-4">
-          {showsearch && (
-            <div className="relative hidden sm:flex sm:max-w-[200px] md:max-w-xs lg:max-w-sm">
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
 
-              <input
-                type="search"
-                placeholder="Search..."
-                aria-label="Search dashboard"
-                className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#016472]/30"
-              />
-            </div>
-          )}
-
-          {/* Notifications */}
           <button
             type="button"
             className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#016472]/30"
@@ -76,23 +59,35 @@ export default function Navbar({
             )}
           </button>
 
-          {/* User */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#016472] text-sm font-semibold text-white">
-              {currentRole.userinitials}
-            </div>
-            <div className="hidden md:block">
-              <p className="truncate text-sm font-semibold text-slate-800">
-                {currentRole.username}
-              </p>
+          <div
+            onClick={() =>
+              navigate("/settings", {
+                state: {
+                  role,
+                },
+              })
+            }
+            className="flex cursor-pointer items-center gap-3"
+          >
+            <div className="flex items-center gap-3">
+              <img
+                src={profile.image || "https://ui-avatars.com/api/?name=User"}
+                alt="Profile"
+                className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+              />
 
-              <p className="truncate text-xs text-slate-500">
-                {currentRole.role}
-              </p>
+              <div className="hidden md:block">
+                <p className="truncate text-sm font-semibold text-slate-800">
+                  {profile.fullName}
+                </p>
+
+                <p className="truncate text-xs text-slate-500">
+                  {currentRole.role}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Logout */}
           <button
             type="button"
             onClick={() => {
@@ -107,6 +102,7 @@ export default function Navbar({
               Logout
             </span>
           </button>
+
         </div>
       </div>
     </header>

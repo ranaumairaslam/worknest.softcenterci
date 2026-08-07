@@ -4,6 +4,7 @@ import {
   NavLink,
   useNavigate,
   useLocation,
+  Link
 } from "react-router-dom";
 
 import { Settings, LogOut, X } from "lucide-react";
@@ -61,8 +62,14 @@ export default function Sidebar({
   const location = useLocation();
 
   // Automatically detect role from current route
-  const role = getRoleFromPath(location.pathname);
-  const menu = navigation[role] || [];
+  const pathRole = getRoleFromPath(location.pathname);
+
+const role =
+  location.pathname === "/settings"
+    ? localStorage.getItem("userRole") || "superAdmin"
+    : pathRole;
+
+const menu = navigation[role] || [];
 
   const showLabels = !collapsed || mobileOpen;
 
@@ -146,19 +153,14 @@ export default function Sidebar({
             collapsed ? "lg:px-2" : ""
           }`}
         >
-          <button
-            type="button"
-            aria-label="Settings"
-            className={`${navItemBase} text-[#A3FEFF] ${
-              collapsed
-                ? "lg:justify-center lg:gap-0 lg:px-2"
-                : "gap-4 px-4"
-            }`}
-          >
-            <Settings size={20} className="shrink-0" />
-
-            {showLabels && <span>Settings</span>}
-          </button>
+          <Link
+            to="/settings"
+             onClick={() => localStorage.setItem("userRole", role)}
+            className={`${navItemBase} text-[#A3FEFF] ${collapsed ? "lg:justify-center lg:gap-0 lg:px-2" : "gap-4 px-4"}`}
+            >
+            <Settings size={20} className="shrink-0"/>
+            {showLabels&&<span>Settings</span>}
+            </Link>
 
           <button
             type="button"
