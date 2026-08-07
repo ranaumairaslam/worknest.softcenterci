@@ -12,7 +12,6 @@ import EmployeeModal from "../components/Modals/EmployeeModal";
 import EmployeeDetailsModal from "../components/Modals/EmployeeDetailsModal";
 import ConfirmationModal from "../components/Modals/ConfirmationModal";
 import SuccessToast from "../components/Modals/SuccessToast";
-import { useTeams } from "../hooks/useTeams";
 
 export default function Employees() {
   const {
@@ -23,6 +22,7 @@ export default function Employees() {
     editEmployee,
     removeEmployee,
     assignEmployeeToTeam,
+    teams,
   } = useEmployees();
 
   const [search, setSearch] = useState("");
@@ -31,15 +31,17 @@ export default function Employees() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [deleteEmployeeItem, setDeleteEmployeeItem] = useState(null);
   const [viewEmployee, setViewEmployee] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: "" });
-  const { teams } = useTeams();
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((employee) => {
+      const name = (employee.name || "").toLowerCase();
+      const email = (employee.email || "").toLowerCase();
+      const team = (employee.team || "").toLowerCase();
       const matchesSearch =
-        employee.name.toLowerCase().includes(search.toLowerCase()) ||
-        employee.email.toLowerCase().includes(search.toLowerCase()) ||
-        employee.team.toLowerCase().includes(search.toLowerCase());
+        name.includes(search.toLowerCase()) ||
+        email.includes(search.toLowerCase()) ||
+        team.includes(search.toLowerCase());
 
       const matchesStatus =
         statusFilter === "All" || employee.status === statusFilter;
@@ -48,9 +50,9 @@ export default function Employees() {
     });
   }, [employees, search, statusFilter]);
 
-  const showSuccess = (message) => {
-    setToast({ show: true, message });
-    setTimeout(() => setToast({ show: false, message: "" }), 2500);
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 2500);
   };
 
   const handleOpenNewEmployee = () => {
@@ -77,10 +79,15 @@ export default function Employees() {
           await assignEmployeeToTeam(selectedEmployee.id, employee.team);
         }
 
-        showSuccess("Employee updated successfully.");
+        showToast("Employee updated successfully.");
       } else {
-        await addEmployee(employee);
-        showSuccess("Employee added successfully.");
+        const created = await addEmployee(employee);
+        const credentials = created.credentials;
+        showToast(
+          credentials
+            ? `Employee added. Login: ${credentials.email} | Password: ${credentials.password} | Dashboard: ${credentials.dashboard}`
+            : "Employee added successfully."
+        );
       }
       setShowEmployeeModal(false);
     } catch (err) {
@@ -95,9 +102,10 @@ export default function Employees() {
 
     try {
       await removeEmployee(deleteEmployeeItem.id);
-      showSuccess("Employee deleted successfully.");
+      showToast("Employee deleted successfully.");
     } catch (err) {
       console.error(err);
+      showToast(err?.message || "Unable to delete employee.", "error");
     } finally {
       setDeleteEmployeeItem(null);
     }
@@ -107,14 +115,6 @@ export default function Employees() {
     return (
       <div className="p-6 text-sm text-slate-500">
         Loading employee management...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 text-sm text-rose-500">
-        Failed to load employees.
       </div>
     );
   }
@@ -277,7 +277,7 @@ export default function Employees() {
         onConfirm={handleConfirmDelete}
       />
 
-      <SuccessToast show={toast.show} message={toast.message} />
+      <SuccessToast show={toast.show} message={toast.message} type={toast.type} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
 import { Settings, LogOut, X } from "lucide-react";
 
 import { navigation, getRoleFromPath } from "./navigation";
+import { logout } from "../src/services/authService.js";
 
 const iconButtonBase =
   "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#A3FEFF]/40";
@@ -163,7 +164,10 @@ const menu = navigation[role] || [];
 
           <button
             type="button"
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
             aria-label="Logout"
             className={`
               group relative flex w-full items-center rounded-2xl border border-red-500/20

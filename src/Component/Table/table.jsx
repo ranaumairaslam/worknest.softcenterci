@@ -5,10 +5,12 @@ import Companiesdata from "../Company/companyTable.js";
 
 const STORAGE_KEY = "worknest_companies";
 
-export default function Tables() {
-  const [data, setData] = useState([]);
+export default function Tables({ companies: propCompanies }) {
+  const [localData, setLocalData] = useState([]);
+  const data = propCompanies || localData;
 
   const loadCompanies = () => {
+    if (propCompanies) return;
     try {
       const savedCompanies = localStorage.getItem(STORAGE_KEY);
 
@@ -23,7 +25,7 @@ export default function Tables() {
           JSON.stringify(initialData)
         );
 
-        setData(initialData);
+        setLocalData(initialData);
         return;
       }
 
@@ -35,11 +37,11 @@ export default function Tables() {
           accountStatus: company.accountStatus || "Active",
         }));
 
-        setData(updatedData);
+        setLocalData(updatedData);
         return;
       }
 
-      setData(
+      setLocalData(
         Companiesdata.map((company) => ({
           ...company,
           accountStatus: "Active",
@@ -48,7 +50,7 @@ export default function Tables() {
     } catch (error) {
       console.error("Error loading companies:", error);
 
-      setData(
+      setLocalData(
         Companiesdata.map((company) => ({
           ...company,
           accountStatus: "Active",
@@ -58,11 +60,12 @@ export default function Tables() {
   };
 
   useEffect(() => {
+    if (propCompanies) return;
     loadCompanies();
 
     const handleCompaniesUpdated = (event) => {
       if (event.detail) {
-        setData(event.detail);
+        setLocalData(event.detail);
       } else {
         loadCompanies();
       }
@@ -83,10 +86,14 @@ export default function Tables() {
 
       window.removeEventListener("storage", loadCompanies);
     };
-  }, []);
+  }, [propCompanies]);
 
   const updateAccountStatus = (id, status) => {
-    setData((previousData) => {
+    if (propCompanies) {
+      alert("Status updates for persistent tenant databases are managed through administrative configurations.");
+      return;
+    }
+    setLocalData((previousData) => {
       const updatedData = previousData.map((company) =>
         company.id === id
           ? {

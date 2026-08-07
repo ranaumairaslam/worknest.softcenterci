@@ -14,6 +14,8 @@ import TeamDashboard from "./pages/TeamDashboard.jsx";
 import RevenuePage from "./Component/Revenue/RevenuePage.jsx";
 import TermsAndConditions from "./Component/SignUp/TermsAndConditions.jsx";
 import PrivacyPolicy from "./Component/SignUp/PrivacyPolicy.jsx";
+import ProtectedRoute from "../components/ProtectedRoute.jsx";
+import { isAuthenticated, getStoredUser } from "./services/authService.js";
 
 import CompanySidebar from "./Component/Company/CompnySidebar.jsx";
 
@@ -132,6 +134,27 @@ return (
 "/companies": "superAdmin",
 "/revenue-super-admin": "superAdmin",
 "/reports": "superAdmin",
+        <main className="p-4 sm:p-6">
+          <Routes>
+          
+            <Route
+              path="/dashboard-admin"
+              element={<Admin />}
+            />
+            <Route
+              path="/companies"
+              element={<CompanySidebar />}
+            />
+          
+            <Route
+              path="/reports"
+              element={<ReportsSidebar />}
+            />
+            <Route
+              path="/revenue-super-admin"
+              element={<RevenuePage />}
+            />
+            <Route path="/add-company" element={<AddingCompany />} />
 
 "/dashboard-company": "companyAdmin",
 "/team-management": "companyAdmin",
@@ -352,6 +375,24 @@ const navbarRole = getRole();
 
 
         </div>
+            {/* Default */}
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/dashboard-admin"
+                  replace
+                />
+              }
+             
+            />
+              
+             
+          </Routes>
+        </main> 
+              
+             
+          
       </div>
     
   );
@@ -359,11 +400,25 @@ const navbarRole = getRole();
 
 export default function App() {
   const location = useLocation();
+  const authenticated = isAuthenticated();
 
   const isAuthRoute = AUTH_PATHS.includes(location.pathname);
   
 
   if (isAuthRoute) {
+    if (authenticated) {
+      const user = getStoredUser();
+      const dashboardMap = {
+        super_admin: '/dashboard-admin',
+        company: '/dashboard-company',
+        team_leader: '/dashboard-leader',
+        team_member: '/dashboard-team-member',
+        client: '/client-dashboard',
+      };
+      const redirectUrl = dashboardMap[user?.role] || '/dashboard-company';
+      return <Navigate to={redirectUrl} replace />;
+    }
+
     return (
       <Routes>
         <Route path="/" element={<Navigate to="/landing" replace />} />
@@ -386,16 +441,32 @@ export default function App() {
       <Route
         path="/"
         element={
-          <Navigate
-            to="/dashboard-admin"
-            replace
-          />
+          authenticated ? (
+            (() => {
+              const user = getStoredUser();
+              const dashboardMap = {
+                super_admin: '/dashboard-admin',
+                company: '/dashboard-company',
+                team_leader: '/dashboard-leader',
+                team_member: '/dashboard-team-member',
+                client: '/client-dashboard',
+              };
+              const redirectUrl = dashboardMap[user?.role] || '/dashboard-company';
+              return <Navigate to={redirectUrl} replace />;
+            })()
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       />
 
       <Route
         path="/*"
-        element={<AppLayout />}
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
       />
     </Routes>
   );
