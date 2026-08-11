@@ -1,8 +1,9 @@
+// src/pages/TeamMeetings.jsx
 import MeetingsList from "../components/Meetings/MeetingsList";
-import { useMeetings } from "../hooks/useMeetings";
+import { useTeamMemberMeetings } from "../hooks/useTeamMemberMeetings";
 
 export default function TeamMeetings() {
-  const { meetings, loading, error } = useMeetings();
+  const { meetings, loading, error, joinMeetingById } = useTeamMemberMeetings();
 
   if (loading) return <div className="p-6 text-slate-500 text-sm">Loading meetings…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load meetings.</div>;
@@ -16,7 +17,11 @@ export default function TeamMeetings() {
         </p>
       </div>
 
-      <MeetingsList meetings={meetings} canManage={false} />
+      <MeetingsList
+        meetings={meetings}
+        canManage={false}
+        onJoin={joinMeetingById}  /* ✅ NEW - pass join handler */
+      />
     </div>
   );
 }
