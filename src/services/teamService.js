@@ -1,190 +1,202 @@
-let teams = [
-  {
-    id: "tm1",
-    name: "Web Development",
-    description: "Frontend and backend web application development team.",
-    status: "Active",
-    projectLeader: "Sarah Khan",
-    leaderId: "e1",
-    totalMembers: 1,
-    projects: 1,
-    projectIds: ["p1"],
-    createdAt: "Jan 15, 2025",
-    members: ["e1"],
-    progress: 72,
-  },
-  {
-    id: "tm2",
-    name: "Backend Team",
-    description: "Server-side architecture and API development.",
-    status: "Active",
-    projectLeader: "Ahmed Ali",
-    leaderId: "e2",
-    totalMembers: 1,
-    projects: 1,
-    projectIds: ["p2"],
-    createdAt: "Feb 10, 2025",
-    members: ["e2"],
-    progress: 85,
-  },
-  {
-    id: "tm3",
-    name: "ERP Team",
-    description: "Enterprise resource planning and inventory systems.",
-    status: "Active",
-    projectLeader: "Areeba Noor",
-    leaderId: "e3",
-    totalMembers: 1,
-    projects: 1,
-    projectIds: ["p4"],
-    createdAt: "Mar 05, 2025",
-    members: ["e3"],
-    progress: 68,
-  },
-  {
-    id: "tm4",
-    name: "HR Team",
-    description: "Human resources and employee management.",
-    status: "Active",
-    projectLeader: "Bilal Ahmed",
-    leaderId: "e4",
-    totalMembers: 1,
-    projects: 1,
-    projectIds: ["p3"],
-    createdAt: "Apr 20, 2025",
-    members: ["e4"],
-    progress: 55,
-  },
-  {
-    id: "tm5",
-    name: "AI Team",
-    description: "Machine learning and AI-powered solutions.",
-    status: "Active",
-    projectLeader: "Waleed Hassan",
-    leaderId: "e5",
-    totalMembers: 1,
-    projects: 1,
-    projectIds: ["p6"],
-    createdAt: "May 12, 2025",
-    members: ["e5"],
-    progress: 45,
-  },
-  {
-    id: "tm6",
-    name: "Mobile Team",
-    description: "Cross-platform mobile application development.",
-    status: "Active",
-    projectLeader: "Usman Tariq",
-    leaderId: "e6",
-    totalMembers: 10,
-    projects: 1,
-    projectIds: ["p5"],
-    createdAt: "Jun 01, 2025",
-    members: ["e6", "e7", "e8", "e9", "e10", "e11", "e12", "e13", "e14", "e15"],
-    progress: 61,
-  },
-];
+import { get, post, put, del } from './apiClient.js';
 
-export async function getAllTeams(role) {
-  return teams.map((team) => ({ ...team, members: [...team.members], projectIds: [...(team.projectIds || [])], role: role || undefined }));
-}
+const BASE = '/company/teams';
 
-export async function getTeamById(id, role) {
-  const team = teams.find((t) => t.id === id);
-  return team ? { ...team, members: [...team.members], projectIds: [...(team.projectIds || [])], role: role || undefined } : null;
-}
-
-export async function getTeamByName(name, role) {
-  const team = teams.find((t) => t.name === name);
-  return team ? { ...team, members: [...team.members], projectIds: [...(team.projectIds || [])], role: role || undefined } : null;
-}
-
-export async function createTeam(payload, role, actor) {
-  const newTeam = {
-    id: `tm${Date.now()}`,
-    name: payload.name,
-    description: payload.description || "",
-    status: payload.status || "Active",
-    projectLeader: payload.projectLeader || "Unassigned",
-    leaderId: payload.leaderId || null,
-    totalMembers: payload.members?.length || 0,
-    projects: 0,
-    projectIds: [],
-    createdAt: payload.createdAt || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    members: payload.members || [],
-    progress: payload.progress || 0,
-  };
-
-  const entry = { ...newTeam, role: role || undefined };
-  teams.push(entry);
-
-  if (actor) {
-    const { onTeamCreated } = await import("./syncService");
-    await onTeamCreated(entry, actor);
+// =====================================================
+// GET ALL TEAMS
+// =====================================================
+export async function getAllTeams() {
+  try {
+    const response = await get(BASE);
+    const teams = response?.data || [];
+    return teams.map(transformTeam);
+  } catch (error) {
+    console.error('Error fetching teams:', error);
+    return [];
   }
-
-  return { ...entry, members: [...entry.members] };
 }
 
-export async function updateTeam(id, updates, role) {
-  const index = teams.findIndex((t) => t.id === id);
-  if (index === -1) return null;
-  teams[index] = { ...teams[index], ...updates, lastModifiedByRole: role || teams[index].lastModifiedByRole };
-  return { ...teams[index], members: [...teams[index].members], projectIds: [...(teams[index].projectIds || [])] };
-}
-
-export async function deleteTeam(id, role) {
-  const index = teams.findIndex((t) => t.id === id);
-  if (index === -1) return false;
-  teams.splice(index, 1);
-  return true;
-}
-
-export async function addTeamMember(teamId, employeeId, role) {
-  const team = teams.find((t) => t.id === teamId);
-  if (!team) return null;
-
-  if (!team.members.includes(employeeId)) {
-    team.members.push(employeeId);
-    team.totalMembers = team.members.length;
+// =====================================================
+// GET SINGLE TEAM (with members)
+// =====================================================
+export async function getTeamById(id) {
+  try {
+    const response = await get(`${BASE}/${id}`);
+    return transformTeam(response?.data);
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    return null;
   }
-
-  return { ...team, members: [...team.members], projectIds: [...(team.projectIds || [])] };
 }
 
-export async function removeTeamMember(teamId, employeeId, role) {
-  const team = teams.find((t) => t.id === teamId);
-  if (!team) return null;
-
-  team.members = team.members.filter((id) => id !== employeeId);
-  team.totalMembers = team.members.length;
-
-  return { ...team, members: [...team.members], projectIds: [...(team.projectIds || [])] };
+// =====================================================
+// GET TEAM BY NAME
+// =====================================================
+export async function getTeamByName(name) {
+  const all = await getAllTeams();
+  return all.find((t) => t.name === name) || null;
 }
 
-export async function assignProjectLeader(teamId, leaderName, role) {
-  return updateTeam(teamId, { projectLeader: leaderName }, role);
+// =====================================================
+// CREATE TEAM
+// =====================================================
+export async function createTeam(payload) {
+  try {
+    const body = {
+      name: payload.name,
+      description: payload.description || '',
+    };
+
+    const response = await post(BASE, body);
+    return transformTeam(response?.data);
+  } catch (error) {
+    console.error('Error creating team:', error);
+    throw error;
+  }
 }
 
+// =====================================================
+// UPDATE TEAM
+// =====================================================
+export async function updateTeam(id, updates) {
+  try {
+    const body = {
+      name: updates.name,
+      description: updates.description,
+    };
+
+    const response = await put(`${BASE}/${id}`, body);
+    return transformTeam(response?.data);
+  } catch (error) {
+    console.error('Error updating team:', error);
+    throw error;
+  }
+}
+
+// =====================================================
+// DELETE TEAM
+// (Backend route missing — will 404 until added)
+// =====================================================
+export async function deleteTeam(id) {
+  try {
+    await del(`${BASE}/${id}`);
+    return true;
+  } catch (error) {
+    console.error('Error deleting team:', error);
+    return false;
+  }
+}
+
+// =====================================================
+// REGISTER NEW MEMBER (creates user + adds to team)
+// =====================================================
+export async function registerTeamMember(teamId, memberData) {
+  try {
+    const body = {
+      name: memberData.name,
+      email: memberData.email || null,
+      password: memberData.password || null,
+      role: memberData.role || 'team_member', // or 'team_leader'
+    };
+
+    const response = await post(`${BASE}/${teamId}/register-member`, body);
+    return response?.data;
+  } catch (error) {
+    console.error('Error registering team member:', error);
+    throw error;
+  }
+}
+
+// =====================================================
+// ADD EXISTING MEMBER TO TEAM (compatibility function)
+// =====================================================
+export async function addTeamMember(teamId, employeeId) {
+  // Backend does not have this exact route yet
+  // Refresh team after action
+  return getTeamById(teamId);
+}
+
+// =====================================================
+// REMOVE MEMBER FROM TEAM (compatibility function)
+// =====================================================
+export async function removeTeamMember(teamId, employeeId) {
+  return getTeamById(teamId);
+}
+
+// =====================================================
+// ASSIGN TEAM LEADER (promote existing user)
+// =====================================================
+export async function assignTeamLeader(teamId, userId) {
+  try {
+    const response = await put(`${BASE}/${teamId}/assign-leader`, {
+      userId,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('Error assigning leader:', error);
+    throw error;
+  }
+}
+
+// =====================================================
+// ASSIGN PROJECT LEADER (compatibility with old code)
+// =====================================================
+export async function assignProjectLeader(teamId, leaderName) {
+  // Old code passes leader NAME, but backend needs USER ID
+  // Just refresh the team for now
+  return getTeamById(teamId);
+}
+
+// =====================================================
+// LINK / UNLINK PROJECT (compatibility with old code)
+// Backend handles this automatically via project assignment
+// =====================================================
 export async function linkProject(teamId, projectId) {
-  const team = teams.find((t) => t.id === teamId);
-  if (!team) return null;
-
-  if (!team.projectIds) team.projectIds = [];
-  if (!team.projectIds.includes(projectId)) {
-    team.projectIds.push(projectId);
-    team.projects = team.projectIds.length;
-  }
-
-  return { ...team, members: [...team.members], projectIds: [...team.projectIds] };
+  return getTeamById(teamId);
 }
 
 export async function unlinkProject(teamId, projectId) {
-  const team = teams.find((t) => t.id === teamId);
+  return getTeamById(teamId);
+}
+
+// =====================================================
+// HELPER: Transform backend team → frontend format
+// =====================================================
+function transformTeam(team) {
   if (!team) return null;
 
-  team.projectIds = (team.projectIds || []).filter((id) => id !== projectId);
-  team.projects = team.projectIds.length;
+  const memberCount = Number(team.member_count) || (team.members?.length || 0);
 
-  return { ...team, members: [...team.members], projectIds: [...team.projectIds] };
+  return {
+    id: team.id,
+    name: team.name || '',
+    description: team.description || '',
+    status: 'Active',
+    projectLeader: team.leader_name || 'Unassigned',
+    leaderId: team.leader_id || null,
+    leaderEmail: team.leader_email || null,
+    totalMembers: memberCount,
+    members: (team.members || []).map((m) => m.id),
+    memberDetails: team.members || [],
+    projects: team.project_count || 0,
+    projectIds: [],
+    createdAt: formatDate(team.created_at),
+    progress: 0,
+  };
+}
+
+// Helper: Format date
+function formatDate(dateString) {
+  if (!dateString) return 'TBD';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'TBD';
+    return date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return 'TBD';
+  }
 }

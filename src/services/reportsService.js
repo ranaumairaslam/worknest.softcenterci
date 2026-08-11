@@ -1,56 +1,162 @@
-/**
- * Return report statistics. Optional `role` parameter for filtering/auditing.
- * @param {string} [role]
- */
-export async function getReportStats(role) {
-  console.log("API call: getReportStats", { role });
+import { get } from './apiClient.js';
+
+const BASE = '/company/reports';
+
+// =====================================================
+// GET PROJECT STATUS REPORT
+// =====================================================
+export async function getProjectStatusReport() {
+  try {
+    const response = await get(`${BASE}/projects`);
+    return response?.data || [];
+  } catch (error) {
+    console.error('Error fetching project report:', error);
+    return [];
+  }
+}
+
+// =====================================================
+// GET TEAM PERFORMANCE REPORT
+// =====================================================
+export async function getTeamPerformanceReport() {
+  try {
+    const response = await get(`${BASE}/teams`);
+    return response?.data || [];
+  } catch (error) {
+    console.error('Error fetching team report:', error);
+    return [];
+  }
+}
+
+// =====================================================
+// GET CLIENT SUMMARY REPORT
+// =====================================================
+export async function getClientSummaryReport() {
+  try {
+    const response = await get(`${BASE}/clients`);
+    return response?.data || [];
+  } catch (error) {
+    console.error('Error fetching client report:', error);
+    return [];
+  }
+}
+
+// =====================================================
+// GET REVENUE REPORT (with optional date range)
+// =====================================================
+export async function getRevenueReport(from, to) {
+  try {
+    const params = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    
+    const response = await get(`${BASE}/revenue`, params);
+    return response?.data || { total_revenue: 0, total_transactions: 0, monthly_breakdown: [] };
+  } catch (error) {
+    console.error('Error fetching revenue report:', error);
+    return { total_revenue: 0, total_transactions: 0, monthly_breakdown: [] };
+  }
+}
+
+// =====================================================
+// GET EXECUTIVE SUMMARY (one combined call)
+// =====================================================
+export async function getExecutiveSummary() {
+  try {
+    const response = await get(`${BASE}/summary`);
+    return response?.data || null;
+  } catch (error) {
+    console.error('Error fetching executive summary:', error);
+    return null;
+  }
+}
+
+// =====================================================
+// COMPATIBILITY FUNCTIONS (old dummy replacements)
+// =====================================================
+
+export async function getReportStats() {
+  const summary = await getExecutiveSummary();
+  if (!summary) return [];
+
   return [
-    { id: "total-projects", label: "Total Projects", value: "8", note: "Active Projects", icon: "ClipboardList", color: "indigo" },
-    { id: "tasks-completed", label: "Tasks Completed", value: "128", note: "70% of total tasks", icon: "CheckCircle2", color: "emerald" },
-    { id: "in-progress", label: "In Progress", value: "42", note: "23% of total tasks", icon: "Hourglass", color: "amber" },
-    { id: "overdue", label: "Overdue Tasks", value: "12", note: "7% of total tasks", icon: "AlertCircle", color: "rose" },
+    {
+      id: 'total-projects',
+      label: 'Total Projects',
+      value: String(summary.projects?.total || 0),
+      note: 'Active Projects',
+      icon: 'ClipboardList',
+      color: 'indigo',
+    },
+    {
+      id: 'tasks-completed',
+      label: 'Tasks Completed',
+      value: String(summary.tasks?.completed || 0),
+      note: `${summary.tasks?.total || 0} total tasks`,
+      icon: 'CheckCircle2',
+      color: 'emerald',
+    },
+    {
+      id: 'active-projects',
+      label: 'Active Projects',
+      value: String(summary.projects?.active || 0),
+      note: 'Currently running',
+      icon: 'Hourglass',
+      color: 'amber',
+    },
+    {
+      id: 'teams',
+      label: 'Total Teams',
+      value: String(summary.teams || 0),
+      note: 'Company teams',
+      icon: 'Users',
+      color: 'blue',
+    },
   ];
 }
 
-export async function getTaskStatusBreakdown(role) {
-  console.log("API call: getTaskStatusBreakdown", { role });
+export async function getTaskStatusBreakdown() {
+  const summary = await getExecutiveSummary();
+  const total = summary?.tasks?.total || 0;
+  const completed = summary?.tasks?.completed || 0;
+  const remaining = total - completed;
+
   return [
-    { label: "Completed", value: 128, percent: 70, color: "#10b981" },
-    { label: "In Progress", value: 42, percent: 23, color: "#3b82f6" },
-    { label: "Pending", value: 12, percent: 7, color: "#f59e0b" },
-    { label: "Overdue", value: 8, percent: 4, color: "#ef4444" },
+    {
+      label: 'Completed',
+      value: completed,
+      percent: total ? Math.round((completed / total) * 100) : 0,
+      color: '#10b981',
+    },
+    {
+      label: 'Remaining',
+      value: remaining,
+      percent: total ? Math.round((remaining / total) * 100) : 0,
+      color: '#3b82f6',
+    },
   ];
 }
 
-export async function getProjectProgress(role) {
-  console.log("API call: getProjectProgress", { role });
-  return [
-    { name: "Website Redesign", value: 82 },
-    { name: "Mobile  Application", value: 68 },
-    { name: "Marketing Campaign", value: 55 },
-    { name: "CRM Integration", value: 34 },
-    { name: "Data Dashboard", value: 25 },
-  ];
+export async function getProjectProgress() {
+  const projects = await getProjectStatusReport();
+  return projects.slice(0, 5).map((p) => ({
+    name: p.name,
+    value: p.progress_percent || 0,
+  }));
 }
 
-export async function getTeamProgress(role) {
-  console.log("API call: getTeamProgress", { role });
-  return [
-    { name: "Sophia Lee", value: 88 },
-    { name: "Liam Johnson", value: 72 },
-    { name: "Noah Smith", value: 65 },
-    { name: "Emma Davis", value: 54 },
-  ];
+export async function getTeamProgress() {
+  const teams = await getTeamPerformanceReport();
+  return teams.slice(0, 5).map((t) => ({
+    name: t.team_name,
+    value:
+      t.total_tasks > 0
+        ? Math.round((t.completed_tasks / t.total_tasks) * 100)
+        : 0,
+  }));
 }
 
-export async function getRecentReports(role) {
-  console.log("API call: getRecentReports", { role });
-  return [
-    { id: "r1", name: "Project Progress Report", project: "Website Redesign", generatedBy: "John Leader", date: "Jun 30, 2025", isoDate: "2025-06-30", type: "Progress" },
-    { id: "r2", name: "Task Summary Report", project: "Mobile App", generatedBy: "John Leader", date: "Jun 28, 2025", isoDate: "2025-06-28", type: "Summary" },
-    { id: "r3", name: "Team Performance Report", project: "Marketing Campaign", generatedBy: "John Leader", date: "Jun 25, 2025", isoDate: "2025-06-25", type: "Performance" },
-    { id: "r4", name: "Monthly Overview Report", project: "All Projects", generatedBy: "John Leader", date: "Jun 01, 2025", isoDate: "2025-06-01", type: "Overview" },
-    { id: "r5", name: "Task Distribution Report", project: "All Projects", generatedBy: "John Leader", date: "Jun 15, 2025", isoDate: "2025-06-15", type: "Summary" },
-    { id: "r6", name: "Overdue Tasks Report", project: "CRM Integration", generatedBy: "John Leader", date: "Jun 10, 2025", isoDate: "2025-06-10", type: "Overview" },
-  ];
+export async function getRecentReports() {
+  // Backend doesn't have this — return empty
+  return [];
 }
