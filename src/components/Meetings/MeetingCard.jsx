@@ -1,3 +1,4 @@
+// src/components/Meetings/MeetingCard.jsx
 import {
   Video,
   Users,
@@ -29,6 +30,7 @@ export default function MeetingCard({
   canManage = false,
   onEdit = () => {},
   onCancel = () => {},
+  onJoin,               // ✅ NEW
 }) {
   const attendees = Array.isArray(meeting.attendees)
     ? meeting.attendees
@@ -36,15 +38,20 @@ export default function MeetingCard({
     ? meeting.participants
     : [];
 
-  const guests = Array.isArray(meeting.guests)
-    ? meeting.guests
-    : [];
+  const guests = Array.isArray(meeting.guests) ? meeting.guests : [];
 
   const meetingLink =
-    meeting.link ||
-    meeting.meetingLink ||
-    meeting.meetLink ||
-    "";
+    meeting.link || meeting.meetingLink || meeting.meetLink || "";
+
+  // ✅ If onJoin is provided → button calls API
+  // Otherwise fallback to opening the link directly
+  const handleJoin = () => {
+    if (onJoin) {
+      onJoin(meeting.id);
+    } else if (meetingLink) {
+      window.open(meetingLink, "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 p-5">
@@ -108,17 +115,15 @@ export default function MeetingCard({
         )}
       </div>
 
-      {meetingLink && (
+      {(meetingLink || onJoin) && (
         <div className="mt-5">
-          <a
-            href={meetingLink}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleJoin}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
           >
             <Video size={16} />
             Join Meeting
-          </a>
+          </button>
         </div>
       )}
     </div>

@@ -1,35 +1,37 @@
+// src/hooks/useTeamMemberTasks.js
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { getMyTasks, getTeamTasks, submitTaskWork } from "../services/teamMemberService";
+import {
+  getMyTasks,
+  getTeamTasks,
+  submitTaskWork,
+  startTask,
+} from "../services/teamMemberService";
 
 export function useTeamMemberTasks() {
   const [myTasks, setMyTasks] = useState([]);
   const [teamTasks, setTeamTasks] = useState([]);
-  const [viewMode, setViewMode] = useState("personal"); // "personal" | "team"
+  const [viewMode, setViewMode] = useState("personal");
   const [projectFilter, setProjectFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    Promise.all([getMyTasks(), getTeamTasks()])
-      .then(([mine, team]) => {
-        if (isMounted) {
-          setMyTasks(mine);
-          setTeamTasks(team);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) setError(err);
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
+  const loadTasks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [mine, team] = await Promise.all([getMyTasks(), getTeamTasks()]);
+      setMyTasks(mine);
+      setTeamTasks(team);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const sourceTasks = viewMode === "personal" ? myTasks : teamTasks;
 
@@ -46,22 +48,38 @@ export function useTeamMemberTasks() {
     [sourceTasks, projectFilter]
   );
 
-  const submitTask = useCallback(async (taskId, payload) => {
-    // Optimistic update in both lists so the change is reflected
-    // no matter which view the user is on.
-    setMyTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: "under_review" } : t))
-    );
-    setTeamTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: "under_review" } : t))
-    );
+  const submitTask = useCallback(
+    async (taskId, payload) => {
+      setMyTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: "under_review" } : t))
+      );
+      setTeamTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: "under_review" } : t))
+      );
+      try {
+        await submitTaskWork(taskId, payload);
+      } catch (err) {
+        setError(err);
+        loadTasks();
+      }
+    },
+    [loadTasks]
+  );
 
-    try {
-      await submitTaskWork(taskId, payload);
-    } catch (err) {
-      setError(err);
-    }
-  }, []);
+  const startTaskById = useCallback(
+    async (taskId) => {
+      setMyTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: "in_progress" } : t))
+      );
+      try {
+        await startTask(taskId);
+      } catch (err) {
+        setError(err);
+        loadTasks();
+      }
+    },
+    [loadTasks]
+  );
 
   return {
     tasks,
@@ -71,6 +89,8 @@ export function useTeamMemberTasks() {
     viewMode,
     setViewMode,
     submitTask,
+    startTask: startTaskById,
+    refresh: loadTasks,
     loading,
     error,
   };

@@ -1,3 +1,4 @@
+// src/pages/TeamDashboard.jsx
 import { useState } from "react";
 import { ChevronDown, Check, Users, User } from "lucide-react";
 import KanbanBoard from "../components/Kanban/KanbanBoard";
@@ -47,6 +48,7 @@ export default function TeamMemberDashboard() {
     viewMode,
     setViewMode,
     submitTask,
+    startTask,   // ✅ NEW - from updated hook
     loading,
     error,
   } = useTeamMemberTasks();
@@ -83,6 +85,10 @@ export default function TeamMemberDashboard() {
       <TaskDetailModal
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
+        onStart={(taskId) => {                    // ✅ NEW - Start Task handler
+          startTask(taskId);
+          setSelectedTask(null);
+        }}
         onSubmit={(payload) => {
           submitTask(selectedTask.id, payload);
           setSelectedTask(null);
