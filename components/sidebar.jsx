@@ -154,13 +154,21 @@ const menu = navigation[role] || [];
           }`}
         >
           <Link
-            to="/settings"
-             onClick={() => localStorage.setItem("userRole", role)}
-            className={`${navItemBase} text-[#A3FEFF] ${collapsed ? "lg:justify-center lg:gap-0 lg:px-2" : "gap-4 px-4"}`}
-            >
-            <Settings size={20} className="shrink-0"/>
-            {showLabels&&<span>Settings</span>}
-            </Link>
+  to="/settings"
+  state={{ role }}
+  onClick={() => {
+    localStorage.setItem("userRole", role);
+  }}
+  className={`${navItemBase} text-[#A3FEFF] ${
+    collapsed
+      ? "lg:justify-center lg:gap-0 lg:px-2"
+      : "gap-4 px-4"
+  }`}
+>
+  <Settings size={20} className="shrink-0" />
+
+  {showLabels && <span>Settings</span>}
+</Link>
 
           <button
             type="button"
