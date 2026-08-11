@@ -19,9 +19,12 @@ export function useDashboardData() {
 
         const res = await get("/company/dashboard");
 
-        console.log("Dashboard Response:", res);
+        console.log("Full Response:", res);
 
-        const d = res?.data || {};
+        // ✅ FIX: API response ke andar 'data' object hai
+        const d = res?.data?.data || res?.data || {};
+
+        console.log("Extracted Data:", d);
 
         setCompany(d.company);
 
@@ -81,7 +84,7 @@ export function useDashboardData() {
         setProjects(
           (d.project_progress ?? []).map((p) => ({
             id: p.id,
-            name: p.name,
+            name: p.project_name || p.name,
             progress: p.progress ?? 0,
             status: p.status,
             team: p.team_name ?? "Unassigned",
@@ -112,7 +115,6 @@ export function useDashboardData() {
         });
       } catch (err) {
         console.error("API Error:", err);
-
         console.log("Response:", err.response);
         console.log("Data:", err.response?.data);
         console.log("Message:", err.message);
