@@ -54,20 +54,28 @@ export function useTeamMemberMeetings() {
   }, []);
 
   const joinMeetingById = useCallback(async (meetingId) => {
+    // Try to open a link from local meeting data immediately (faster UX),
+    // then notify backend via joinMeeting. Any backend error is non-fatal.
     try {
-      const res = await joinMeeting(meetingId);
-
-      // Open the join URL in a new tab
-      if (res?.joinUrl) {
-        window.open(res.joinUrl, "_blank", "noopener,noreferrer");
+      const meeting = meetings.find((m) => m.id === meetingId || m.meetingId === meetingId);
+      if (meeting && (meeting.link || meeting.MeetingLink || meeting.meetingLink)) {
+        const url = meeting.link || meeting.MeetingLink || meeting.meetingLink;
+        window.open(url, "_blank", "noopener,noreferrer");
+        setMeetings((prev) => prev.map((m) => (m.id === meetingId ? { ...m, status: "live" } : m)));
       }
 
-      // Update meeting status locally
-      setMeetings((prev) =>
-        prev.map((m) =>
-          m.id === meetingId ? { ...m, status: "live" } : m
-        )
-      );
+      // Notify server that user joined (best-effort)
+      const res = await joinMeeting(meetingId).catch((err) => {
+        // preserve previous error handling and expose to caller
+        setError(err);
+        return null;
+      });
+
+      // If backend returned a joinUrl and we didn't open yet, open it now
+      if (res?.joinUrl && !(meeting && meeting.link)) {
+        window.open(res.joinUrl, "_blank", "noopener,noreferrer");
+        setMeetings((prev) => prev.map((m) => (m.id === meetingId ? { ...m, status: "live" } : m)));
+      }
 
       return res;
     } catch (err) {

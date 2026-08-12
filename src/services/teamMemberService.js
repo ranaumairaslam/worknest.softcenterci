@@ -26,7 +26,7 @@ function getInitials(name = "?") {
 
 function mapTaskForKanban(task) {
   return {
-    id: task.taskId,
+    id: task.taskId || task.taskid || task.id || task._id,   // ✅ Handle all variants
     title: task.title || task.name,
     status: mapStatusToKanban(task.status),
     project: task.projectName || task.project || "Unassigned",
@@ -83,8 +83,31 @@ export async function getSubmissionById(submissionId) {
 /* ------------------- MEETINGS API ------------------- */
 
 export async function getUpcomingMeetings() {
-  const res = await get("/team-member/meetings/upcoming");
-  return res?.data || [];
+  // Prefer company-level scheduled meetings filtered for Team Meeting audience.
+  // Backend: GET /api/company/scheduledMeetings?toWhom=Team%20Meeting
+  try {
+    const res = await get("/company/scheduledMeetings", { toWhom: "Team Meeting" });
+    const list = res?.data || [];
+
+    // Normalize company meeting row → meeting object expected by hooks/components
+    return list.map((m) => ({
+      meetingId: m.id || m.meetingId || m.MeetingId,
+      title: m.Title || m.title,
+      startTime: m.scheduled_at || (m.date && m.time ? `${m.date} ${m.time}` : null),
+      date: m.date || null,
+      time: m.time || null,
+      link: m.MeetingLink || m.meeting_link || m.MeetingLink || null,
+      participants: m.Members || m.members || [],
+      attendees: m.Members || m.members || [],
+      guests: m.guests || [],
+      status: m.status || null,
+      raw: m,
+    }));
+  } catch (err) {
+    // Fallback to legacy team-member endpoint if company endpoint fails
+    const res = await get("/team-member/meetings/upcoming");
+    return res?.data || [];
+  }
 }
 
 export async function joinMeeting(meetingId) {
