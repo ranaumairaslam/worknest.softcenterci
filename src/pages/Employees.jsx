@@ -65,35 +65,27 @@ export default function Employees() {
     setShowEmployeeModal(true);
   };
 
-  const handleSubmitEmployee = async (employee) => {
+   const handleSubmitEmployee = async (employee) => {
     try {
       if (selectedEmployee) {
-        const updatedFields = {
-          ...employee,
-          team: selectedEmployee.team,
-        };
-
-        await editEmployee(selectedEmployee.id, updatedFields);
-
-        if (employee.team !== selectedEmployee.team) {
-          await assignEmployeeToTeam(selectedEmployee.id, employee.team);
-        }
-
+        // For UPDATE
+        await editEmployee(selectedEmployee.id, employee);
         showToast("Employee updated successfully.");
       } else {
+        // For CREATE
         const created = await addEmployee(employee);
-        const credentials = created.credentials;
+        const credentials = created?.credentials;
         showToast(
           credentials
-            ? `Employee added. Login: ${credentials.email} | Password: ${credentials.password} | Dashboard: ${credentials.dashboard}`
+            ? `Employee added! Login: ${credentials.email} | Password: ${credentials.password}`
             : "Employee added successfully."
         );
       }
       setShowEmployeeModal(false);
+      setSelectedEmployee(null);
     } catch (err) {
       console.error(err);
-    } finally {
-      setSelectedEmployee(null);
+      showToast(err?.message || "Unable to save employee.", "error");
     }
   };
 

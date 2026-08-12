@@ -1,46 +1,42 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getAllClients,
   createClient,
   updateClient,
   deleteClient,
 } from "../services/clientService";
-import useRole from "./useRole";
 
 export function useClients() {
-  const role = useRole();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function load() {
-      try {
-        const data = await getAllClients(role);
-        if (isMounted) setClients(data);
-      } catch (err) {
-        if (isMounted) setError(err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getAllClients();
+      setClients(data);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError(err);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
+  useEffect(() => {
     load();
-    return () => {
-      isMounted = false;
-    };
-  }, [role]);
+  }, [load]);
 
   const addClient = async (payload) => {
-    const client = await createClient(payload, role);
+    const client = await createClient(payload);
     setClients((prev) => [client, ...prev]);
     return client;
   };
 
   const editClient = async (id, updates) => {
-    const client = await updateClient(id, updates, role);
+    const client = await updateClient(id, updates);
     if (client) {
       setClients((prev) => prev.map((c) => (c.id === id ? client : c)));
     }
@@ -48,7 +44,7 @@ export function useClients() {
   };
 
   const removeClient = async (id) => {
-    const deleted = await deleteClient(id, role);
+    const deleted = await deleteClient(id);
     if (deleted) {
       setClients((prev) => prev.filter((c) => c.id !== id));
     }
@@ -62,5 +58,6 @@ export function useClients() {
     addClient,
     editClient,
     removeClient,
+    refresh: load,
   };
 }
