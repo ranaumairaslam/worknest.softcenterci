@@ -41,7 +41,7 @@ import Revenue from "./pages/Revenue.jsx";
 // Leader
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import Reports from "./pages/Reports.jsx";
-import Calendar from "./pages/Calendar.jsx";
+
 import LeaderMeetings from "./pages/Meetings.jsx";
 
 // Team Member
@@ -167,7 +167,7 @@ function AppLayout() {
 
         "/dashboard-leader": "projectLeader",
         "/project": "projectLeader",
-        "/calendar": "projectLeader",
+       
         "/project-reports": "projectLeader",
         "/meetings": "projectLeader",
         "/meetingss": "projectLeader",
@@ -280,10 +280,7 @@ function AppLayout() {
               path="/project"
               element={<ProjectOversightFull />}
             />
-            <Route
-              path="/calendar"
-              element={<Calendar />}
-            />
+           
             <Route
               path="/project-reports"
               element={<Reports />}

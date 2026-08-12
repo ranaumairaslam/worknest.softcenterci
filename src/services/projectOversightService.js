@@ -1,156 +1,164 @@
-const PROJECTS = {
-  p1: {
-    id: "p1",
-    name: "Website Redesign",
-    status: "On Track",
-    description: "Redesign and improve the company website with modern UI/UX and better performance.",
-    startDate: "May 10, 2025",
-    endDate: "Aug 15, 2025",
-    daysRemaining: 23,
-  },
-  p2: {
-    id: "p2",
-    name: "Mobile App",
-    status: "At Risk",
-    description: "Build the companion mobile app for iOS and Android with feature parity to web.",
-    startDate: "Apr 01, 2025",
-    endDate: "Sep 30, 2025",
-    daysRemaining: 61,
-  },
-  p3: {
-    id: "p3",
-    name: "CRM Integration",
-    status: "On Track",
-    description: "Integrate the internal CRM with the customer support and sales pipelines.",
-    startDate: "Jun 01, 2025",
-    endDate: "Jul 20, 2025",
-    daysRemaining: 8,
-  },
-};
+import {
+  getTeamLeaderProjects,
+  getTeamLeaderMembers,
+  getTeamLeaderTasks,
+  getTeamLeaderProgress,
+  getTeamLeaderReports,
+} from "./teamLeaderService";
+
+function normalizeStatus(status) {
+  if (!status) return "Pending";
+  const map = {
+    todo: "Pending",
+    in_progress: "In Progress",
+    under_review: "In Progress",
+    submitted: "In Progress",
+    done: "Completed",
+    blocked: "Pending",
+  };
+  return map[status] || "Pending";
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 export async function getProjects() {
-  return Object.values(PROJECTS).map((p) => ({ id: p.id, name: p.name }));
+  const projects = await getTeamLeaderProjects();
+  return projects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    status: project.status || "Active",
+  }));
 }
 
-export async function getProjectSummary(projectId = "p1") {
-  return PROJECTS[projectId] ?? PROJECTS.p1;
+export async function getProjectSummary(projectId = null) {
+  const projects = await getTeamLeaderProjects();
+  const selected = projects.find((project) => String(project.id) === String(projectId)) || projects[0];
+
+  if (!selected) {
+    return {
+      id: projectId || "team-leader-project",
+      name: "Team Leader Project",
+      status: "Active",
+      description: "Project data is loading from the team leader API.",
+      startDate: "—",
+      endDate: "—",
+      progress: 0,
+      tasksCompleted: 0,
+      tasksTotal: 0,
+      daysRemaining: 0,
+    };
+  }
+
+  const tasks = await getTeamLeaderTasks({ projectId: selected.id });
+  const total = tasks.length;
+  const done = tasks.filter((task) => task.status === "done").length;
+  const progress = total ? Math.round((done / total) * 100) : 0;
+
+  return {
+    id: selected.id,
+    name: selected.name,
+    status: selected.status || "Active",
+    description: selected.description || "Team project overview",
+    startDate: formatDate(selected.startDate || selected.start_date),
+    endDate: formatDate(selected.dueDate || selected.due_date),
+    progress,
+    tasksCompleted: done,
+    tasksTotal: total,
+    daysRemaining: 0,
+  };
 }
 
-export async function getStats() {
+export async function getStats(projectId = null) {
+  const progress = await getTeamLeaderProgress();
+  const teamData = await getTeamLeaderProjects();
+  const teamMembers = await getTeamLeaderMembers();
+
   return [
-    { id: "total", label: "Total Tasks", trend: "up", trendValue: "12%", icon: "ClipboardList", color: "slate" },
-    { id: "completed", label: "Completed", trend: "up", trendValue: "15%", icon: "CheckCircle2", color: "emerald" },
-    { id: "in-progress", label: "In Progress", trend: "up", trendValue: "5%", icon: "Clock", color: "blue" },
-    { id: "pending", label: "Pending", trend: "down", trendValue: "5%", icon: "Hourglass", color: "amber" },
-    { id: "overdue", label: "Overdue", value: "3", trend: "down", trendValue: "25%", icon: "AlertCircle", color: "rose" },
-    { id: "team", label: "Team Members", value: "12", trend: "up", trendValue: "8%", icon: "Users2", color: "indigo" },
-    { id: "completion", label: "Completion", trend: "up", trendValue: "10%", icon: "TrendingUp", color: "cyan" },
-    { id: "remaining", label: "Remaining Days", value: "23", trend: "down", trendValue: "4 days", icon: "CalendarDays", color: "orange" },
+    { id: "total", label: "Total Tasks", value: String(progress[0]?.value ?? 0), trend: "up", trendValue: "Live", icon: "ClipboardList", color: "slate" },
+    { id: "completed", label: "Completed", value: String(progress[1]?.value ?? 0), trend: "up", trendValue: "Live", icon: "CheckCircle2", color: "emerald" },
+    { id: "in-progress", label: "In Progress", value: String(progress[2]?.value ?? 0), trend: "up", trendValue: "Live", icon: "Clock", color: "blue" },
+    { id: "pending", label: "Pending", value: String(progress[3]?.value ?? 0), trend: "down", trendValue: "Team", icon: "Hourglass", color: "amber" },
+    { id: "blocked", label: "Blocked", value: String(progress[4]?.value ?? 0), trend: "down", trendValue: "Needs review", icon: "AlertCircle", color: "rose" },
+    { id: "team", label: "Team Members", value: String(teamMembers.length || teamData.length || 0), trend: "up", trendValue: "Active", icon: "Users2", color: "indigo" },
   ];
 }
 
-export async function getTimeline(projectId = "p1") {
-  const timelines = {
-    p1: [
-      { id: "kickoff", label: "Kickoff", date: "May 10", state: "done" },
-      { id: "design", label: "Design", date: "May 20", state: "done" },
-      { id: "development", label: "Development", date: "Jun 01", state: "current" },
-      { id: "testing", label: "Testing", date: "Jul 10", state: "upcoming" },
-      { id: "launch", label: "Launch", date: "Aug 15", state: "upcoming" },
-    ],
-    p2: [
-      { id: "kickoff", label: "Kickoff", date: "Apr 01", state: "done" },
-      { id: "design", label: "Design", date: "Apr 20", state: "current" },
-      { id: "development", label: "Development", date: "Jun 15", state: "upcoming" },
-      { id: "testing", label: "Testing", date: "Aug 20", state: "upcoming" },
-      { id: "launch", label: "Launch", date: "Sep 30", state: "upcoming" },
-    ],
-    p3: [
-      { id: "kickoff", label: "Kickoff", date: "Jun 01", state: "done" },
-      { id: "design", label: "Design", date: "Jun 05", state: "done" },
-      { id: "development", label: "Development", date: "Jun 10", state: "done" },
-      { id: "testing", label: "Testing", date: "Jul 05", state: "current" },
-      { id: "launch", label: "Launch", date: "Jul 20", state: "upcoming" },
-    ],
-  };
-  return timelines[projectId] ?? timelines.p1;
+export async function getTimeline(projectId = null) {
+  const project = await getProjectSummary(projectId);
+  const phases = [
+    { id: "kickoff", label: "Kickoff", date: project.startDate || "Today", state: "done" },
+    { id: "execution", label: "Execution", date: "Current", state: "current" },
+    { id: "review", label: "Review", date: project.endDate || "Review", state: "upcoming" },
+    { id: "delivery", label: "Delivery", date: project.endDate || "Delivery", state: "upcoming" },
+  ];
+  return phases;
 }
 
-export async function getTeamPerformance(projectId = "p1") {
-  const teams = {
-    p1: [
-      { id: "m1", name: "Sophia Lee", role: "Frontend Dev", presence: "online", tasks: 12, done: 8, pending: 2, progress: 85 },
-      { id: "m2", name: "Liam Johnson", role: "Backend Dev", presence: "away", tasks: 10, done: 6, pending: 4, progress: 65 },
-      { id: "m3", name: "Noah Smith", role: "UI/UX Designer", presence: "online", tasks: 8, done: 6, pending: 2, progress: 75 },
-      { id: "m4", name: "Emma Davis", role: "QA Engineer", presence: "offline", tasks: 6, done: 4, pending: 2, progress: 60 },
-    ],
-    p2: [
-      { id: "m5", name: "Ava Chen", role: "Mobile Dev (iOS)", presence: "online", tasks: 14, done: 5, pending: 9, progress: 36 },
-      { id: "m6", name: "Ryan Patel", role: "Mobile Dev (Android)", presence: "online", tasks: 13, done: 4, pending: 9, progress: 31 },
-    ],
-    p3: [
-      { id: "m7", name: "Maya Torres", role: "Integration Engineer", presence: "online", tasks: 9, done: 8, pending: 1, progress: 89 },
-      { id: "m8", name: "Ethan Brooks", role: "Backend Dev", presence: "away", tasks: 7, done: 6, pending: 1, progress: 86 },
-    ],
-  };
-  return teams[projectId] ?? teams.p1;
+export async function getTeamPerformance(projectId = null) {
+  const teamMembers = await getTeamLeaderMembers();
+  const tasks = await getTeamLeaderTasks(projectId ? { projectId } : {});
+
+  return teamMembers.map((member, index) => {
+    const memberTasks = tasks.filter((task) => task.assignee === member.name);
+    const done = memberTasks.filter((task) => task.status === "done").length;
+    const pending = memberTasks.filter((task) => task.status !== "done").length;
+    const progress = memberTasks.length ? Math.round((done / memberTasks.length) * 100) : 0;
+
+    return {
+      id: member.id,
+      name: member.name,
+      role: member.role || "Team Member",
+      presence: ["online", "away", "offline"][index % 3],
+      tasks: memberTasks.length,
+      done,
+      pending,
+      progress,
+    };
+  });
 }
 
-export async function getTaskOverview(projectId = "p1") {
-  const taskSets = {
-    p1: [
-      { id: "TASK-101", name: "Create Wireframes", priority: "High", status: "Completed", assignee: "SL", dueDate: "May 20, 2025", progress: 100, category: "Design" },
-      { id: "TASK-102", name: "Develop Homepage", priority: "High", status: "In Progress", assignee: "LJ", dueDate: "May 28, 2025", progress: 70, category: "Development" },
-      { id: "TASK-103", name: "API Integration", priority: "Medium", status: "In Progress", assignee: "NS", dueDate: "Jun 02, 2025", progress: 40, category: "Backend" },
-      { id: "TASK-104", name: "Testing & Bug Fixes", priority: "High", status: "Pending", assignee: "ED", dueDate: "Jun 07, 2025", progress: 0, category: "Testing" },
-      { id: "TASK-105", name: "Deployment", priority: "Low", status: "Pending", assignee: "SL", dueDate: "Jun 15, 2025", progress: 0, category: "DevOps" },
-    ],
-    p2: [
-      { id: "TASK-201", name: "iOS Login Screen", priority: "High", status: "In Progress", assignee: "AC", dueDate: "Jun 10, 2025", progress: 50, category: "Design" },
-      { id: "TASK-202", name: "Android Login Screen", priority: "High", status: "Pending", assignee: "RP", dueDate: "Jun 12, 2025", progress: 0, category: "Design" },
-      { id: "TASK-203", name: "Push Notifications", priority: "Medium", status: "Pending", assignee: "AC", dueDate: "Jul 01, 2025", progress: 0, category: "Backend" },
-    ],
-    p3: [
-      { id: "TASK-301", name: "CRM API Mapping", priority: "High", status: "Completed", assignee: "MT", dueDate: "Jun 15, 2025", progress: 100, category: "Backend" },
-      { id: "TASK-302", name: "Data Sync Job", priority: "Medium", status: "Completed", assignee: "EB", dueDate: "Jun 20, 2025", progress: 100, category: "Backend" },
-      { id: "TASK-303", name: "Support Ticket Sync", priority: "Low", status: "In Progress", assignee: "MT", dueDate: "Jul 05, 2025", progress: 60, category: "Integration" },
-    ],
-  };
-  return taskSets[projectId] ?? taskSets.p1;
+export async function getTaskOverview(projectId = null) {
+  const tasks = await getTeamLeaderTasks(projectId ? { projectId } : {});
+  return tasks.map((task) => ({
+    id: task.id,
+    name: task.title,
+    priority: task.priority || "Medium",
+    status: normalizeStatus(task.status),
+    assignee: task.assignee || "Unassigned",
+    dueDate: formatDate(task.dueDate),
+    progress: task.progress || 0,
+    category: task.projectName || "Team task",
+  }));
 }
 
-export async function getKanbanPreview(projectId = "p1") {
-  const boards = {
-    p1: {
-      columns: [
-        { key: "backlog", title: "Backlog", count: 6, cards: ["Site Map Creation", "Competitor Analysis", "Content Strategy"] },
-        { key: "todo", title: "Todo", count: 6, cards: ["Create Design System", "Landing Page Design", "Responsive Design"] },
-        { key: "in_progress", title: "In Progress", count: 8, cards: ["Homepage Development", "User Dashboard Development", "API Integration"] },
-        { key: "review", title: "Review", count: 4, cards: ["UI Component Review", "Code Review - Sprint 2", "Security Testing"] },
-        { key: "testing", title: "Testing", count: 3, cards: ["Cross Browser Testing", "Mobile Testing", "Performance Testing"] },
-        { key: "completed", title: "Completed", count: 24, cards: ["Project Kickoff", "Database Completed"] },
-      ],
-    },
-    p2: {
-      columns: [
-        { key: "backlog", title: "Backlog", count: 3, cards: ["App Store Assets", "Privacy Policy"] },
-        { key: "todo", title: "Todo", count: 5, cards: ["Push Notifications", "Onboarding Flow"] },
-        { key: "in_progress", title: "In Progress", count: 4, cards: ["iOS Login Screen", "Android Login Screen"] },
-        { key: "review", title: "Review", count: 1, cards: ["Design QA"] },
-        { key: "testing", title: "Testing", count: 0, cards: [] },
-        { key: "completed", title: "Completed", count: 2, cards: ["Kickoff", "Wireframes"] },
-      ],
-    },
-    p3: {
-      columns: [
-        { key: "backlog", title: "Backlog", count: 1, cards: ["Legacy System Audit"] },
-        { key: "todo", title: "Todo", count: 2, cards: ["Support Ticket Sync"] },
-        { key: "in_progress", title: "In Progress", count: 1, cards: ["Support Ticket Sync"] },
-        { key: "review", title: "Review", count: 0, cards: [] },
-        { key: "testing", title: "Testing", count: 1, cards: ["Data Validation"] },
-        { key: "completed", title: "Completed", count: 5, cards: ["CRM API Mapping", "Data Sync Job"] },
-      ],
-    },
+export async function getKanbanPreview(projectId = null) {
+  const tasks = await getTaskOverview(projectId);
+  const grouped = {
+    todo: { key: "todo", title: "To Do", cards: [] },
+    in_progress: { key: "in_progress", title: "In Progress", cards: [] },
+    review: { key: "review", title: "Review", cards: [] },
+    completed: { key: "completed", title: "Completed", cards: [] },
   };
-  return boards[projectId] ?? boards.p1;
+
+  tasks.forEach((task) => {
+    const bucket = task.status === "Completed" ? "completed" : task.status === "In Progress" ? "in_progress" : task.status === "Pending" ? "todo" : "review";
+    grouped[bucket].cards.push(task.name);
+  });
+
+  return {
+    columns: Object.values(grouped).map((column) => ({
+      ...column,
+      count: column.cards.length,
+    })),
+  };
+}
+
+export async function getTeamLeaderReportSummary() {
+  const summary = await getTeamLeaderReports();
+  return summary;
 }

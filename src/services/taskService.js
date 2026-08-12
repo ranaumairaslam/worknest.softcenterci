@@ -2,14 +2,9 @@ import { get, post, put, patch, del } from './apiClient.js';
 
 const BASE = '/company/tasks';
 
-// Backend status <-> Frontend status mapping
-const STATUS_TO_FRONTEND = {
-  todo: 'Pending',
-  in_progress: 'In Progress',
-  done: 'Completed',
-  blocked: 'Rejected',
-};
-
+// =====================================================
+// Status Mapping (Frontend ↔ Backend)
+// =====================================================
 const STATUS_TO_BACKEND = {
   Pending: 'todo',
   'In Progress': 'in_progress',
@@ -17,19 +12,27 @@ const STATUS_TO_BACKEND = {
   Review: 'in_progress',
   Completed: 'done',
   Rejected: 'blocked',
+  Blocked: 'blocked',
+  Todo: 'todo',
 };
 
-// Backend priority <-> Frontend priority mapping
-const PRIORITY_TO_FRONTEND = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
+const STATUS_TO_FRONTEND = {
+  todo: 'Pending',
+  in_progress: 'In Progress',
+  done: 'Completed',
+  blocked: 'Rejected',
 };
 
 const PRIORITY_TO_BACKEND = {
   Low: 'low',
   Medium: 'medium',
   High: 'high',
+};
+
+const PRIORITY_TO_FRONTEND = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
 };
 
 // Status → Progress percentage
@@ -74,7 +77,7 @@ export async function getTaskById(id) {
 // =====================================================
 export async function getTasksByProject(projectId) {
   try {
-    const response = await get(BASE, { projectId, limit: 100 });
+    const response = await get(`${BASE}/projectId/${projectId}`);
     return (response?.data || []).map(transformTask);
   } catch (error) {
     console.error('Error fetching project tasks:', error);
@@ -96,28 +99,60 @@ export async function getTasksByAssignee(assigneeId) {
 }
 
 // =====================================================
+// GET TASKS BY STATUS
+// =====================================================
+export async function getTasksByStatus(status) {
+  try {
+    if (status === 'All') return getAllTasks();
+    const backendStatus = STATUS_TO_BACKEND[status];
+    const response = await get(BASE, { status: backendStatus, limit: 100 });
+    return (response?.data || []).map(transformTask);
+  } catch (error) {
+    console.error('Error fetching tasks by status:', error);
+    return [];
+  }
+}
+
+// =====================================================
 // CREATE TASK
 // =====================================================
 export async function createTask(payload) {
   try {
-    // Frontend form data → Backend format
     const body = {
-      title: payload.name,
+      TaskName: payload.name || payload.title,
       description: payload.description || '',
       projectId: payload.projectId || null,
-      assigneeId: payload.assigneeId || null,
-      dueDate: payload.dueDate || null,
       priority: PRIORITY_TO_BACKEND[payload.priority] || 'medium',
+      dueDate: payload.dueDate || null,
     };
+
+    // Add assignee if provided
+    if (payload.assigneeId) {
+      body.assigneeId = payload.assigneeId;
+    } else if (payload.assignee) {
+      body.EmployeeName = payload.assignee;
+    }
 
     if (!body.projectId) {
       throw new Error('Please select a project for this task.');
     }
 
+    console.log('📤 Creating task with body:', body);
+
     const response = await post(BASE, body);
     return transformTask(response?.data);
   } catch (error) {
     console.error('Error creating task:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
     throw error;
   }
 }
@@ -127,25 +162,49 @@ export async function createTask(payload) {
 // =====================================================
 export async function updateTask(id, updates) {
   try {
-    const body = {
-      title: updates.name,
-      description: updates.description,
-      assigneeId: updates.assigneeId || null,
-      dueDate: updates.dueDate || null,
-      priority: PRIORITY_TO_BACKEND[updates.priority] || 'medium',
-      status: STATUS_TO_BACKEND[updates.status] || 'todo',
-    };
+    const body = {};
+    
+    if (updates.name !== undefined || updates.title !== undefined) {
+      body.TaskName = updates.name || updates.title;
+    }
+    if (updates.description !== undefined) body.description = updates.description;
+    if (updates.dueDate !== undefined) body.dueDate = updates.dueDate;
+    if (updates.priority !== undefined) {
+      body.priority = PRIORITY_TO_BACKEND[updates.priority] || updates.priority.toLowerCase();
+    }
+    if (updates.status !== undefined) {
+      body.status = STATUS_TO_BACKEND[updates.status] || 'todo';
+    }
+    
+    // Handle assignee change
+    if (updates.assigneeId !== undefined) {
+      body.assigneeId = updates.assigneeId;
+    } else if (updates.assignee !== undefined) {
+      body.EmployeeName = updates.assignee;
+    }
+
+    console.log('📤 Updating task:', id, body);
 
     const response = await put(`${BASE}/${id}`, body);
     return transformTask(response?.data);
   } catch (error) {
     console.error('Error updating task:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
     throw error;
   }
 }
 
 // =====================================================
-// UPDATE TASK STATUS ONLY
+// UPDATE TASK STATUS ONLY (PATCH)
 // =====================================================
 export async function updateTaskStatus(id, status) {
   try {
@@ -161,31 +220,17 @@ export async function updateTaskStatus(id, status) {
 }
 
 // =====================================================
-// DELETE TASK
-// (Backend route missing — will 404 until added)
+// DELETE TASK ⭐ (Now Works!)
 // =====================================================
 export async function deleteTask(id) {
   try {
+    console.log('🗑️ Deleting task:', id);
     await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
     console.error('Error deleting task:', error);
+    alert(`Delete failed: ${error.data?.message || error.message || 'Unknown error'}`);
     return false;
-  }
-}
-
-// =====================================================
-// GET TASKS BY STATUS
-// =====================================================
-export async function getTasksByStatus(status) {
-  try {
-    if (status === 'All') return getAllTasks();
-    const backendStatus = STATUS_TO_BACKEND[status];
-    const response = await get(BASE, { status: backendStatus, limit: 100 });
-    return (response?.data || []).map(transformTask);
-  } catch (error) {
-    console.error('Error fetching tasks by status:', error);
-    return [];
   }
 }
 
@@ -260,6 +305,7 @@ function transformTask(task) {
   return {
     id: task.id,
     name: task.title || '',
+    title: task.title || '',
     description: task.description || '',
     project: task.project_name || 'Unassigned',
     projectId: task.project_id || null,
@@ -268,8 +314,10 @@ function transformTask(task) {
     dueDate: formatDate(task.due_date),
     assignee: task.assignee_name || 'Unassigned',
     assigneeId: task.assignee_id || null,
+    assigneeEmail: task.assignee_email || null,
     progress: STATUS_PROGRESS[frontendStatus] ?? 0,
     createdAt: formatDate(task.created_at),
+    updatedAt: formatDate(task.updated_at),
   };
 }
 

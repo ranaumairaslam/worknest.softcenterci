@@ -17,12 +17,12 @@ export async function getAllClients() {
 }
 
 // =====================================================
-// GET SINGLE CLIENT
+// GET SINGLE CLIENT (frontend fallback — backend route missing)
 // =====================================================
 export async function getClientById(id) {
   try {
-    const response = await get(`${BASE}/${id}`);
-    return transformClient(response?.data);
+    const all = await getAllClients();
+    return all.find((c) => String(c.id) === String(id)) || null;
   } catch (error) {
     console.error('Error fetching client:', error);
     return null;
@@ -38,25 +38,16 @@ export async function getClientByName(name) {
 }
 
 // =====================================================
-// CREATE CLIENT
+// CREATE CLIENT (creates client + login + initial project)
 // =====================================================
 export async function createClient(payload) {
   try {
-    // ✅ Revenue ko number bana lein (agar string hai toh)
-    let revenueValue = payload.revenue || '0';
-    revenueValue = String(revenueValue).replace(/[$,\s]/g, '');
-    const revenueNumber = Number(revenueValue) || 0;
-
     const body = {
-      companyName: payload.name,
-      companyEmail: payload.contact || payload.email,
-      password: payload.password || 'client12345',
-      address: payload.address || payload.location || 'N/A',
-      industry: payload.industry || '',
-      AccountOwnerName: payload.owner || 'Unknown',
-      companySize: payload.size || 'N/A',
-      revenu: revenueNumber,   // ✅ Number ke tor pe bhej rahe hain
-      location: payload.location || payload.address || 'N/A',
+      name: payload.name,
+      email: payload.contact || payload.email,
+      password: payload.password,
+      project_name: payload.projectName || payload.name + ' Project',
+      project_description: payload.projectDescription || payload.description || '',
     };
 
     console.log('📤 Creating client with body:', body);
@@ -66,53 +57,36 @@ export async function createClient(payload) {
   } catch (error) {
     console.error('Error creating client:', error);
     
-    // ✅ Backend errors ko clean format mein throw karein
-    if (error.data?.errors && Array.isArray(error.data.errors)) {
-      const errorMessages = error.data.errors
-        .map((e) => `${e.field}: ${e.message}`)
-        .join('\n');
-      const newError = new Error(errorMessages);
-      newError.backendErrors = error.data.errors;
-      throw newError;
+    // Show backend errors
+    if (error.data?.message) {
+      alert(`Error: ${error.data.message}`);
     }
     
-    throw error;
+    throw new Error(error.data?.message || error.message || 'Failed to create client');
   }
 }
 
 // =====================================================
-// UPDATE CLIENT
+// UPDATE CLIENT (Backend route missing — will fail gracefully)
 // =====================================================
 export async function updateClient(id, updates) {
   try {
-    let revenueValue = updates.revenue || '0';
-    revenueValue = String(revenueValue).replace(/[$,\s]/g, '');
-    const revenueNumber = Number(revenueValue) || 0;
-
     const body = {
-      companyName: updates.name,
-      companyEmail: updates.contact || updates.email,
-      address: updates.address || updates.location,
-      industry: updates.industry,
-      AccountOwnerName: updates.owner,
-      companySize: updates.size,
-      revenu: revenueNumber,
-      location: updates.location,
-      status: updates.status?.toLowerCase(),
+      name: updates.name,
+      email: updates.contact || updates.email,
     };
+
+    console.log('📤 Updating client:', id, body);
 
     const response = await put(`${BASE}/${id}`, body);
     return transformClient(response?.data);
   } catch (error) {
     console.error('Error updating client:', error);
     
-    if (error.data?.errors && Array.isArray(error.data.errors)) {
-      const errorMessages = error.data.errors
-        .map((e) => `${e.field}: ${e.message}`)
-        .join('\n');
-      const newError = new Error(errorMessages);
-      newError.backendErrors = error.data.errors;
-      throw newError;
+    if (error.status === 404) {
+      alert('Update failed: Backend does not support client update yet. Please ask backend developer to add PUT /api/company/clients/:id');
+    } else {
+      alert(`Update failed: ${error.data?.message || error.message}`);
     }
     
     throw error;
@@ -120,14 +94,22 @@ export async function updateClient(id, updates) {
 }
 
 // =====================================================
-// DELETE CLIENT
+// DELETE CLIENT (Backend route missing — will fail gracefully)
 // =====================================================
 export async function deleteClient(id) {
   try {
+    console.log('🗑️ Deleting client:', id);
     await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
     console.error('Error deleting client:', error);
+    
+    if (error.status === 404) {
+      alert('Delete failed: Backend does not support client delete yet. Please ask backend developer to add DELETE /api/company/clients/:id');
+    } else {
+      alert(`Delete failed: ${error.data?.message || error.message}`);
+    }
+    
     return false;
   }
 }
@@ -145,7 +127,7 @@ export async function unlinkProject(clientId, projectId) {
 
 export async function getProjectsByClient(clientId) {
   const client = await getClientById(clientId);
-  return client?.projectIds || [];
+  return client?.projects || [];
 }
 
 // =====================================================
@@ -156,29 +138,27 @@ function transformClient(client) {
 
   return {
     id: client.id,
-    name: client.companyName || client.name || '',
-    contact: client.companyEmail || client.email || '',
-    email: client.companyEmail || client.email || '',
-    status: capitalize(client.status || 'Active'),
-    industry: client.industry || 'Unknown',
-    owner: client.AccountOwnerName || client.owner || 'Unassigned',
-    size: client.companySize || client.size || 'Unknown',
-    revenue: client.revenu || client.revenue || 0,
-    location: client.location || client.address || 'Unknown',
-    address: client.address || '',
-    phone: client.phone || '',
-    projects: client.project_count || 0,
-    projectIds: client.project_ids || [],
-    lastContact: formatDate(client.updated_at || client.created_at),
+    name: client.name || '',
+    contact: client.email || '',
+    email: client.email || '',
+    status: 'Active',
+    industry: client.industry || 'Not specified',
+    owner: client.name || 'Not specified',
+    size: 'N/A',
+    revenue: 0,
+    location: 'N/A',
+    address: '',
+    phone: '',
+    projects: (client.projects || []).length,
+    projectsList: client.projects || [],
+    projectIds: (client.projects || []).map((p) => p.id),
+    userId: client.user_id || null,
+    lastContact: formatDate(client.created_at),
     createdAt: formatDate(client.created_at),
   };
 }
 
-function capitalize(str) {
-  if (!str) return '';
-  return String(str).charAt(0).toUpperCase() + String(str).slice(1).toLowerCase();
-}
-
+// Helper: Format date
 function formatDate(dateString) {
   if (!dateString) return 'N/A';
   try {

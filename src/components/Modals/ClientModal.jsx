@@ -5,17 +5,12 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
     name: "",
     contact: "",
     password: "",
-    address: "",
-    status: "Active",
-    industry: "",
-    owner: "",
-    size: "",
-    revenue: "",
-    location: "",
+    projectName: "",
+    projectDescription: "",
   };
 
   const [form, setForm] = useState(emptyForm);
-  const [errors, setErrors] = useState({});   // ✅ Errors state
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -24,36 +19,31 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
         name: client.name || "",
         contact: client.contact || client.email || "",
         password: "",
-        address: client.address || "",
-        status: client.status || "Active",
-        industry: client.industry || "",
-        owner: client.owner || "",
-        size: client.size || "",
-        revenue: client.revenue || "",
-        location: client.location || "",
+        projectName: "",
+        projectDescription: "",
       });
     } else {
       setForm(emptyForm);
     }
-    setErrors({});   // Clear errors on open
+    setErrors({});
   }, [client, open]);
 
   if (!open) return null;
 
-  // ✅ VALIDATION FUNCTION
+  // ✅ VALIDATION
   const validate = () => {
     const newErrors = {};
 
-    // Company Name
+    // Name
     if (!form.name.trim()) {
-      newErrors.name = "Company Name is required";
+      newErrors.name = "Client Name is required";
     } else if (form.name.trim().length < 2) {
-      newErrors.name = "Company Name must be at least 2 characters";
+      newErrors.name = "Name must be at least 2 characters";
     }
 
-    // Contact Email
+    // Email
     if (!form.contact.trim()) {
-      newErrors.contact = "Contact Email is required";
+      newErrors.contact = "Email is required";
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(form.contact.trim())) {
@@ -61,98 +51,22 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
       }
     }
 
-    // Password (only when creating new client)
+    // For create only
     if (!client) {
       if (!form.password.trim()) {
         newErrors.password = "Password is required";
       } else if (form.password.trim().length < 6) {
         newErrors.password = "Password must be at least 6 characters";
       }
-    }
 
-    // Address
-    if (!form.address.trim()) {
-      newErrors.address = "Company Address is required";
-    }
-
-    // Industry
-    if (!form.industry.trim()) {
-      newErrors.industry = "Industry is required";
-    }
-
-    // Owner
-    if (!form.owner.trim()) {
-      newErrors.owner = "Account Owner is required";
-    }
-
-    // Size
-    if (!form.size.trim()) {
-      newErrors.size = "Company Size is required";
-    }
-
-    // Revenue (must be a number)
-    if (!form.revenue.toString().trim()) {
-      newErrors.revenue = "Revenue is required";
-    } else {
-      const cleaned = String(form.revenue).replace(/[$,\s]/g, '');
-      if (isNaN(Number(cleaned)) || Number(cleaned) < 0) {
-        newErrors.revenue = "Revenue must be a valid number (e.g. 100000)";
+      if (!form.projectName.trim()) {
+        newErrors.projectName = "Project Name is required";
       }
-    }
-
-    // Location
-    if (!form.location.trim()) {
-      newErrors.location = "Location is required";
     }
 
     return newErrors;
   };
 
-  const handleSubmit = async () => {
-    const validationErrors = validate();
-    setErrors(validationErrors);
-
-    // Agar errors hain toh submit mat karo
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await onSubmit?.({
-        ...form,
-        id: client?.id,
-      });
-    } catch (err) {
-      // Backend errors ko form errors mein daalein
-      if (err.backendErrors) {
-        const beErrors = {};
-        err.backendErrors.forEach((e) => {
-          // Map backend field names to frontend field names
-          const fieldMap = {
-            companyName: 'name',
-            companyEmail: 'contact',
-            AccountOwnerName: 'owner',
-            companySize: 'size',
-            revenu: 'revenue',
-            address: 'address',
-            location: 'location',
-            password: 'password',
-            industry: 'industry',
-          };
-          const field = fieldMap[e.field] || e.field;
-          beErrors[field] = e.message;
-        });
-        setErrors(beErrors);
-      } else {
-        alert(err.message || 'Failed to save client');
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Handler to clear specific error on change
   const handleChange = (field, value) => {
     setForm({ ...form, [field]: value });
     if (errors[field]) {
@@ -160,7 +74,28 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
     }
   };
 
-  // ✅ Helper for input classes (adds red border if error)
+  const handleSubmit = async () => {
+    const validationErrors = validate();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      console.log("📤 Submitting client:", form);
+      await onSubmit?.({
+        ...form,
+        id: client?.id,
+      });
+    } catch (err) {
+      alert(err.message || 'Failed to save client');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const inputClass = (field) =>
     `w-full rounded-lg border p-3 outline-none focus:ring-2 ${
       errors[field]
@@ -168,7 +103,6 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
         : "border-gray-300 focus:ring-[#016472]"
     }`;
 
-  // ✅ Error message component
   const ErrorMessage = ({ field }) =>
     errors[field] ? (
       <p className="mt-1 text-xs text-red-500">{errors[field]}</p>
@@ -181,115 +115,91 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
           {client ? "Edit Client" : "Add Client"}
         </h2>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Company Name */}
-          <div className="col-span-2">
+        <div className="grid gap-4">
+          {/* Client Name */}
+          <div>
             <input
               className={inputClass("name")}
-              placeholder="Company Name *"
+              placeholder="Client Name *"
               value={form.name}
               onChange={(e) => handleChange("name", e.target.value)}
             />
             <ErrorMessage field="name" />
           </div>
 
-          {/* Contact Email */}
+          {/* Email */}
           <div>
             <input
               type="email"
               className={inputClass("contact")}
-              placeholder="Contact Email *"
+              placeholder="Email Address *"
               value={form.contact}
               onChange={(e) => handleChange("contact", e.target.value)}
             />
             <ErrorMessage field="contact" />
           </div>
 
-          {/* Password */}
-          <div>
-            <input
-              type="password"
-              className={inputClass("password")}
-              placeholder={client ? "Password (leave blank)" : "Password * (min 6 chars)"}
-              value={form.password}
-              onChange={(e) => handleChange("password", e.target.value)}
-            />
-            <ErrorMessage field="password" />
-          </div>
+          {/* Password - only for create */}
+          {!client && (
+            <div>
+              <input
+                type="password"
+                className={inputClass("password")}
+                placeholder="Password * (min 6 characters)"
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+              />
+              <ErrorMessage field="password" />
+            </div>
+          )}
 
-          {/* Address */}
-          <div className="col-span-2">
-            <textarea
-              rows={3}
-              className={inputClass("address")}
-              placeholder="Company Address *"
-              value={form.address}
-              onChange={(e) => handleChange("address", e.target.value)}
-            />
-            <ErrorMessage field="address" />
-          </div>
+          {/* Project Name - only for create */}
+          {!client && (
+            <>
+              <div className="mt-2 border-t border-slate-200 pt-4">
+                <p className="mb-2 text-sm font-semibold text-slate-700">
+                  Initial Project
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  Every new client needs an initial project.
+                </p>
+              </div>
 
-          {/* Industry */}
-          <div>
-            <input
-              className={inputClass("industry")}
-              placeholder="Industry *"
-              value={form.industry}
-              onChange={(e) => handleChange("industry", e.target.value)}
-            />
-            <ErrorMessage field="industry" />
-          </div>
+              <div>
+                <input
+                  className={inputClass("projectName")}
+                  placeholder="Project Name *"
+                  value={form.projectName}
+                  onChange={(e) => handleChange("projectName", e.target.value)}
+                />
+                <ErrorMessage field="projectName" />
+              </div>
 
-          {/* Owner */}
-          <div>
-            <input
-              className={inputClass("owner")}
-              placeholder="Account Owner *"
-              value={form.owner}
-              onChange={(e) => handleChange("owner", e.target.value)}
-            />
-            <ErrorMessage field="owner" />
-          </div>
-
-          {/* Size */}
-          <div>
-            <input
-              className={inputClass("size")}
-              placeholder="Company Size * (e.g. 10-50)"
-              value={form.size}
-              onChange={(e) => handleChange("size", e.target.value)}
-            />
-            <ErrorMessage field="size" />
-          </div>
-
-          {/* Revenue */}
-          <div>
-            <input
-              type="number"
-              className={inputClass("revenue")}
-              placeholder="Revenue * (e.g. 100000)"
-              value={form.revenue}
-              onChange={(e) => handleChange("revenue", e.target.value)}
-            />
-            <ErrorMessage field="revenue" />
-          </div>
-
-          {/* Location */}
-          <div className="col-span-2">
-            <input
-              className={inputClass("location")}
-              placeholder="Location *"
-              value={form.location}
-              onChange={(e) => handleChange("location", e.target.value)}
-            />
-            <ErrorMessage field="location" />
-          </div>
+              <div>
+                <textarea
+                  rows={3}
+                  className={inputClass("projectDescription")}
+                  placeholder="Project Description (Optional)"
+                  value={form.projectDescription}
+                  onChange={(e) =>
+                    handleChange("projectDescription", e.target.value)
+                  }
+                />
+                <ErrorMessage field="projectDescription" />
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Error Summary */}
         {Object.keys(errors).length > 0 && (
           <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
             ⚠️ Please fix the errors above before submitting.
+          </div>
+        )}
+
+        {client && (
+          <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+            ℹ️ Backend currently supports client name/email updates only.
           </div>
         )}
 

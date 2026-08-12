@@ -10,13 +10,17 @@ const roleValue = {
   "Team Leader": "team_leader",
   "Project Leader": "team_leader",
   "Team Member": "team_member",
+  Leader: "team_leader",
+  Member: "team_member",
 };
 
 // ✅ FIXED: Handle both backend field name formats
 function mapEmployee(employee, teamsById) {
+  if (!employee) return null;
+  
   const employeeName = employee.EmployeeName || employee.name || "";
   const teamId = employee.TeamId ?? employee.team_id ?? null;
-  const teamName = employee.teamName || teamsById.get(String(teamId)) || "Unassigned";
+  const teamName = employee.teamName || teamsById?.get(String(teamId)) || "Unassigned";
   const createdAt = employee.createdAt || employee.created_at;
   
   return {
@@ -71,44 +75,53 @@ export async function getAllEmployees() {
 }
 
 // =====================================================
-// CREATE EMPLOYEE (via register-member in team)
+// CREATE EMPLOYEE
+// ✅ NEW: Uses dedicated /company/employees POST route
+// Works with or without team!
 // =====================================================
 export async function createEmployee(payload) {
-  const teams = await getCompanyTeams();
-  
-  if (teams.length === 0) {
-    throw new Error("No teams available. Please create a team first.");
-  }
-
-  const selectedTeam = teams.find((item) => item.name === payload.team);
-  const fallbackTeam = teams[0];
-  const team = selectedTeam || fallbackTeam;
-
-  if (!team) {
-    throw new Error("Please select a team for the employee.");
-  }
-
-  console.log('📤 Creating employee in team:', team.name);
-
   try {
-    const response = await post(`/company/teams/${team.id}/register-member`, {
-      name: payload.name,
+    // Find team ID if team name provided
+    let teamId = null;
+    let teamName = null;
+    
+    if (payload.team && payload.team !== "Unassigned" && payload.team !== "") {
+      const teams = await getCompanyTeams();
+      const team = teams.find((item) => item.name === payload.team);
+      if (team) {
+        teamId = team.id;
+        teamName = team.name;
+      }
+    }
+
+    const body = {
+      EmployeeName: payload.name,
       email: payload.email,
       password: payload.password || undefined,
       role: roleValue[payload.role] || "team_member",
-    });
+    };
     
-    const user = response?.data?.user;
-    if (!user) {
-      throw new Error(response?.message || "Employee could not be created.");
+    // Only add TeamId if team was selected
+    if (teamId) {
+      body.TeamId = teamId;
     }
 
+    console.log('📤 Creating employee with body:', body);
+
+    const response = await post("/company/employees", body);
+    
+    const employeeData = response?.data;
+    if (!employeeData) {
+      throw new Error("Employee could not be created.");
+    }
+
+    const teamsById = teamName 
+      ? new Map([[String(teamId), teamName]])
+      : new Map();
+
     return {
-      ...mapEmployee(
-        { ...user, status: "active" },
-        new Map([[String(team.id), team.name]]),
-      ),
-      credentials: response.data.credentials,
+      ...mapEmployee(employeeData, teamsById),
+      credentials: employeeData.credentials,
     };
   } catch (error) {
     console.error('Error creating employee:', error);
@@ -132,16 +145,27 @@ export async function createEmployee(payload) {
 export async function updateEmployee(id, payload) {
   try {
     const teams = await getCompanyTeams();
-    const team = teams.find((item) => item.name === payload.team);
     
     const body = {};
-    if (payload.name !== undefined) body.name = payload.name;
+    if (payload.name !== undefined) body.EmployeeName = payload.name;
     if (payload.email !== undefined && payload.email) body.email = payload.email;
     if (payload.role !== undefined) body.role = roleValue[payload.role] || payload.role;
     if (payload.status !== undefined) {
       body.status = payload.status?.toLowerCase() === "active" ? "active" : "inactive";
     }
-    if (team?.id) body.teamId = team.id;
+    if (payload.password !== undefined && payload.password) {
+      body.password = payload.password;
+    }
+    
+    // Handle team change
+    if (payload.team !== undefined) {
+      if (payload.team === "" || payload.team === "Unassigned") {
+        body.TeamId = null;   // Unassign from team
+      } else {
+        const team = teams.find((item) => item.name === payload.team);
+        if (team) body.TeamId = team.id;
+      }
+    }
 
     console.log('📤 Updating employee:', id, body);
 
@@ -168,7 +192,7 @@ export async function updateEmployee(id, payload) {
 }
 
 // =====================================================
-// DELETE EMPLOYEE
+// DELETE EMPLOYEE (✅ Working!)
 // =====================================================
 export async function deleteEmployee(id) {
   try {
@@ -183,7 +207,7 @@ export async function deleteEmployee(id) {
 }
 
 // =====================================================
-// ASSIGN EMPLOYEE TO TEAM
+// ASSIGN EMPLOYEE TO TEAM (via PUT update)
 // =====================================================
 export async function assignToTeam(employeeId, teamName) {
   try {
@@ -194,7 +218,7 @@ export async function assignToTeam(employeeId, teamName) {
     console.log('📤 Assigning employee to team:', employeeId, team.name);
     
     const response = await put(`/company/employees/${employeeId}`, {
-      teamId: team.id,
+      TeamId: team.id,
     });
     
     return mapEmployee(

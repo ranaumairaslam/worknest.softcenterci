@@ -1,112 +1,102 @@
-import { getAllProjects, createProject as createCanonicalProject } from "./projectService";
-import { getTasksByProject, updateTask } from "./taskService";
-import { getProjectById } from "./projectService";
-import { getEmployeeById } from "./employeeService";
-import { getActor } from "./authContext";
-import { computeLiveStats } from "../utils/projectStats";
-
-const STATUS_MAP = {
-  Pending: "todo",
-  "In Progress": "in_progress",
-  Review: "under_review",
-  "Under Review": "under_review",
-  Completed: "completed",
-  Rejected: "in_progress",
-};
-
-function mapTaskForLeader(task) {
-  const initials = (task.assignee || "?")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  return {
-    id: task.id,
-    title: task.name,
-    status: STATUS_MAP[task.status] || "todo",
-    assignee: { name: task.assignee, avatar: initials },
-  };
-}
+import { createProject as createCanonicalProject } from "./projectService";
+import {
+  getTeamLeaderDashboard,
+  getTeamLeaderProjects,
+  getTeamLeaderMembers,
+  getTeamLeaderTasks,
+  getTeamLeaderSubmittedTasks,
+  getTeamLeaderProgress,
+  assignTeamLeaderTask,
+  approveTeamLeaderTask,
+  reviseTeamLeaderTask,
+  mapTeamTask,
+} from "./teamLeaderService";
 
 export async function getProjects(role) {
-  return getAllProjects(role);
+  return getTeamLeaderProjects();
 }
 
 export async function getProjectTasks(projectId, role) {
-  const tasks = await getTasksByProject(projectId, role);
-  return tasks.map(mapTaskForLeader);
+  const tasks = await getTeamLeaderTasks({ projectId });
+  return tasks
+    .filter((task) => !projectId || String(task.projectId) === String(projectId))
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      status: task.status,
+      assignee: {
+        name: task.assignee,
+        avatar: task.member?.avatar || "NA",
+      },
+      projectId: task.projectId,
+      projectName: task.projectName,
+      priority: task.priority,
+      dueDate: task.dueDate,
+    }));
 }
 
 export async function getPendingDeliverables(projectId, role) {
-  const tasks = await getTasksByProject(projectId, role);
-  return tasks
-    .filter((t) => t.status === "Review" || t.status === "Under Review")
-    .map((t) => ({
-      id: `d-${t.id}`,
-      taskId: t.id,
-      member: {
-        name: t.assignee,
-        avatar: (t.assignee || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
-      },
-      fileLabel: "Attached files",
-      linkLabel: "link/ZIP",
-      url: "https://documents.com/ZIP",
+  const items = await getTeamLeaderSubmittedTasks();
+  return items
+    .filter((item) => !projectId || String(item.projectId) === String(projectId))
+    .map((item) => ({
+      id: item.id,
+      taskId: item.taskId,
+      member: item.member,
+      fileLabel: item.fileLabel,
+      linkLabel: item.linkLabel,
+      url: item.url,
+      title: item.title,
+      projectName: item.projectName,
     }));
 }
 
 export async function approveDeliverable(id, comment, role) {
-  const taskId = id.replace(/^d-/, "");
-  await updateTask(taskId, { status: "Completed", progress: 100 }, getActor(role));
-  return { id, status: "approved", comment };
+  const taskId = String(id).replace(/^d-/, "");
+  const response = await approveTeamLeaderTask(taskId);
+  return { id, status: "approved", comment, response };
 }
 
 export async function rejectDeliverable(id, comment, role) {
-  const taskId = id.replace(/^d-/, "");
-  await updateTask(taskId, { status: "In Progress", progress: 50 }, getActor(role));
-  return { id, status: "rejected", comment };
+  const taskId = String(id).replace(/^d-/, "");
+  const response = await reviseTeamLeaderTask(taskId, comment || "Needs revision");
+  return { id, status: "rejected", comment, response };
 }
 
 export async function getTeamProgressStats(projectId, role) {
-  const [project, tasks] = await Promise.all([
-    getProjectById(projectId),
-    getTasksByProject(projectId, role),
-  ]);
-
-  const baseStats = [
-    { id: "team-members", label: "Team Members", value: String(project?.members || 0), note: "Active" },
-    { id: "in-progress", label: "Tasks in Progress", value: "0", note: "This project" },
-    { id: "overdue", label: "Overdue Tasks", value: "0", note: "Needs attention" },
-    { id: "completion", label: "Completion", value: "0%", note: "Live" },
-  ];
-
-  const mappedTasks = tasks.map((t) => ({
-    ...t,
-    status: t.status === "In Progress" ? "In Progress" : t.status,
+  const stats = await getTeamLeaderProgress();
+  return stats.map((item) => ({
+    ...item,
+    label: item.label,
+    value: String(item.value ?? 0),
   }));
-
-  return computeLiveStats(baseStats, mappedTasks);
 }
 
 export async function getTeamMembers(projectId) {
-  const project = await getProjectById(projectId);
-  if (!project?.memberIds?.length) return [];
-
-  const members = await Promise.all(project.memberIds.map((id) => getEmployeeById(id)));
-  return members.filter(Boolean).map((m) => ({
-    id: m.id,
-    name: m.name,
-    avatar: m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
+  const members = await getTeamLeaderMembers();
+  return members.map((member) => ({
+    id: member.id,
+    name: member.name,
+    avatar: member.avatar,
+    role: member.role,
+    email: member.email,
   }));
 }
 
 export async function reassignTask(taskId, memberId, role) {
-  const member = await getEmployeeById(memberId);
-  if (!member) return { taskId, memberId };
-  return updateTask(taskId, { assignee: member.name, assigneeId: member.id }, getActor(role));
+  const response = await assignTeamLeaderTask(taskId, memberId);
+  return response;
 }
 
 export async function createProject(project, role) {
-  return createCanonicalProject(project, getActor(role));
+  return createCanonicalProject(project);
+}
+
+export async function getLeaderDashboardData() {
+  return getTeamLeaderDashboard();
+}
+
+export async function getLeaderTeamTasks(params = {}) {
+  const tasks = await getTeamLeaderTasks(params);
+  return tasks.map(mapTeamTask);
 }

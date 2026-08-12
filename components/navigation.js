@@ -243,7 +243,7 @@ export const getRoleFromPath = (pathname) => {
     // Project Leader
     "/dashboard-leader": "projectLeader",
     "/project": "projectLeader",
-    "/calendar": "projectLeader",
+   
     "/project-reports": "projectLeader",
     "/project/timeline": "projectLeader",
     "/project/team-performance": "projectLeader",
