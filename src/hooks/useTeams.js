@@ -4,8 +4,9 @@ import {
   createTeam,
   updateTeam,
   deleteTeam,
-  addTeamMember,
+  addExistingMemberToTeam,
   assignTeamLeader,
+  removeTeamMember,
 } from "../services/teamService";
 
 export function useTeams() {
@@ -33,7 +34,19 @@ export function useTeams() {
 
   const addTeam = async (payload) => {
     const team = await createTeam(payload);
-    // If leader was selected, assign as leader after creation
+    
+    // If members were selected, add them
+    if (team && payload.memberNames && payload.memberNames.length > 0) {
+      for (const memberName of payload.memberNames) {
+        try {
+          await addExistingMemberToTeam(team.id, memberName);
+        } catch (err) {
+          console.warn(`Could not add member ${memberName}:`, err);
+        }
+      }
+    }
+    
+    // If leader was selected, assign as leader
     if (team && payload.leaderId) {
       try {
         await assignTeamLeader(team.id, payload.leaderId);
@@ -41,7 +54,7 @@ export function useTeams() {
         console.warn('Could not auto-assign leader:', err);
       }
     }
-    // Refresh list to get updated leader info
+    
     await load();
     return team;
   };
@@ -51,7 +64,6 @@ export function useTeams() {
     if (team) {
       setTeams((prev) => prev.map((t) => (t.id === id ? team : t)));
     }
-    // If leader changed, assign
     if (updates.leaderId) {
       try {
         await assignTeamLeader(id, updates.leaderId);
@@ -71,17 +83,29 @@ export function useTeams() {
     return deleted;
   };
 
-  const assignMember = async (teamId, employeeId) => {
-    const team = await addTeamMember(teamId, employeeId);
-    if (team) {
-      setTeams((prev) => prev.map((t) => (t.id === teamId ? team : t)));
+  const assignMember = async (teamId, employeeName) => {
+    try {
+      await addExistingMemberToTeam(teamId, employeeName);
+      await load(); // Refresh to get updated member count
+      return true;
+    } catch (err) {
+      throw err;
     }
-    return team;
+  };
+
+  const removeMember = async (teamId, employeeId) => {
+    try {
+      await removeTeamMember(teamId, employeeId);
+      await load();
+      return true;
+    } catch (err) {
+      throw err;
+    }
   };
 
   const setTeamLeader = async (teamId, userId) => {
     const result = await assignTeamLeader(teamId, userId);
-    await load(); // Refresh to get updated data
+    await load();
     return result;
   };
 
@@ -93,6 +117,7 @@ export function useTeams() {
     editTeam,
     removeTeam,
     assignMember,
+    removeMember,
     setTeamLeader,
     refresh: load,
   };

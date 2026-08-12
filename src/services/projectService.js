@@ -3,7 +3,7 @@ import { get, post, put, del } from './apiClient.js';
 const BASE = '/company/projects';
 
 // =====================================================
-// Status/Priority Mapping (Frontend → Backend)
+// Status/Priority Mapping
 // =====================================================
 const STATUS_TO_BACKEND = {
   Planning: 'pending',
@@ -67,9 +67,54 @@ export async function getProjectsByClient(clientId) {
 }
 
 // =====================================================
+// GET PROJECT CLIENT (NEW!)
+// =====================================================
+export async function getProjectClient(projectId) {
+  try {
+    const response = await get(`${BASE}/${projectId}/client`);
+    return response?.data || null;
+  } catch (error) {
+    console.error('Error fetching project client:', error);
+    return null;
+  }
+}
+
+// =====================================================
+// GET PROJECT TASKS (NEW!)
+// =====================================================
+export async function getProjectTasks(projectId) {
+  try {
+    const response = await get(`${BASE}/${projectId}/tasks`);
+    return response?.data || [];
+  } catch (error) {
+    console.error('Error fetching project tasks:', error);
+    return [];
+  }
+}
+
+// =====================================================
+// CREATE TASK FOR PROJECT (NEW!)
+// =====================================================
+export async function createProjectTask(projectId, taskPayload) {
+  try {
+    const body = {
+      title: taskPayload.title || taskPayload.name,
+      description: taskPayload.description || '',
+      assigneeId: taskPayload.assigneeId || null,
+      dueDate: taskPayload.dueDate || null,
+      priority: (taskPayload.priority || 'medium').toLowerCase(),
+    };
+
+    const response = await post(`${BASE}/${projectId}/tasks`, body);
+    return response?.data;
+  } catch (error) {
+    console.error('Error creating project task:', error);
+    throw error;
+  }
+}
+
+// =====================================================
 // CREATE PROJECT
-// Backend requires: projectName, description, TeamLeaderName,
-// ProjectTeam, ProjectStatus, ProjectPriority, date, clientName
 // =====================================================
 export async function createProject(payload) {
   try {
@@ -106,7 +151,6 @@ export async function createProject(payload) {
 
 // =====================================================
 // UPDATE PROJECT
-// Backend accepts: name, description, clientId, startDate, dueDate, status
 // =====================================================
 export async function updateProject(id, updates) {
   try {
@@ -172,11 +216,10 @@ export async function markProjectCompleted(id) {
 }
 
 // =====================================================
-// ASSIGN PROJECT LEADER (via assign-team endpoint)
+// ASSIGN PROJECT LEADER
 // =====================================================
 export async function assignProjectLeader(id, leaderName) {
   try {
-    // Refresh project - actual assignment done via assignTeamToProject
     return getProjectById(id);
   } catch (error) {
     console.error('Error assigning leader:', error);
@@ -214,6 +257,19 @@ export async function getCompanyEmployees() {
 }
 
 // =====================================================
+// GET PROJECT TEAM MEMBERS
+// =====================================================
+export async function getProjectTeamMembers(projectId, teamId) {
+  try {
+    const response = await get(`${BASE}/${projectId}/team/${teamId}/employees`);
+    return response?.data || [];
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    return [];
+  }
+}
+
+// =====================================================
 // COMPATIBILITY
 // =====================================================
 export async function incrementTaskCount(projectId) {
@@ -230,7 +286,6 @@ export async function recalculateProgress(projectId) {
 function transformProject(project) {
   if (!project) return null;
 
-  // Backend can return either format - handle both
   const statusRaw = project.ProjectStatus || project.status || 'pending';
   const priorityRaw = project.ProjectPriority || project.priority || 'medium';
   const frontendStatus = STATUS_TO_FRONTEND[statusRaw] || capitalize(statusRaw);

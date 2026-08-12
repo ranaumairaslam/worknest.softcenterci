@@ -24,8 +24,9 @@ export async function getClientById(id) {
     const response = await get(`${BASE}/${id}`);
     return transformClient(response?.data);
   } catch (error) {
-    console.error('Error fetching client:', error);
-    return null;
+    // Fallback: find from list
+    const all = await getAllClients();
+    return all.find((c) => String(c.id) === String(id)) || null;
   }
 }
 
@@ -38,24 +39,33 @@ export async function getClientByName(name) {
 }
 
 // =====================================================
-// CREATE CLIENT
+// CREATE CLIENT — Sends ALL fields backend accepts
 // =====================================================
 export async function createClient(payload) {
   try {
-    // ✅ Revenue ko number bana lein (agar string hai toh)
+    // Convert revenue to number
     let revenueValue = payload.revenue || '0';
     revenueValue = String(revenueValue).replace(/[$,\s]/g, '');
     const revenueNumber = Number(revenueValue) || 0;
 
+    // Send ALL fields — backend will accept what it supports
     const body = {
+      // Simple version fields (current backend)
+      name: payload.name,
+      email: payload.contact || payload.email,
+      password: payload.password || 'client12345',
+      project_name: (payload.name || 'Client') + ' - Initial Project',
+      project_description: `Initial project for ${payload.name}`,
+      
+      // Advanced version fields (for when backend is fixed)
       companyName: payload.name,
       companyEmail: payload.contact || payload.email,
-      password: payload.password || 'client12345',
-      address: payload.address || payload.location || 'N/A',
+      address: payload.address || 'N/A',
       industry: payload.industry || '',
       AccountOwnerName: payload.owner || 'Unknown',
       companySize: payload.size || 'N/A',
-      revenu: revenueNumber,   // ✅ Number ke tor pe bhej rahe hain
+      revenu: revenueNumber,
+      revenue: revenueNumber,
       location: payload.location || payload.address || 'N/A',
     };
 
@@ -66,7 +76,6 @@ export async function createClient(payload) {
   } catch (error) {
     console.error('Error creating client:', error);
     
-    // ✅ Backend errors ko clean format mein throw karein
     if (error.data?.errors && Array.isArray(error.data.errors)) {
       const errorMessages = error.data.errors
         .map((e) => `${e.field}: ${e.message}`)
@@ -76,7 +85,7 @@ export async function createClient(payload) {
       throw newError;
     }
     
-    throw error;
+    throw new Error(error.data?.message || error.message || 'Failed to create client');
   }
 }
 
@@ -90,6 +99,11 @@ export async function updateClient(id, updates) {
     const revenueNumber = Number(revenueValue) || 0;
 
     const body = {
+      // Simple fields
+      name: updates.name,
+      email: updates.contact || updates.email,
+      
+      // Advanced fields
       companyName: updates.name,
       companyEmail: updates.contact || updates.email,
       address: updates.address || updates.location,
@@ -97,22 +111,29 @@ export async function updateClient(id, updates) {
       AccountOwnerName: updates.owner,
       companySize: updates.size,
       revenu: revenueNumber,
+      revenue: revenueNumber,
       location: updates.location,
       status: updates.status?.toLowerCase(),
     };
+
+    console.log('📤 Updating client:', id, body);
 
     const response = await put(`${BASE}/${id}`, body);
     return transformClient(response?.data);
   } catch (error) {
     console.error('Error updating client:', error);
     
-    if (error.data?.errors && Array.isArray(error.data.errors)) {
+    if (error.status === 404) {
+      alert('Update failed: Backend does not support client update yet. Backend developer is fixing it.');
+    } else if (error.data?.errors && Array.isArray(error.data.errors)) {
       const errorMessages = error.data.errors
         .map((e) => `${e.field}: ${e.message}`)
         .join('\n');
       const newError = new Error(errorMessages);
       newError.backendErrors = error.data.errors;
       throw newError;
+    } else {
+      alert(`Update failed: ${error.data?.message || error.message}`);
     }
     
     throw error;
@@ -124,10 +145,18 @@ export async function updateClient(id, updates) {
 // =====================================================
 export async function deleteClient(id) {
   try {
+    console.log('🗑️ Deleting client:', id);
     await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
     console.error('Error deleting client:', error);
+    
+    if (error.status === 404) {
+      alert('Delete failed: Backend does not support client delete yet. Backend developer is fixing it.');
+    } else {
+      alert(`Delete failed: ${error.data?.message || error.message}`);
+    }
+    
     return false;
   }
 }
@@ -145,7 +174,7 @@ export async function unlinkProject(clientId, projectId) {
 
 export async function getProjectsByClient(clientId) {
   const client = await getClientById(clientId);
-  return client?.projectIds || [];
+  return client?.projectsList || [];
 }
 
 // =====================================================
@@ -160,15 +189,17 @@ function transformClient(client) {
     contact: client.companyEmail || client.email || '',
     email: client.companyEmail || client.email || '',
     status: capitalize(client.status || 'Active'),
-    industry: client.industry || 'Unknown',
-    owner: client.AccountOwnerName || client.owner || 'Unassigned',
-    size: client.companySize || client.size || 'Unknown',
+    industry: client.industry || 'Not specified',
+    owner: client.AccountOwnerName || client.owner || client.name || 'Not specified',
+    size: client.companySize || client.size || 'N/A',
     revenue: client.revenu || client.revenue || 0,
-    location: client.location || client.address || 'Unknown',
+    location: client.location || client.address || 'N/A',
     address: client.address || '',
     phone: client.phone || '',
-    projects: client.project_count || 0,
-    projectIds: client.project_ids || [],
+    projects: (client.projects || []).length || client.project_count || 0,
+    projectsList: client.projects || [],
+    projectIds: (client.projects || []).map((p) => p.id),
+    userId: client.user_id || null,
     lastContact: formatDate(client.updated_at || client.created_at),
     createdAt: formatDate(client.created_at),
   };

@@ -11,9 +11,9 @@ export default function TeamModal({
     name: "",
     description: "",
     status: "Active",
-    leaderId: "",         // ← Employee ID
-    leaderName: "",       // ← Employee Name (for backend)
-    members: [],          // ← Selected member IDs
+    leaderId: "",
+    leaderName: "",
+    memberNames: [],   // ✅ Now contains employee NAMES (not IDs)
   };
 
   const [search, setSearch] = useState("");
@@ -29,7 +29,7 @@ export default function TeamModal({
         status: team.status || "Active",
         leaderId: team.leaderId || "",
         leaderName: team.projectLeader || "",
-        members: team.members || [],
+        memberNames: [],
       });
     } else {
       setForm(emptyForm);
@@ -40,7 +40,6 @@ export default function TeamModal({
 
   if (!open) return null;
 
-  // ✅ VALIDATION
   const validate = () => {
     const newErrors = {};
 
@@ -65,7 +64,7 @@ export default function TeamModal({
       leaderId: empId,
       leaderName: employee?.name || "",
       // Remove leader from members if selected
-      members: form.members.filter((id) => String(id) !== String(empId)),
+      memberNames: form.memberNames.filter((name) => name !== employee?.name),
     });
     if (errors.leaderId) {
       setErrors({ ...errors, leaderId: undefined });
@@ -186,13 +185,13 @@ export default function TeamModal({
             <ErrorMessage field="leaderId" />
           </div>
 
-          {/* Team Members (Display Only - Info) */}
+          {/* Team Members */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-slate-700">
               Team Members (Optional)
             </label>
             <p className="text-xs text-slate-500">
-              ℹ️ Members can be added after creating the team via employee management.
+              ℹ️ Selected members will be added to the team after creation.
             </p>
 
             <input
@@ -230,18 +229,18 @@ export default function TeamModal({
 
                     <input
                       type="checkbox"
-                      checked={form.members.includes(employee.id)}
+                      checked={form.memberNames.includes(employee.name)}
                       onChange={(e) => {
                         if (e.target.checked) {
                           setForm({
                             ...form,
-                            members: [...form.members, employee.id],
+                            memberNames: [...form.memberNames, employee.name],
                           });
                         } else {
                           setForm({
                             ...form,
-                            members: form.members.filter(
-                              (id) => id !== employee.id
+                            memberNames: form.memberNames.filter(
+                              (name) => name !== employee.name
                             ),
                           });
                         }
@@ -254,37 +253,33 @@ export default function TeamModal({
           </div>
 
           {/* Selected Members Chips */}
-          {form.members.length > 0 && (
+          {form.memberNames.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-semibold text-slate-700">
-                Selected Members ({form.members.length})
+                Selected Members ({form.memberNames.length})
               </p>
               <div className="flex flex-wrap gap-2">
-                {form.members.map((id) => {
-                  const employee = employees.find((emp) => emp.id === id);
-                  if (!employee) return null;
-                  return (
-                    <div
-                      key={id}
-                      className="flex items-center gap-2 rounded-full bg-cyan-100 px-3 py-1 text-sm text-cyan-700"
+                {form.memberNames.map((name) => (
+                  <div
+                    key={name}
+                    className="flex items-center gap-2 rounded-full bg-cyan-100 px-3 py-1 text-sm text-cyan-700"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          memberNames: form.memberNames.filter(
+                            (n) => n !== name
+                          ),
+                        })
+                      }
                     >
-                      {employee.name}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            members: form.members.filter(
-                              (memberId) => memberId !== id
-                            ),
-                          })
-                        }
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  );
-                })}
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

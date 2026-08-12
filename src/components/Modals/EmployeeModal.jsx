@@ -70,11 +70,9 @@ export default function EmployeeModal({
       } else if (form.password.trim().length < 6) {
         newErrors.password = "Password must be at least 6 characters";
       }
-
-      // Team required for new employee
-      if (!form.team.trim()) {
-        newErrors.team = "Please select a team (required for new employee)";
-      }
+    } else if (form.password && form.password.trim().length < 6) {
+      // If updating and password provided, validate length
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     // Role
@@ -114,7 +112,16 @@ export default function EmployeeModal({
       if (err.backendErrors) {
         const beErrors = {};
         err.backendErrors.forEach((e) => {
-          beErrors[e.field] = e.message;
+          const fieldMap = {
+            EmployeeName: 'name',
+            email: 'email',
+            password: 'password',
+            role: 'role',
+            TeamId: 'team',
+            status: 'status',
+          };
+          const field = fieldMap[e.field] || e.field;
+          beErrors[field] = e.message;
         });
         setErrors(beErrors);
       } else {
@@ -186,23 +193,21 @@ export default function EmployeeModal({
             <input
               type="password"
               className={inputClass("password")}
-              placeholder={employee ? "Password (leave blank)" : "Password * (min 6 chars)"}
+              placeholder={employee ? "Password (leave blank to keep)" : "Password * (min 6 chars)"}
               value={form.password}
               onChange={(e) => handleFieldChange("password", e.target.value)}
             />
             <ErrorMessage field="password" />
           </div>
 
-          {/* Team */}
+          {/* Team (Optional now!) */}
           <div>
             <select
               className={inputClass("team")}
               value={form.team}
               onChange={(e) => handleFieldChange("team", e.target.value)}
             >
-              <option value="">
-                {employee ? "Select Team (Optional)" : "Select Team *"}
-              </option>
+              <option value="">Select Team (Optional)</option>
               {teams.map((team) => (
                 <option key={team.id} value={team.name}>
                   {team.name}
@@ -243,17 +248,10 @@ export default function EmployeeModal({
             >
               <option>Active</option>
               <option>Inactive</option>
-              <option>On Leave</option>
             </select>
             <ErrorMessage field="status" />
           </div>
         </div>
-
-        {teams.length === 0 && !employee && (
-          <div className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-            ⚠️ No teams available. Please create a team first from Teams page.
-          </div>
-        )}
 
         {Object.keys(errors).length > 0 && (
           <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -272,7 +270,7 @@ export default function EmployeeModal({
 
           <button
             onClick={handleSubmit}
-            disabled={submitting || (teams.length === 0 && !employee)}
+            disabled={submitting}
             className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {submitting

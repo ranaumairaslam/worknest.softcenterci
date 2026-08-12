@@ -1,116 +1,219 @@
-let revenueRecords = [
-  { id: "r1", projectId: "p1", projectName: "Alpha Platform Rebrand", amount: 85000, date: "2026-07-01", status: "Received", client: "SoftCentric Ltd." },
-  { id: "r2", projectId: "p2", projectName: "CRM Dashboard", amount: 120000, date: "2026-07-05", status: "Received", client: "Vertex Solutions" },
-  { id: "r3", projectId: "p3", projectName: "HR Management System", amount: 65000, date: "2026-07-10", status: "Pending", client: "Novatech Partners" },
-  { id: "r4", projectId: "p7", projectName: "Finance Portal", amount: 78000, date: "2026-07-12", status: "Received", client: "SoftCentric Ltd." },
-  { id: "r5", projectId: "p4", projectName: "Inventory System", amount: 95000, date: "2026-07-15", status: "Received", client: "Vertex Solutions" },
-];
+import { get, post, put, del } from './apiClient.js';
 
-/**
- * Get all revenue records. Optional role parameter for audit/filtering.
- * @param {string} [role]
- */
-export async function getAllRevenueRecords(role) {
-  console.log("API call: getAllRevenueRecords", { role });
-  return revenueRecords.map((r) => ({ ...r, role: role || undefined }));
+const BASE = '/company/revenue';
+
+// =====================================================
+// GET ALL REVENUES
+// =====================================================
+export async function getAllRevenues() {
+  try {
+    const response = await get(BASE);
+    const revenues = response?.data || [];
+    return revenues.map(transformRevenue);
+  } catch (error) {
+    console.error('Error fetching revenues:', error);
+    return [];
+  }
 }
 
-/**
- * Get a revenue record by id.
- * @param {string} id
- * @param {string} [role]
- */
-export async function getRevenueById(id, role) {
-  console.log("API call: getRevenueById", { id, role });
-  return revenueRecords.find((r) => r.id === id) || null;
+// =====================================================
+// GET SINGLE REVENUE
+// =====================================================
+export async function getRevenueById(id) {
+  try {
+    const response = await get(`${BASE}/${id}`);
+    return transformRevenue(response?.data);
+  } catch (error) {
+    console.error('Error fetching revenue:', error);
+    return null;
+  }
 }
 
-/**
- * Create a revenue record.
- * @param {object} payload
- * @param {string} [role]
- */
-export async function createRevenueRecord(payload, role) {
-  const newRecord = {
-    id: `r${Date.now()}`,
-    projectId: payload.projectId || "",
-    projectName: payload.projectName || "Unassigned",
-    amount: Number(payload.amount) || 0,
-    date: payload.date || new Date().toISOString().split("T")[0],
-    status: payload.status || "Pending",
-    client: payload.client || "Unknown",
-  };
+// =====================================================
+// CREATE REVENUE
+// =====================================================
+export async function createRevenue(payload) {
+  try {
+    // Convert amount to number
+    let amount = payload.amount || payload.Amount || 0;
+    amount = String(amount).replace(/[$,\s]/g, '');
+    const amountNumber = Number(amount) || 0;
 
-  const entry = { ...newRecord, role: role || undefined };
-  revenueRecords.push(entry);
-  console.log("API call: createRevenueRecord", { role, payload });
-  return { ...entry };
+    const body = {
+      ProjectName: payload.project || payload.projectName || payload.ProjectName,
+      ClientName: payload.client || payload.clientName || payload.ClientName,
+      Amount: amountNumber,
+      Date: payload.date || payload.Date,
+      status: (payload.status || 'pending').toLowerCase(),
+    };
+
+    console.log('📤 Creating revenue with body:', body);
+
+    const response = await post(BASE, body);
+    return transformRevenue(response?.data);
+  } catch (error) {
+    console.error('Error creating revenue:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
+    throw new Error(error.data?.message || error.message || 'Failed to create revenue');
+  }
 }
 
-/**
- * Update a revenue record.
- * @param {string} id
- * @param {object} updates
- * @param {string} [role]
- */
-export async function updateRevenueRecord(id, updates, role) {
-  const index = revenueRecords.findIndex((r) => r.id === id);
-  if (index === -1) return null;
+// =====================================================
+// UPDATE REVENUE
+// =====================================================
+export async function updateRevenue(id, updates) {
+  try {
+    const body = {};
+    
+    if (updates.project !== undefined) body.ProjectName = updates.project;
+    if (updates.client !== undefined) body.ClientName = updates.client;
+    
+    if (updates.amount !== undefined) {
+      let amount = String(updates.amount).replace(/[$,\s]/g, '');
+      body.Amount = Number(amount) || 0;
+    }
+    
+    if (updates.date !== undefined) body.Date = updates.date;
+    if (updates.status !== undefined) body.status = updates.status.toLowerCase();
 
-  revenueRecords[index] = {
-    ...revenueRecords[index],
-    ...updates,
-    amount: updates.amount !== undefined ? Number(updates.amount) : revenueRecords[index].amount,
-  };
+    console.log('📤 Updating revenue:', id, body);
 
-  revenueRecords[index] = { ...revenueRecords[index], lastModifiedByRole: role || revenueRecords[index].lastModifiedByRole };
-  console.log("API call: updateRevenueRecord", { id, updates, role });
-  return { ...revenueRecords[index] };
+    const response = await put(`${BASE}/${id}`, body);
+    return transformRevenue(response?.data);
+  } catch (error) {
+    console.error('Error updating revenue:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
+    throw error;
+  }
 }
 
-/**
- * Delete a revenue record.
- * @param {string} id
- * @param {string} [role]
- */
-export async function deleteRevenueRecord(id, role) {
-  const index = revenueRecords.findIndex((r) => r.id === id);
-  if (index === -1) return false;
-
-  revenueRecords.splice(index, 1);
-  console.log("API call: deleteRevenueRecord", { id, role });
-  return true;
+// =====================================================
+// DELETE REVENUE
+// =====================================================
+export async function deleteRevenue(id) {
+  try {
+    console.log('🗑️ Deleting revenue:', id);
+    await del(`${BASE}/${id}`);
+    return true;
+  } catch (error) {
+    console.error('Error deleting revenue:', error);
+    alert(`Delete failed: ${error.data?.message || error.message || 'Unknown error'}`);
+    return false;
+  }
 }
 
-/**
- * Compute revenue summary across projects/clients; role optional.
- * @param {Array} projects
- * @param {Array} clients
- * @param {string} [role]
- */
-export async function getRevenueSummary(projects, clients, role) {
-  const records = await getAllRevenueRecords(role);
-  const projectRevenue = projects.reduce((sum, project) => sum + (project.revenue || 0), 0);
-  const recordTotal = records.reduce((sum, r) => sum + r.amount, 0);
-  const totalRevenue = Math.max(projectRevenue, recordTotal);
+// =====================================================
+// GET REVENUE SUMMARY
+// =====================================================
+export async function getRevenueSummary(projects, clients) {
+  try {
+    const all = await getAllRevenues();
+    
+    const totalRevenue = all.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const completedRevenue = all
+      .filter((r) => r.status === 'Complete')
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const pendingRevenue = all
+      .filter((r) => r.status === 'Pending')
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-  const revenuePerProject = projects.map((project) => ({
-    id: project.id,
-    name: project.name,
-    value: project.revenue || records.filter((r) => r.projectId === project.id).reduce((s, r) => s + r.amount, 0),
-  }));
+    // Monthly breakdown
+    const monthlyMap = {};
+    all.forEach((r) => {
+      if (!r.date) return;
+      const month = String(r.date).slice(0, 7); // YYYY-MM
+      if (!monthlyMap[month]) monthlyMap[month] = 0;
+      monthlyMap[month] += Number(r.amount || 0);
+    });
 
-  const monthlyMap = records.reduce((acc, record) => {
-    const month = record.date ? record.date.slice(0, 7) : "Unknown";
-    acc[month] = (acc[month] || 0) + record.amount;
-    return acc;
-  }, {});
+    const monthlyRevenue = Object.entries(monthlyMap)
+      .map(([month, value]) => ({ month, value }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return {
+      totalRevenue,
+      completedRevenue,
+      pendingRevenue,
+      totalEntries: all.length,
+      monthlyRevenue,
+      revenues: all,
+    };
+  } catch (error) {
+    console.error('Error building revenue summary:', error);
+    return {
+      totalRevenue: 0,
+      completedRevenue: 0,
+      pendingRevenue: 0,
+      totalEntries: 0,
+      monthlyRevenue: [],
+      revenues: [],
+    };
+  }
+}
+
+// =====================================================
+// HELPER: Transform backend revenue → frontend format
+// =====================================================
+function transformRevenue(revenue) {
+  if (!revenue) return null;
+
+  const status = revenue.status === 'complete' ? 'Complete' : 'Pending';
 
   return {
-    totalRevenue,
-    monthlyRevenue: Object.entries(monthlyMap).map(([month, value]) => ({ month, value })),
-    revenuePerProject,
-    records,
-    clientCount: clients?.length || 0,
+    id: revenue.id,
+    amount: Number(revenue.Amount) || 0,
+    date: revenue.Date ? String(revenue.Date).slice(0, 10) : '',
+    dateFormatted: formatDate(revenue.Date),
+    status: status,
+    project: revenue.ProjectName || 'Unassigned',
+    projectId: revenue.project_id || null,
+    client: revenue.ClientName || 'Unknown',
+    clientId: revenue.client_id || null,
+    clientEmail: revenue.client_email || '',
+    createdAt: formatDate(revenue.created_at),
+    updatedAt: formatDate(revenue.updated_at),
   };
 }
+
+// Helper: Format date
+function formatDate(dateString) {
+  if (!dateString) return 'TBD';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+// =====================================================
+// COMPATIBILITY EXPORTS
+// =====================================================
+export const getAll = getAllRevenues;
+export const getById = getRevenueById;
+export const create = createRevenue;
+export const update = updateRevenue;
+export const remove = deleteRevenue;
