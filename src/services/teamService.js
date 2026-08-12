@@ -39,18 +39,36 @@ export async function getTeamByName(name) {
 
 // =====================================================
 // CREATE TEAM
+// Backend requires: teamName (or name), description, TeamLeaderName (optional)
 // =====================================================
 export async function createTeam(payload) {
   try {
     const body = {
-      name: payload.name,
+      teamName: payload.name,
       description: payload.description || '',
     };
+    
+    // Optional: If leader name provided
+    if (payload.leaderName && String(payload.leaderName).trim()) {
+      body.TeamLeaderName = payload.leaderName;
+    }
+
+    console.log('📤 Creating team with body:', body);
 
     const response = await post(BASE, body);
     return transformTeam(response?.data);
   } catch (error) {
     console.error('Error creating team:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
     throw error;
   }
 }
@@ -60,29 +78,41 @@ export async function createTeam(payload) {
 // =====================================================
 export async function updateTeam(id, updates) {
   try {
-    const body = {
-      name: updates.name,
-      description: updates.description,
-    };
+    const body = {};
+    if (updates.name !== undefined) body.name = updates.name;
+    if (updates.description !== undefined) body.description = updates.description;
+
+    console.log('📤 Updating team:', id, body);
 
     const response = await put(`${BASE}/${id}`, body);
     return transformTeam(response?.data);
   } catch (error) {
     console.error('Error updating team:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
     throw error;
   }
 }
 
 // =====================================================
 // DELETE TEAM
-// (Backend route missing — will 404 until added)
 // =====================================================
 export async function deleteTeam(id) {
   try {
+    console.log('🗑️ Deleting team:', id);
     await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
     console.error('Error deleting team:', error);
+    alert(`Delete failed: ${error.data?.message || error.message || 'Unknown error'}`);
     return false;
   }
 }
@@ -96,7 +126,7 @@ export async function registerTeamMember(teamId, memberData) {
       name: memberData.name,
       email: memberData.email || null,
       password: memberData.password || null,
-      role: memberData.role || 'team_member', // or 'team_leader'
+      role: memberData.role || 'team_member',
     };
 
     const response = await post(`${BASE}/${teamId}/register-member`, body);
@@ -108,26 +138,42 @@ export async function registerTeamMember(teamId, memberData) {
 }
 
 // =====================================================
-// ADD EXISTING MEMBER TO TEAM (compatibility function)
+// ADD EXISTING MEMBER TO TEAM
+// (Backend doesn't have dedicated route, so refresh team)
 // =====================================================
 export async function addTeamMember(teamId, employeeId) {
-  // Backend does not have this exact route yet
-  // Refresh team after action
-  return getTeamById(teamId);
+  try {
+    // Backend uses register-member endpoint or assign-leader
+    // For adding existing member without login creation, no route yet
+    console.warn('addTeamMember: No dedicated backend route yet');
+    return getTeamById(teamId);
+  } catch (error) {
+    console.error('Error adding team member:', error);
+    return getTeamById(teamId);
+  }
 }
 
 // =====================================================
-// REMOVE MEMBER FROM TEAM (compatibility function)
+// REMOVE MEMBER FROM TEAM
 // =====================================================
 export async function removeTeamMember(teamId, employeeId) {
-  return getTeamById(teamId);
+  try {
+    console.warn('removeTeamMember: No dedicated backend route yet');
+    return getTeamById(teamId);
+  } catch (error) {
+    console.error('Error removing team member:', error);
+    return getTeamById(teamId);
+  }
 }
 
 // =====================================================
 // ASSIGN TEAM LEADER (promote existing user)
+// Backend: PUT /company/teams/:teamId/assign-leader
+// Body: { userId: 21 }
 // =====================================================
 export async function assignTeamLeader(teamId, userId) {
   try {
+    console.log('📤 Assigning leader:', teamId, userId);
     const response = await put(`${BASE}/${teamId}/assign-leader`, {
       userId,
     });
@@ -139,18 +185,12 @@ export async function assignTeamLeader(teamId, userId) {
 }
 
 // =====================================================
-// ASSIGN PROJECT LEADER (compatibility with old code)
+// COMPATIBILITY FUNCTIONS
 // =====================================================
 export async function assignProjectLeader(teamId, leaderName) {
-  // Old code passes leader NAME, but backend needs USER ID
-  // Just refresh the team for now
   return getTeamById(teamId);
 }
 
-// =====================================================
-// LINK / UNLINK PROJECT (compatibility with old code)
-// Backend handles this automatically via project assignment
-// =====================================================
 export async function linkProject(teamId, projectId) {
   return getTeamById(teamId);
 }
@@ -166,6 +206,7 @@ function transformTeam(team) {
   if (!team) return null;
 
   const memberCount = Number(team.member_count) || (team.members?.length || 0);
+  const memberIds = (team.members || []).map((m) => m.id);
 
   return {
     id: team.id,
@@ -176,11 +217,12 @@ function transformTeam(team) {
     leaderId: team.leader_id || null,
     leaderEmail: team.leader_email || null,
     totalMembers: memberCount,
-    members: (team.members || []).map((m) => m.id),
+    members: memberIds,
     memberDetails: team.members || [],
     projects: team.project_count || 0,
     projectIds: [],
     createdAt: formatDate(team.created_at),
+    updatedAt: formatDate(team.updated_at),
     progress: 0,
   };
 }

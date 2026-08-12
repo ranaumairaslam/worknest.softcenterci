@@ -3,6 +3,35 @@ import { get, post, put, del } from './apiClient.js';
 const BASE = '/company/projects';
 
 // =====================================================
+// Status/Priority Mapping (Frontend → Backend)
+// =====================================================
+const STATUS_TO_BACKEND = {
+  Planning: 'pending',
+  Active: 'active',
+  'In Progress': 'active',
+  Review: 'active',
+  Completed: 'completed',
+  Pending: 'pending',
+  'On Hold': 'on_hold',
+  Inactive: 'inactive',
+};
+
+const STATUS_TO_FRONTEND = {
+  pending: 'Planning',
+  active: 'Active',
+  completed: 'Completed',
+  on_hold: 'On Hold',
+  inactive: 'Inactive',
+};
+
+const PRIORITY_TO_BACKEND = {
+  High: 'high',
+  Medium: 'medium',
+  Low: 'low',
+  Urgent: 'urgent',
+};
+
+// =====================================================
 // GET ALL PROJECTS
 // =====================================================
 export async function getAllProjects() {
@@ -39,45 +68,75 @@ export async function getProjectsByClient(clientId) {
 
 // =====================================================
 // CREATE PROJECT
+// Backend requires: projectName, description, TeamLeaderName,
+// ProjectTeam, ProjectStatus, ProjectPriority, date, clientName
 // =====================================================
 export async function createProject(payload) {
   try {
-    // Frontend form data ko backend format mein convert karein
     const body = {
-      name: payload.name,
-      description: payload.description || '',
-      clientId: payload.clientId || null,
-      startDate: payload.startDate || null,
-      dueDate: payload.dueDate || null,
+      projectName: payload.name,
+      description: payload.description,
+      TeamLeaderName: payload.leader,
+      ProjectTeam: payload.team,
+      ProjectStatus: STATUS_TO_BACKEND[payload.status] || 'pending',
+      ProjectPriority: PRIORITY_TO_BACKEND[payload.priority] || 'medium',
+      date: payload.dueDate,
+      clientName: payload.client,
     };
+
+    console.log('📤 Creating project with body:', body);
 
     const response = await post(BASE, body);
     return transformProject(response?.data);
   } catch (error) {
     console.error('Error creating project:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
     throw error;
   }
 }
 
 // =====================================================
 // UPDATE PROJECT
+// Backend accepts: name, description, clientId, startDate, dueDate, status
 // =====================================================
 export async function updateProject(id, updates) {
   try {
-    const body = {
-      name: updates.name,
-      description: updates.description,
-      status: updates.status?.toLowerCase(),
-      priority: updates.priority,
-      startDate: updates.startDate,
-      dueDate: updates.dueDate,
-      progress: updates.progress,
-    };
+    const body = {};
+    
+    if (updates.name !== undefined) body.name = updates.name;
+    if (updates.description !== undefined) body.description = updates.description;
+    if (updates.clientId !== undefined) body.clientId = updates.clientId;
+    if (updates.startDate !== undefined) body.startDate = updates.startDate;
+    if (updates.dueDate !== undefined) body.dueDate = updates.dueDate;
+    if (updates.status !== undefined) {
+      body.status = STATUS_TO_BACKEND[updates.status] || updates.status.toLowerCase();
+    }
+
+    console.log('📤 Updating project:', id, body);
 
     const response = await put(`${BASE}/${id}`, body);
     return transformProject(response?.data);
   } catch (error) {
     console.error('Error updating project:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
     throw error;
   }
 }
@@ -87,10 +146,12 @@ export async function updateProject(id, updates) {
 // =====================================================
 export async function deleteProject(id) {
   try {
+    console.log('🗑️ Deleting project:', id);
     await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
     console.error('Error deleting project:', error);
+    alert(`Delete failed: ${error.data?.message || error.message || 'Unknown error'}`);
     return false;
   }
 }
@@ -102,7 +163,6 @@ export async function markProjectCompleted(id) {
   try {
     const response = await put(`${BASE}/${id}`, {
       status: 'completed',
-      progress: 100,
     });
     return transformProject(response?.data);
   } catch (error) {
@@ -112,15 +172,12 @@ export async function markProjectCompleted(id) {
 }
 
 // =====================================================
-// ASSIGN PROJECT LEADER
+// ASSIGN PROJECT LEADER (via assign-team endpoint)
 // =====================================================
 export async function assignProjectLeader(id, leaderName) {
   try {
-    // Get project and update with leader
-    const response = await put(`${BASE}/${id}`, {
-      leader: leaderName,
-    });
-    return transformProject(response?.data);
+    // Refresh project - actual assignment done via assignTeamToProject
+    return getProjectById(id);
   } catch (error) {
     console.error('Error assigning leader:', error);
     throw error;
@@ -157,25 +214,41 @@ export async function getCompanyEmployees() {
 }
 
 // =====================================================
-// HELPER: Transform backend project to frontend format
+// COMPATIBILITY
+// =====================================================
+export async function incrementTaskCount(projectId) {
+  return null;
+}
+
+export async function recalculateProgress(projectId) {
+  return await getProjectById(projectId);
+}
+
+// =====================================================
+// HELPER: Transform backend project → frontend format
 // =====================================================
 function transformProject(project) {
   if (!project) return null;
 
+  // Backend can return either format - handle both
+  const statusRaw = project.ProjectStatus || project.status || 'pending';
+  const priorityRaw = project.ProjectPriority || project.priority || 'medium';
+  const frontendStatus = STATUS_TO_FRONTEND[statusRaw] || capitalize(statusRaw);
+
   return {
     id: project.id,
-    name: project.name || '',
+    name: project.projectName || project.name || '',
     description: project.description || '',
-    leader: project.project_leader_name || 'Unassigned',
-    leaderId: project.project_leader_id || null,
-    team: project.team_name || 'Unassigned',
-    teamId: project.team_id || null,
-    client: project.client_name || null,
-    clientId: project.client_id || null,
-    status: capitalize(project.status || 'pending'),
-    priority: project.priority || 'Medium',
+    leader: project.TeamLeaderName || project.project_leader_name || project.project_leader || 'Unassigned',
+    leaderId: project.teamLeaderId || project.project_leader_id || null,
+    team: project.ProjectTeam || project.team_name || 'Unassigned',
+    teamId: project.teamId || project.team_id || null,
+    client: project.clientName || project.client_company_name || project.client_name || null,
+    clientId: project.clientId || project.client_id || null,
+    status: frontendStatus,
+    priority: capitalize(priorityRaw),
     progress: Number(project.progress) || 0,
-    dueDate: formatDate(project.due_date),
+    dueDate: formatDate(project.date || project.due_date),
     startDate: formatDate(project.start_date),
     completedTasks: project.completed_tasks || 0,
     totalTasks: project.total_tasks || 0,
@@ -183,17 +256,17 @@ function transformProject(project) {
     memberIds: project.member_ids || [],
     color: getColorById(project.id),
     revenue: project.revenue || 0,
+    createdAt: formatDate(project.created_at || project.createdAt),
+    updatedAt: formatDate(project.updated_at),
   };
 }
 
-// Helper: Capitalize first letter
 function capitalize(str) {
   if (!str) return '';
   const s = String(str);
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-// Helper: Format date to readable format
 function formatDate(dateString) {
   if (!dateString) return 'TBD';
   try {
@@ -209,7 +282,6 @@ function formatDate(dateString) {
   }
 }
 
-// Helper: Get color based on ID
 function getColorById(id) {
   const colors = [
     'bg-cyan-500',
@@ -224,20 +296,4 @@ function getColorById(id) {
     'bg-teal-500',
   ];
   return colors[Number(id) % colors.length];
-}
-
-// =====================================================
-// INCREMENT TASK COUNT (for compatibility with old code)
-// =====================================================
-export async function incrementTaskCount(projectId) {
-  // Backend handles this automatically when task is created
-  return null;
-}
-
-// =====================================================
-// RECALCULATE PROGRESS (for compatibility with old code)
-// =====================================================
-export async function recalculateProgress(projectId) {
-  // Backend handles this automatically
-  return await getProjectById(projectId);
 }
