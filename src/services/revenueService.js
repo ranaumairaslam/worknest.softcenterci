@@ -1,6 +1,6 @@
 import { get, post, put, del } from './apiClient.js';
 
-const BASE = '/company/revenue';
+const BASE = '/company/project-revenues';  // ✅ FIXED URL!
 
 // =====================================================
 // GET ALL REVENUES
@@ -34,7 +34,6 @@ export async function getRevenueById(id) {
 // =====================================================
 export async function createRevenue(payload) {
   try {
-    // Convert amount to number
     let amount = payload.amount || payload.Amount || 0;
     amount = String(amount).replace(/[$,\s]/g, '');
     const amountNumber = Number(amount) || 0;
@@ -135,11 +134,10 @@ export async function getRevenueSummary(projects, clients) {
       .filter((r) => r.status === 'Pending')
       .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-    // Monthly breakdown
     const monthlyMap = {};
     all.forEach((r) => {
       if (!r.date) return;
-      const month = String(r.date).slice(0, 7); // YYYY-MM
+      const month = String(r.date).slice(0, 7);
       if (!monthlyMap[month]) monthlyMap[month] = 0;
       monthlyMap[month] += Number(r.amount || 0);
     });
@@ -193,7 +191,6 @@ function transformRevenue(revenue) {
   };
 }
 
-// Helper: Format date
 function formatDate(dateString) {
   if (!dateString) return 'TBD';
   try {

@@ -11,7 +11,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getRoleSettings } from "./RoleSettings";
 
 const NOTIFICATIONS_STORAGE_KEY = "worknest_notification_prefs";
 
@@ -20,6 +19,15 @@ const defaultNotifications = {
   pushNotifications: true,
   taskUpdates: true,
   weeklySummary: false,
+};
+
+// Role display names (only for heading)
+const ROLE_LABELS = {
+  superAdmin: "Super Admin",
+  companyAdmin: "Company Admin",
+  projectLeader: "Project Leader",
+  teamMember: "Team Member",
+  client: "Client",
 };
 
 export default function Settings({ role: propRole }) {
@@ -51,54 +59,28 @@ export default function Settings({ role: propRole }) {
     localStorage.getItem("userRole") ||
     "superAdmin";
 
-  const currentRole =
-    getRoleSettings(role) || {
-      role: "User",
-      settings: [],
-      notifications: [],
-    };
+  const roleLabel = ROLE_LABELS[role] || "User";
 
   const [notifications, setNotifications] = useState(() => {
-    const roleDefaults = {};
-
-    (currentRole.notifications || []).forEach((n) => {
-      roleDefaults[n.key] = n.defaultValue ?? true;
-    });
-
-    const merged = {
-      ...defaultNotifications,
-      ...roleDefaults,
-    };
-
     try {
-      const stored = localStorage.getItem(
-        NOTIFICATIONS_STORAGE_KEY
-      );
-
+      const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
       if (stored) {
         return {
-          ...merged,
+          ...defaultNotifications,
           ...JSON.parse(stored),
         };
       }
-
-      return merged;
+      return defaultNotifications;
     } catch {
-      return merged;
+      return defaultNotifications;
     }
   });
 
-  const [savedNotifications, setSavedNotifications] =
-    useState(notifications);
-
+  const [savedNotifications, setSavedNotifications] = useState(notifications);
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
-  const [selectValues, setSelectValues] = useState({});
-
-  const [showForgotPassword, setShowForgotPassword] =
-    useState(false);
-
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotMethod, setForgotMethod] = useState(null);
   const [forgotContact, setForgotContact] = useState("");
   const [forgotStep, setForgotStep] = useState("method");
@@ -109,15 +91,13 @@ export default function Settings({ role: propRole }) {
   const [otpError, setOtpError] = useState("");
 
   const hasUnsavedChanges =
-    JSON.stringify(notifications) !==
-    JSON.stringify(savedNotifications);
+    JSON.stringify(notifications) !== JSON.stringify(savedNotifications);
 
   const toggleNotification = (key) => {
     setNotifications((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
-
     setJustSaved(false);
   };
 
@@ -130,14 +110,12 @@ export default function Settings({ role: propRole }) {
           NOTIFICATIONS_STORAGE_KEY,
           JSON.stringify(notifications)
         );
-
         setSavedNotifications(notifications);
         setJustSaved(true);
       } catch (error) {
         console.log(error);
       } finally {
         setIsSaving(false);
-
         setTimeout(() => {
           setJustSaved(false);
         }, 2000);
@@ -147,7 +125,6 @@ export default function Settings({ role: propRole }) {
 
   const handleImage = (e) => {
     const file = e.target.files[0];
-
     if (file) {
       setImage(URL.createObjectURL(file));
     }
@@ -179,13 +156,7 @@ export default function Settings({ role: propRole }) {
     </button>
   );
 
-  const NotificationRow = ({
-    icon: Icon,
-    title,
-    desc,
-    checked,
-    onChange,
-  }) => (
+  const NotificationRow = ({ icon: Icon, title, desc, checked, onChange }) => (
     <div className="flex items-center justify-between py-4 border-b border-gray-100">
       <div className="flex items-start gap-3">
         <div className="w-9 h-9 rounded-lg bg-[#e6fbfc] text-[#016472] flex items-center justify-center">
@@ -193,37 +164,48 @@ export default function Settings({ role: propRole }) {
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-gray-800">
-            {title}
-          </p>
-
-          <p className="text-xs text-gray-500 mt-1">
-            {desc}
-          </p>
+          <p className="text-sm font-semibold text-gray-800">{title}</p>
+          <p className="text-xs text-gray-500 mt-1">{desc}</p>
         </div>
       </div>
 
-      <Toggle
-        checked={checked}
-        onChange={onChange}
-      />
+      <Toggle checked={checked} onChange={onChange} />
     </div>
   );
+
+  const handleUpdateProfile = () => {
+    setProfile({
+      ...profile,
+      fullName,
+      image,
+    });
+
+    if (role === "companyAdmin") {
+      navigate("/dashboard-company");
+    } else if (role === "projectLeader") {
+      navigate("/dashboard-leader");
+    } else if (role === "teamMember") {
+      navigate("/dashboard-team-member");
+    } else if (role === "client") {
+      navigate("/client-dashboard");
+    } else {
+      navigate("/dashboard-admin");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f5fcfd] p-4 md:p-6">
       <div>
         <h1 className="text-3xl font-bold text-[#000304]">
-          {currentRole.role} Settings
+          {roleLabel} Settings
         </h1>
 
         <p className="text-gray-500 mt-1">
-          Manage your {currentRole.role} account.
+          Manage your {roleLabel} account.
         </p>
 
         <div className="flex justify-center">
           <div className="w-full max-w-[500px] bg-white rounded-2xl border border-gray-200 shadow-sm mt-6 overflow-hidden">
-
             {/* Tabs */}
             <div className="flex gap-6 border-b border-gray-200 px-6">
               <button
@@ -260,7 +242,7 @@ export default function Settings({ role: propRole }) {
               </button>
             </div>
 
-            {/* PROFILE */}
+            {/* PROFILE TAB */}
             {activeTab === "profile" && (
               <div className="p-6">
                 <div className="flex justify-center">
@@ -273,19 +255,14 @@ export default function Settings({ role: propRole }) {
                       />
                     ) : (
                       <div className="w-32 h-32 rounded-full border flex items-center justify-center">
-                        <User
-                          size={60}
-                          className="text-gray-400"
-                        />
+                        <User size={60} className="text-gray-400" />
                       </div>
                     )}
 
                     <button
                       type="button"
                       className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-[#016472] text-white flex items-center justify-center"
-                      onClick={() =>
-                        fileInputRef.current?.click()
-                      }
+                      onClick={() => fileInputRef.current?.click()}
                     >
                       <Camera size={18} />
                     </button>
@@ -301,7 +278,6 @@ export default function Settings({ role: propRole }) {
                 </div>
 
                 <div className="mt-8 space-y-5">
-
                   {/* Full Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -311,9 +287,7 @@ export default function Settings({ role: propRole }) {
                     <input
                       type="text"
                       value={fullName}
-                      onChange={(e) =>
-                        setFullName(e.target.value)
-                      }
+                      onChange={(e) => setFullName(e.target.value)}
                       placeholder="Update Name"
                       className="w-full h-12 border border-gray-300 rounded-xl px-4 outline-none focus:ring-2 focus:ring-[#016472]"
                     />
@@ -333,159 +307,11 @@ export default function Settings({ role: propRole }) {
                     />
                   </div>
 
-                  {/* Role Settings */}
-                  {currentRole.settings.map((item, index) => {
-                    const Icon = item.icon;
-
-                    const isClickable =
-                      !!item.path || !!item.tab;
-
-                    const handleClick = () => {
-                      if (item.comingSoon) return;
-
-                      if (item.path) {
-                        navigate(item.path);
-                      }
-
-                      if (item.tab) {
-                        setActiveTab(item.tab);
-                      }
-                    };
-
-                    return (
-                      <div
-                        key={index}
-                        onClick={
-                          isClickable
-                            ? handleClick
-                            : undefined
-                        }
-                        className={`border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 ${
-                          isClickable
-                            ? "cursor-pointer hover:border-[#016472] hover:bg-[#e6fbfc]"
-                            : ""
-                        } ${
-                          item.comingSoon
-                            ? "opacity-60 cursor-not-allowed"
-                            : ""
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <Icon
-                              className="text-[#016472]"
-                              size={20}
-                            />
-
-                            <span>{item.title}</span>
-                          </div>
-
-                          {item.comingSoon && (
-                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                              Coming Soon
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Input */}
-                        {item.input && (
-                          <input
-                            type="text"
-                            placeholder={item.placeholder}
-                            onClick={(e) =>
-                              e.stopPropagation()
-                            }
-                            className="border rounded-lg p-2"
-                          />
-                        )}
-
-                        {/* Select */}
-                        {item.select && (
-                          <select
-                            className="border rounded-lg p-2 text-gray-700"
-                            value={
-                              selectValues[index] || ""
-                            }
-                            onClick={(e) =>
-                              e.stopPropagation()
-                            }
-                            onChange={(e) =>
-                              setSelectValues((prev) => ({
-                                ...prev,
-                                [index]: e.target.value,
-                              }))
-                            }
-                          >
-                            <option
-                              value=""
-                              disabled
-                            >
-                              {item.placeholder}
-                            </option>
-
-                            {item.options.map(
-                              (opt, i) => (
-                                <option
-                                  key={i}
-                                  value={opt}
-                                >
-                                  {opt}
-                                </option>
-                              )
-                            )}
-                          </select>
-                        )}
-
-                        {/* Dependent Input */}
-                        {item.select &&
-                          item.dependentInput &&
-                          selectValues[index] && (
-                            <input
-                              type="text"
-                              placeholder={
-                                item
-                                  .dependentPlaceholders?.[
-                                  selectValues[index]
-                                ] ||
-                                "Enter details"
-                              }
-                              onClick={(e) =>
-                                e.stopPropagation()
-                              }
-                              className="border rounded-lg p-2"
-                            />
-                          )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Update Profile */}
+                  {/* Update Profile Button */}
                   <button
                     type="button"
                     className="w-full mt-5 h-12 rounded-xl bg-[#016472] text-white font-semibold hover:bg-[#014954] duration-300"
-                    onClick={() => {
-                      setProfile({
-                        ...profile,
-                        fullName,
-                        image,
-                      });
-
-                      if (role === "companyAdmin") {
-                        navigate("/dashboard-company");
-                      } else if (
-                        role === "projectLeader"
-                      ) {
-                        navigate("/dashboard-leader");
-                      } else if (
-                        role === "teamMember"
-                      ) {
-                        navigate("/dashboard-team-member");
-                      } else if (role === "client") {
-                        navigate("/client-dashboard");
-                      } else {
-                        navigate("/dashboard-admin");
-                      }
-                    }}
+                    onClick={handleUpdateProfile}
                   >
                     Update Profile
                   </button>
@@ -493,11 +319,10 @@ export default function Settings({ role: propRole }) {
               </div>
             )}
 
-            {/* SECURITY */}
+            {/* SECURITY TAB */}
             {activeTab === "security" && (
               <div className="p-6">
                 <div className="space-y-5">
-
                   {/* Current Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -506,11 +331,7 @@ export default function Settings({ role: propRole }) {
 
                     <div className="relative">
                       <input
-                        type={
-                          showCurrent
-                            ? "text"
-                            : "password"
-                        }
+                        type={showCurrent ? "text" : "password"}
                         placeholder="Current Password"
                         className="w-full h-12 border border-gray-300 rounded-xl px-4 pr-12 outline-none focus:ring-2 focus:ring-[#016472]"
                       />
@@ -518,15 +339,9 @@ export default function Settings({ role: propRole }) {
                       <button
                         type="button"
                         className="absolute right-4 top-1/2 -translate-y-1/2"
-                        onClick={() =>
-                          setShowCurrent(!showCurrent)
-                        }
+                        onClick={() => setShowCurrent(!showCurrent)}
                       >
-                        {showCurrent ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
+                        {showCurrent ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                   </div>
@@ -539,11 +354,7 @@ export default function Settings({ role: propRole }) {
 
                     <div className="relative">
                       <input
-                        type={
-                          showNew
-                            ? "text"
-                            : "password"
-                        }
+                        type={showNew ? "text" : "password"}
                         placeholder="New Password"
                         className="w-full h-12 border border-gray-300 rounded-xl px-4 pr-12 outline-none focus:ring-2 focus:ring-[#016472]"
                       />
@@ -551,15 +362,9 @@ export default function Settings({ role: propRole }) {
                       <button
                         type="button"
                         className="absolute right-4 top-1/2 -translate-y-1/2"
-                        onClick={() =>
-                          setShowNew(!showNew)
-                        }
+                        onClick={() => setShowNew(!showNew)}
                       >
-                        {showNew ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
+                        {showNew ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                   </div>
@@ -572,11 +377,7 @@ export default function Settings({ role: propRole }) {
 
                     <div className="relative">
                       <input
-                        type={
-                          showConfirm
-                            ? "text"
-                            : "password"
-                        }
+                        type={showConfirm ? "text" : "password"}
                         placeholder="Confirm Password"
                         className="w-full h-12 border border-gray-300 rounded-xl px-4 pr-12 outline-none focus:ring-2 focus:ring-[#016472]"
                       />
@@ -584,15 +385,9 @@ export default function Settings({ role: propRole }) {
                       <button
                         type="button"
                         className="absolute right-4 top-1/2 -translate-y-1/2"
-                        onClick={() =>
-                          setShowConfirm(!showConfirm)
-                        }
+                        onClick={() => setShowConfirm(!showConfirm)}
                       >
-                        {showConfirm ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
+                        {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                   </div>
@@ -621,7 +416,6 @@ export default function Settings({ role: propRole }) {
                   {/* Forgot Password Flow */}
                   {showForgotPassword && (
                     <div className="mt-6 border border-gray-200 rounded-xl p-5 bg-[#f5fcfd]">
-
                       {/* METHOD */}
                       {forgotStep === "method" && (
                         <>
@@ -630,8 +424,7 @@ export default function Settings({ role: propRole }) {
                           </h4>
 
                           <p className="text-xs text-gray-500 mb-4">
-                            Choose how you'd like to receive
-                            your code.
+                            Choose how you'd like to receive your code.
                           </p>
 
                           <div className="flex gap-3 mb-4">
@@ -675,21 +468,11 @@ export default function Settings({ role: propRole }) {
                               </label>
 
                               <input
-                                type={
-                                  forgotMethod ===
-                                  "email"
-                                    ? "email"
-                                    : "tel"
-                                }
+                                type={forgotMethod === "email" ? "email" : "tel"}
                                 value={forgotContact}
-                                onChange={(e) =>
-                                  setForgotContact(
-                                    e.target.value
-                                  )
-                                }
+                                onChange={(e) => setForgotContact(e.target.value)}
                                 placeholder={
-                                  forgotMethod ===
-                                  "email"
+                                  forgotMethod === "email"
                                     ? "Enter your email"
                                     : "Enter your phone number"
                                 }
@@ -701,11 +484,7 @@ export default function Settings({ role: propRole }) {
                           <div className="flex gap-3">
                             <button
                               type="button"
-                              onClick={() =>
-                                setShowForgotPassword(
-                                  false
-                                )
-                              }
+                              onClick={() => setShowForgotPassword(false)}
                               className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 duration-300"
                             >
                               Cancel
@@ -713,13 +492,8 @@ export default function Settings({ role: propRole }) {
 
                             <button
                               type="button"
-                              disabled={
-                                !forgotMethod ||
-                                !forgotContact.trim()
-                              }
-                              onClick={() =>
-                                setForgotStep("otp")
-                              }
+                              disabled={!forgotMethod || !forgotContact.trim()}
+                              onClick={() => setForgotStep("otp")}
                               className="flex-1 h-11 rounded-xl bg-[#016472] text-white font-semibold hover:bg-[#014954] duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Send Code
@@ -737,10 +511,7 @@ export default function Settings({ role: propRole }) {
 
                           <p className="text-xs text-gray-500 mb-4">
                             We sent a 6-digit code to your{" "}
-                            {forgotMethod === "email"
-                              ? "email"
-                              : "phone"}{" "}
-                            at{" "}
+                            {forgotMethod === "email" ? "email" : "phone"} at{" "}
                             <span className="font-medium text-gray-700">
                               {forgotContact}
                             </span>
@@ -751,12 +522,7 @@ export default function Settings({ role: propRole }) {
                             maxLength={6}
                             value={otpValue}
                             onChange={(e) => {
-                              setOtpValue(
-                                e.target.value.replace(
-                                  /\D/g,
-                                  ""
-                                )
-                              );
+                              setOtpValue(e.target.value.replace(/\D/g, ""));
                               setOtpError("");
                             }}
                             placeholder="Enter 6-digit code"
@@ -784,9 +550,7 @@ export default function Settings({ role: propRole }) {
                           <div className="flex gap-3 mt-4">
                             <button
                               type="button"
-                              onClick={() =>
-                                setForgotStep("method")
-                              }
+                              onClick={() => setForgotStep("method")}
                               className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 duration-300"
                             >
                               Back
@@ -794,20 +558,12 @@ export default function Settings({ role: propRole }) {
 
                             <button
                               type="button"
-                              disabled={
-                                otpValue.length !== 6
-                              }
+                              disabled={otpValue.length !== 6}
                               onClick={() => {
-                                if (
-                                  otpValue.length === 6
-                                ) {
-                                  setForgotStep(
-                                    "newPassword"
-                                  );
+                                if (otpValue.length === 6) {
+                                  setForgotStep("newPassword");
                                 } else {
-                                  setOtpError(
-                                    "Please enter the 6-digit code."
-                                  );
+                                  setOtpError("Please enter the 6-digit code.");
                                 }
                               }}
                               className="flex-1 h-11 rounded-xl bg-[#016472] text-white font-semibold hover:bg-[#014954] duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -826,17 +582,15 @@ export default function Settings({ role: propRole }) {
                           </h4>
 
                           <p className="text-xs text-gray-500 mb-4">
-                            Your identity has been verified.
-                            Enter a new password.
+                            Your identity has been verified. Enter a new
+                            password.
                           </p>
 
                           <div className="space-y-3">
                             <input
                               type="password"
                               value={newPass}
-                              onChange={(e) =>
-                                setNewPass(e.target.value)
-                              }
+                              onChange={(e) => setNewPass(e.target.value)}
                               placeholder="New Password"
                               className="w-full h-12 border border-gray-300 rounded-xl px-4 outline-none focus:ring-2 focus:ring-[#016472]"
                             />
@@ -844,30 +598,22 @@ export default function Settings({ role: propRole }) {
                             <input
                               type="password"
                               value={confirmNewPass}
-                              onChange={(e) =>
-                                setConfirmNewPass(
-                                  e.target.value
-                                )
-                              }
+                              onChange={(e) => setConfirmNewPass(e.target.value)}
                               placeholder="Confirm New Password"
                               className="w-full h-12 border border-gray-300 rounded-xl px-4 outline-none focus:ring-2 focus:ring-[#016472]"
                             />
 
-                            {confirmNewPass &&
-                              newPass !==
-                                confirmNewPass && (
-                                <p className="text-xs text-red-500">
-                                  Passwords do not match.
-                                </p>
-                              )}
+                            {confirmNewPass && newPass !== confirmNewPass && (
+                              <p className="text-xs text-red-500">
+                                Passwords do not match.
+                              </p>
+                            )}
                           </div>
 
                           <div className="flex gap-3 mt-4">
                             <button
                               type="button"
-                              onClick={() =>
-                                setForgotStep("otp")
-                              }
+                              onClick={() => setForgotStep("otp")}
                               className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 duration-300"
                             >
                               Back
@@ -875,14 +621,8 @@ export default function Settings({ role: propRole }) {
 
                             <button
                               type="button"
-                              disabled={
-                                !newPass ||
-                                newPass !==
-                                  confirmNewPass
-                              }
-                              onClick={() =>
-                                setForgotStep("done")
-                              }
+                              disabled={!newPass || newPass !== confirmNewPass}
+                              onClick={() => setForgotStep("done")}
                               className="flex-1 h-11 rounded-xl bg-[#016472] text-white font-semibold hover:bg-[#014954] duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Reset Password
@@ -904,15 +644,12 @@ export default function Settings({ role: propRole }) {
                           </p>
 
                           <p className="text-xs text-gray-500 mt-1">
-                            You can now log in with your new
-                            password.
+                            You can now log in with your new password.
                           </p>
 
                           <button
                             type="button"
-                            onClick={() =>
-                              setShowForgotPassword(false)
-                            }
+                            onClick={() => setShowForgotPassword(false)}
                             className="mt-4 text-sm text-[#016472] font-medium hover:underline"
                           >
                             Close
@@ -925,14 +662,11 @@ export default function Settings({ role: propRole }) {
               </div>
             )}
 
-            {/* NOTIFICATIONS */}
+            {/* NOTIFICATIONS TAB */}
             {activeTab === "notifications" && (
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Bell
-                    size={18}
-                    className="text-[#016472]"
-                  />
+                  <Bell size={18} className="text-[#016472]" />
 
                   <h3 className="text-sm font-semibold text-gray-800">
                     Notification Preferences
@@ -940,8 +674,7 @@ export default function Settings({ role: propRole }) {
                 </div>
 
                 <p className="text-xs text-gray-500 mb-2">
-                  Choose how you want to be notified about
-                  activity.
+                  Choose how you want to be notified about activity.
                 </p>
 
                 <div>
@@ -950,23 +683,15 @@ export default function Settings({ role: propRole }) {
                     title="Email Alerts"
                     desc="Get important updates sent to your email"
                     checked={notifications.emailAlerts}
-                    onChange={() =>
-                      toggleNotification("emailAlerts")
-                    }
+                    onChange={() => toggleNotification("emailAlerts")}
                   />
 
                   <NotificationRow
                     icon={Smartphone}
                     title="Push Notifications"
                     desc="Receive alerts directly on your device"
-                    checked={
-                      notifications.pushNotifications
-                    }
-                    onChange={() =>
-                      toggleNotification(
-                        "pushNotifications"
-                      )
-                    }
+                    checked={notifications.pushNotifications}
+                    onChange={() => toggleNotification("pushNotifications")}
                   />
 
                   <NotificationRow
@@ -974,9 +699,7 @@ export default function Settings({ role: propRole }) {
                     title="Task Updates"
                     desc="Notify me when a task status changes"
                     checked={notifications.taskUpdates}
-                    onChange={() =>
-                      toggleNotification("taskUpdates")
-                    }
+                    onChange={() => toggleNotification("taskUpdates")}
                   />
 
                   <NotificationRow
@@ -984,29 +707,8 @@ export default function Settings({ role: propRole }) {
                     title="Weekly Summary"
                     desc="Get a weekly digest of your activity"
                     checked={notifications.weeklySummary}
-                    onChange={() =>
-                      toggleNotification(
-                        "weeklySummary"
-                      )
-                    }
+                    onChange={() => toggleNotification("weeklySummary")}
                   />
-
-                  {(currentRole.notifications || []).map(
-                    (item) => (
-                      <NotificationRow
-                        key={item.key}
-                        icon={item.icon}
-                        title={item.title}
-                        desc={item.desc}
-                        checked={
-                          notifications[item.key]
-                        }
-                        onChange={() =>
-                          toggleNotification(item.key)
-                        }
-                      />
-                    )
-                  )}
                 </div>
 
                 {hasUnsavedChanges && !justSaved && (
@@ -1018,29 +720,26 @@ export default function Settings({ role: propRole }) {
                 <button
                   type="button"
                   onClick={handleSavePreferences}
-                  disabled={
-                    !hasUnsavedChanges || isSaving
-                  }
+                  disabled={!hasUnsavedChanges || isSaving}
                   className={`w-full mt-3 h-12 rounded-xl font-semibold duration-300 flex items-center justify-center gap-2 ${
                     justSaved
                       ? "bg-green-600 text-white"
                       : "bg-[#016472] text-white hover:bg-[#014954]"
                   } disabled:opacity-50`}
                 >
-                  {isSaving
-                    ? "Saving..."
-                    : justSaved
-                    ? (
-                      <>
-                        <CheckCircle2 size={18} />
-                        Preferences Saved
-                      </>
-                    )
-                    : "Save Preferences"}
+                  {isSaving ? (
+                    "Saving..."
+                  ) : justSaved ? (
+                    <>
+                      <CheckCircle2 size={18} />
+                      Preferences Saved
+                    </>
+                  ) : (
+                    "Save Preferences"
+                  )}
                 </button>
               </div>
             )}
-
           </div>
         </div>
       </div>
