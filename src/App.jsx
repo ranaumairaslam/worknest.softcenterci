@@ -41,7 +41,7 @@ import Revenue from "./pages/Revenue.jsx";
 // Leader
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import Reports from "./pages/Reports.jsx";
-import Calendar from "./pages/Calendar.jsx";
+
 import LeaderMeetings from "./pages/Meetings.jsx";
 
 // Team Member
@@ -63,7 +63,7 @@ import Settings from "../components/Setting.jsx";
 import ProjectTimelinePage from "./pages/ProjectTimelinePage.jsx";
 import TeamPerformancePage from "./pages/TeamPerformancePage.jsx";
 import TaskOverviewPage from "./pages/TaskOverviewPage.jsx";
-import KanbanBoardPage from "./pages/KanbanBoardPage.jsx";
+
 
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -280,10 +280,7 @@ function AppLayout() {
               path="/project"
               element={<ProjectOversightFull />}
             />
-            <Route
-              path="/calendar"
-              element={<Calendar />}
-            />
+            
             <Route
               path="/project-reports"
               element={<Reports />}
@@ -310,10 +307,7 @@ function AppLayout() {
               path="/project/tasks"
               element={<TaskOverviewPage />}
             />
-            <Route
-              path="/project/kanban"
-              element={<KanbanBoardPage />}
-            />
+            
 
             {/* Team Member Routes */}
             <Route

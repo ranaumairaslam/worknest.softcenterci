@@ -83,17 +83,19 @@ export default function TeamMemberDashboard() {
       <KanbanBoard tasks={tasks} onTaskClick={setSelectedTask} />
 
       <TaskDetailModal
-        task={selectedTask}
-        onClose={() => setSelectedTask(null)}
-        onStart={(taskId) => {                    // ✅ NEW - Start Task handler
-          startTask(taskId);
-          setSelectedTask(null);
-        }}
-        onSubmit={(payload) => {
-          submitTask(selectedTask.id, payload);
-          setSelectedTask(null);
-        }}
-      />
+  task={selectedTask}
+  onClose={() => setSelectedTask(null)}
+  onStart={(taskId) => {
+    console.log("🔵 taskId received:", taskId);
+    console.log("🔵 Full selectedTask:", selectedTask);   // ✅ Check what's inside
+    startTask(taskId);
+    setSelectedTask(null);
+  }}
+  onSubmit={(payload) => {
+    submitTask(selectedTask.id, payload);
+    setSelectedTask(null);
+  }}
+/>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Clock3, Users, CheckSquare, Briefcase, ArrowRight } from "lucide-react";
+import { Clock3, Users, CheckSquare, ArrowRight } from "lucide-react";
 import ProjectHeaderCard from "../components/Cards/ProjectHeaderCard";
 import StatCardTrend from "../components/Cards/StatCardTrend";
 import TeamRosterModal from "../components/Cards/TeamRosterModal";
@@ -14,7 +14,7 @@ const sectionLinks = [
   { key: "timeline", title: "Project Timeline", description: "Track project phases from kickoff to launch", icon: Clock3, path: "/project/timeline", color: "bg-indigo-50 text-indigo-600" },
   { key: "team-performance", title: "Team Performance", description: "See how each team member is progressing", icon: Users, path: "/project/team-performance", color: "bg-blue-50 text-blue-600" },
   { key: "tasks", title: "Task Overview", description: "Search, filter, and manage all project tasks", icon: CheckSquare, path: "/project/tasks", color: "bg-emerald-50 text-emerald-600" },
-  { key: "kanban", title: "Kanban Board", description: "View tasks organized by status columns", icon: Briefcase, path: "/project/kanban", color: "bg-amber-50 text-amber-600" },
+  
 ];
 
 export default function ProjectOversightFull() {
