@@ -9,10 +9,30 @@ import {
   getKanbanPreview,
 } from "../services/projectOversightService";
 
+const emptyProjectData = {
+  summary: {
+    id: "empty-project",
+    name: "No project assigned",
+    status: "Active",
+    description: "No project data available yet.",
+    startDate: "—",
+    endDate: "—",
+    progress: 0,
+    tasksCompleted: 0,
+    tasksTotal: 0,
+    daysRemaining: 0,
+  },
+  stats: [],
+  timeline: [],
+  team: [],
+  tasks: [],
+  kanban: { columns: [] },
+};
+
 export function useProjectOversightData() {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(emptyProjectData);
   const [error, setError] = useState(null);
 
   // Load the project list once, pick the first one as default.
@@ -21,13 +41,25 @@ export function useProjectOversightData() {
 
     getProjects()
       .then((list) => {
-        if (isMounted) {
-          setProjects(list);
-          setSelectedProjectId(list[0]?.id ?? null);
+        if (!isMounted) return;
+
+        setProjects(list);
+        if (list.length === 0) {
+          setSelectedProjectId(null);
+          setData(emptyProjectData);
+          setError(null);
+          return;
         }
+
+        setSelectedProjectId(list[0]?.id ?? null);
       })
       .catch((err) => {
-        if (isMounted) setError(err);
+        if (isMounted) {
+          setProjects([]);
+          setSelectedProjectId(null);
+          setData(emptyProjectData);
+          setError(err);
+        }
       });
 
     return () => {
@@ -35,11 +67,12 @@ export function useProjectOversightData() {
     };
   }, []);
 
-  // Re-fetch everything whenever the selected project changes.
-  // No setState is called synchronously here — only inside the
-  // resolved promise callback, which the React Compiler allows.
   useEffect(() => {
-    if (!selectedProjectId) return;
+    if (!selectedProjectId) {
+      setData(emptyProjectData);
+      return;
+    }
+
     let isMounted = true;
 
     Promise.all([
@@ -53,10 +86,14 @@ export function useProjectOversightData() {
       .then(([summary, stats, timeline, team, tasks, kanban]) => {
         if (isMounted) {
           setData({ summary, stats, timeline, team, tasks, kanban });
+          setError(null);
         }
       })
       .catch((err) => {
-        if (isMounted) setError(err);
+        if (isMounted) {
+          setData(emptyProjectData);
+          setError(err);
+        }
       });
 
     return () => {
@@ -64,10 +101,7 @@ export function useProjectOversightData() {
     };
   }, [selectedProjectId]);
 
-  // Derived, not stored: loading is true whenever we don't yet have
-  // data for the CURRENTLY selected project (e.g. right after
-  // switching projects, before the new fetch resolves).
-  const loading = !data || data.summary.id !== selectedProjectId;
+  const loading = Boolean(selectedProjectId) && (!data || data.summary.id !== selectedProjectId);
 
   return { projects, selectedProjectId, setSelectedProjectId, data, loading, error };
 }

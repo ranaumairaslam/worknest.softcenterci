@@ -1,4 +1,4 @@
-import { get, post, put } from './apiClient.js';
+import { get, post, put, patch } from './apiClient.js';
 
 const BASE = '/team-leader';
 
@@ -57,6 +57,21 @@ export function mapTeamTask(task) {
 export async function getTeamLeaderDashboard() {
   const response = await get(`${BASE}/dashboard`);
   return response?.data || { team: {}, stats: {}, projects: [], members: [], recentTasks: [] };
+}
+
+export async function getTeamLeaderMeetings(params = {}) {
+  const response = await get(`${BASE}/meetings`, params);
+  return response?.data || [];
+}
+
+export async function createTeamLeaderMeeting(payload) {
+  const response = await post(`${BASE}/meetings`, payload);
+  return response?.data || null;
+}
+
+export async function cancelTeamLeaderMeeting(meetingId) {
+  const response = await patch(`${BASE}/meetings/${meetingId}/cancel`, {});
+  return response?.data || null;
 }
 
 export async function getTeamLeaderProjects() {
@@ -149,13 +164,13 @@ export async function updateTeamLeaderTaskPriority(taskId, priority) {
 }
 
 export async function approveTeamLeaderTask(taskId) {
-  return put(`${BASE}/tasks/${taskId}/approve`, {});
+  return post(`${BASE}/tasks/${taskId}/approve`, {});
 }
 
 export async function reviseTeamLeaderTask(taskId, reviewNote) {
-  return put(`${BASE}/tasks/${taskId}/revision`, { reviewNote });
+  return post(`${BASE}/tasks/${taskId}/revision`, { reviewNote });
 }
 
 export async function addTeamLeaderMember(userId, role = 'team_member') {
-  return post(`${BASE}/team/members`, { userId, role });
+  return post(`${BASE}/team-members`, { userId, role });
 }

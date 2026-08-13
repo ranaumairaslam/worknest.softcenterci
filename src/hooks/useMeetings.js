@@ -9,6 +9,11 @@ import {
   cancelMeeting,
   inviteParticipants,
 } from "../services/meetingService";
+import {
+  getTeamLeaderMeetings,
+  createTeamLeaderMeeting,
+  cancelTeamLeaderMeeting,
+} from "../services/teamLeaderService";
 
 export function useMeetings() {
   const role = useRole();
@@ -22,7 +27,10 @@ export function useMeetings() {
 
     async function loadMeetings() {
       try {
-        const data = await getAllMeetings(role);
+        const isLeaderRole = role === "projectLeader" || role === "team_leader";
+        const data = isLeaderRole
+          ? await getTeamLeaderMeetings()
+          : await getAllMeetings(role);
 
         if (isMounted) {
           setMeetings(data);
@@ -46,9 +54,14 @@ export function useMeetings() {
   }, [role]);
 
   const addMeeting = async (payload) => {
-    const meeting = await createMeeting(payload, role);
+    const isLeaderRole = role === "projectLeader" || role === "team_leader";
+    const meeting = isLeaderRole
+      ? await createTeamLeaderMeeting(payload)
+      : await createMeeting(payload, role);
 
-    setMeetings((prev) => [meeting, ...prev]);
+    if (meeting) {
+      setMeetings((prev) => [meeting, ...prev]);
+    }
 
     return meeting;
   };
@@ -78,7 +91,10 @@ export function useMeetings() {
   };
 
   const cancelMeetingById = async (id) => {
-    const meeting = await cancelMeeting(id, role);
+    const isLeaderRole = role === "projectLeader" || role === "team_leader";
+    const meeting = isLeaderRole
+      ? await cancelTeamLeaderMeeting(id)
+      : await cancelMeeting(id, role);
 
     if (meeting) {
       setMeetings((prev) =>

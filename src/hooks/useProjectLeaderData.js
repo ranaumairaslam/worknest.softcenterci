@@ -43,13 +43,23 @@ export function useProjectLeaderData() {
 
     getProjects(role)
       .then((projectList) => {
-        if (isMounted) {
-          setProjects(projectList);
-          setSelectedProjectId(projectList[0]?.id ?? null);
-        }
+        if (!isMounted) return;
+
+        setProjects(projectList);
+        setSelectedProjectId((current) => {
+          if (projectList.some((project) => String(project.id) === String(current))) {
+            return current;
+          }
+          return projectList[0]?.id ?? null;
+        });
+        setError(null);
       })
       .catch((err) => {
-        if (isMounted) setError(err);
+        if (isMounted) {
+          setProjects([]);
+          setSelectedProjectId(null);
+          setError(err);
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -61,7 +71,14 @@ export function useProjectLeaderData() {
   }, [role]);
 
   useEffect(() => {
-    if (!selectedProjectId) return;
+    if (!selectedProjectId) {
+      setTasks([]);
+      setDeliverables([]);
+      setStats([]);
+      setTeamMembers([]);
+      return;
+    }
+
     let isMounted = true;
 
     Promise.all([
@@ -75,6 +92,15 @@ export function useProjectLeaderData() {
         setDeliverables(deliverableList);
         setStats(statList);
         setTeamMembers(members);
+        setError(null);
+      }
+    }).catch((err) => {
+      if (isMounted) {
+        setTasks([]);
+        setDeliverables([]);
+        setStats([]);
+        setTeamMembers([]);
+        setError(err);
       }
     });
 
