@@ -147,16 +147,7 @@ export const navigation = {
     path: "/project/timeline",
   },
   
-  {
-    title: "Kanban Board",
-    icon: Briefcase,
-    path: "/project/kanban",
-  },
-  {
-    title: "Calendar",
-    icon: CalendarDays,
-    path: "/calendar",
-  },
+  
     {
       title: "Reports",
       icon: BarChart3,
@@ -243,12 +234,10 @@ export const getRoleFromPath = (pathname) => {
     // Project Leader
     "/dashboard-leader": "projectLeader",
     "/project": "projectLeader",
-    "/calendar": "projectLeader",
     "/project-reports": "projectLeader",
     "/project/timeline": "projectLeader",
     "/project/team-performance": "projectLeader",
     "/project/tasks": "projectLeader",
-    "/project/kanban": "projectLeader",
     "/meetingss": "projectLeader",
 
     // Team Member
