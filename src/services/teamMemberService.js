@@ -112,4 +112,60 @@ export async function getUpcomingMeetings() {
 
 export async function joinMeeting(meetingId) {
   return post(`/team-member/meetings/${meetingId}/join`, {});
+}// ✅ NEW: Fetch tasks from company endpoint (same as My Tasks page)
+export async function getAssignedTasksFromCompany() {
+  try {
+    // Get current user ID from JWT
+    const token = localStorage.getItem("worknest_token");
+    if (!token) return [];
+
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const userId = payload.id;
+
+    // Call same endpoint that My Tasks uses
+    const { get } = await import("./apiClient");
+    const response = await get("/company/tasks", {
+      assigneeId: userId,
+      limit: 100,
+    });
+
+    const tasks = response?.data || [];
+
+    // Map to Kanban format
+    return tasks.map((task) => ({
+      id: task.id,
+      title: task.title || task.name,
+      status: mapBackendStatusToKanban(task.status),
+      project: task.project_name || "Unassigned",
+      priority: task.priority,
+      dueDate: task.due_date,
+      description: task.description,
+      assignee: {
+        name: task.assignee_name || "Me",
+        avatar: getInitials(task.assignee_name || "Me"),
+      },
+      raw: task,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch company tasks:", error);
+    return [];
+  }
+}
+
+// Helper: backend status → Kanban status
+function mapBackendStatusToKanban(status) {
+  const map = {
+    todo: "todo",
+    pending: "todo",
+    in_progress: "in_progress",
+    review: "under_review",
+    under_review: "under_review",
+    submitted: "under_review",
+    done: "completed",
+    completed: "completed",
+    approved: "completed",
+    blocked: "in_progress",
+    rejected: "in_progress",
+  };
+  return map[String(status).toLowerCase()] || "todo";
 }

@@ -1,5 +1,5 @@
 import { useEmployees } from "../hooks/useEmployees";
-
+import LoadingShimmer from "../components/common/LoadingShimmer";
 import { getAllClients } from "../services/clientService";
 
 import { useMemo, useState, useEffect } from "react";
@@ -140,9 +140,7 @@ export default function ProjectOversight() {
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-sm text-slate-500">Loading projects...</div>;
-  }
+  if (loading) return <LoadingShimmer message="Loading projects..." variant="projects" />;
 
   if (error) {
     return <div className="p-6 text-sm text-rose-500">Failed to load projects.</div>;
