@@ -156,9 +156,6 @@ const menu = navigation[role] || [];
           <Link
   to="/settings"
   state={{ role }}
-  onClick={() => {
-    localStorage.setItem("userRole", role);
-  }}
   className={`${navItemBase} text-[#A3FEFF] ${
     collapsed
       ? "lg:justify-center lg:gap-0 lg:px-2"
