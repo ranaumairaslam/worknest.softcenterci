@@ -6,6 +6,7 @@ import AssignTaskModal from "../components/Modals/AssignTaskModal";
 import EditKanbanTaskModal from "../components/Modals/EditKanbanTaskModal";
 import { useProjectLeaderData } from "../hooks/useProjectLeaderData";
 import CreateProjectModal from "../components/Modals/CreateProjectModal";
+import LoadingShimmer from "../components/common/LoadingShimmer";
 
 
 const statusLabel = {
@@ -101,7 +102,7 @@ export default function ProjectLeaderDashboard() {
   const [editingTask, setEditingTask] = useState(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
 
-  if (loading) return <div className="p-6 text-slate-500 text-sm">Loading project…</div>;
+  if (loading) return <LoadingShimmer message="Loading project..." variant="kanban" />;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load project data.</div>;
 
   function confirmDelete(task) {

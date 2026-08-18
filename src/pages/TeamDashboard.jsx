@@ -4,6 +4,7 @@ import { ChevronDown, Check, Users, User } from "lucide-react";
 import KanbanBoard from "../components/Kanban/KanbanBoard";
 import TaskDetailModal from "../components/Modals/TaskDetailModal";
 import { useTeamMemberTasks } from "../hooks/useTeamMemberTasks";
+import LoadingShimmer from "../components/common/LoadingShimmer";
 
 // Top-level component — React Compiler forbids defining components
 // inside another component's render function.
@@ -55,7 +56,7 @@ export default function TeamMemberDashboard() {
 
   const [selectedTask, setSelectedTask] = useState(null);
 
-  if (loading) return <div className="p-6 text-slate-500 text-sm">Loading tasks…</div>;
+ if (loading) return <LoadingShimmer message="Loading tasks..." variant="kanban" />;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load tasks.</div>;
 
   return (
