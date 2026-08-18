@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import useRole from "./useRole";
-
+import { useCallback, useEffect, useState } from "react";
 import {
   getAllMeetings,
   createMeeting,
@@ -16,108 +14,63 @@ import {
 } from "../services/teamLeaderService";
 
 export function useMeetings() {
-  const role = useRole();
-
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadMeetings() {
-      try {
-        const isLeaderRole = role === "projectLeader" || role === "team_leader";
-        const data = isLeaderRole
-          ? await getTeamLeaderMeetings()
-          : await getAllMeetings(role);
-
-        if (isMounted) {
-          setMeetings(data);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getAllMeetings();
+      setMeetings(data);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError(err);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    loadMeetings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [role]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const addMeeting = async (payload) => {
-    const isLeaderRole = role === "projectLeader" || role === "team_leader";
-    const meeting = isLeaderRole
-      ? await createTeamLeaderMeeting(payload)
-      : await createMeeting(payload, role);
-
-    if (meeting) {
-      setMeetings((prev) => [meeting, ...prev]);
-    }
-
+    const meeting = await createMeeting(payload);
+    setMeetings((prev) => [meeting, ...prev]);
     return meeting;
   };
 
   const editMeeting = async (id, updates) => {
-    const meeting = await updateMeeting(id, updates, role);
-
+    const meeting = await updateMeeting(id, updates);
     if (meeting) {
-      setMeetings((prev) =>
-        prev.map((m) => (m.id === id ? meeting : m))
-      );
+      setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
     }
-
     return meeting;
   };
 
   const removeMeeting = async (id) => {
-    const deleted = await deleteMeeting(id, role);
-
+    const deleted = await deleteMeeting(id);
     if (deleted) {
-      setMeetings((prev) =>
-        prev.filter((m) => m.id !== id)
-      );
+      setMeetings((prev) => prev.filter((m) => m.id !== id));
     }
-
     return deleted;
   };
 
   const cancelMeetingById = async (id) => {
-    const isLeaderRole = role === "projectLeader" || role === "team_leader";
-    const meeting = isLeaderRole
-      ? await cancelTeamLeaderMeeting(id)
-      : await cancelMeeting(id, role);
-
+    const meeting = await cancelMeeting(id);
     if (meeting) {
-      setMeetings((prev) =>
-        prev.map((m) => (m.id === id ? meeting : m))
-      );
+      setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
     }
-
     return meeting;
   };
 
   const inviteToMeeting = async (id, participants) => {
-    const meeting = await inviteParticipants(
-      id,
-      participants,
-      role
-    );
-
+    const meeting = await inviteParticipants(id, participants);
     if (meeting) {
-      setMeetings((prev) =>
-        prev.map((m) => (m.id === id ? meeting : m))
-      );
+      setMeetings((prev) => prev.map((m) => (m.id === id ? meeting : m)));
     }
-
     return meeting;
   };
 
@@ -130,5 +83,6 @@ export function useMeetings() {
     removeMeeting,
     cancelMeetingById,
     inviteToMeeting,
+    refresh: load,
   };
 }

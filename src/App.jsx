@@ -140,55 +140,64 @@ function AppLayout() {
       : "lg:ml-72"
     : "ml-0";
 
-  const getRole = () => {
-    const savedRole = localStorage.getItem("userRole");
+const getRole = () => {
+  const user = getStoredUser();
 
-    if (location.pathname === "/settings" && savedRole) {
-      return savedRole;
-    }
-
-    return (
-      {
-        "/dashboard-admin": "superAdmin",
-        "/companies": "superAdmin",
-        "/revenue-super-admin": "superAdmin",
-        "/reports": "superAdmin",
-        "/add-company": "superAdmin",
-
-        "/dashboard-company": "companyAdmin",
-        "/team-management": "companyAdmin",
-        "/projects": "companyAdmin",
-        "/employees": "companyAdmin",
-        "/company-tasks": "companyAdmin",
-        "/clients": "companyAdmin",
-        "/company-meetings": "companyAdmin",
-        "/revenue": "companyAdmin",
-        "/company-reports": "companyAdmin",
-
-        "/dashboard-leader": "projectLeader",
-        "/project": "projectLeader",
-       
-        "/project-reports": "projectLeader",
-        "/meetings": "projectLeader",
-        "/meetingss": "projectLeader",
-        "/project/timeline": "projectLeader",
-        "/project/team-performance": "projectLeader",
-        "/project/tasks": "projectLeader",
-        "/project/kanban": "projectLeader",
-
-        "/dashboard-team-member": "teamMember",
-        "/tasks": "teamMember",
-        "/team-member-projects": "teamMember",
-        "/team-meetings": "teamMember",
-        "/chat": "teamMember",
-
-        "/client-dashboard": "client",
-        "/client-projects": "client",
-        "/client-meetings": "client",
-        "/client-calendar": "client",
-      }[location.pathname] || "superAdmin"
-    );
+  const roleMap = {
+    super_admin: "superAdmin",
+    company: "companyAdmin",
+    team_leader: "projectLeader",
+    team_member: "teamMember",
+    client: "client",
   };
+
+  // Settings par actual logged-in user ka role use hoga
+  if (location.pathname === "/settings") {
+    return roleMap[user?.role] || "superAdmin";
+  }
+
+  return (
+    {
+      "/dashboard-admin": "superAdmin",
+      "/companies": "superAdmin",
+      "/revenue-super-admin": "superAdmin",
+      "/reports": "superAdmin",
+      "/add-company": "superAdmin",
+
+      "/dashboard-company": "companyAdmin",
+      "/team-management": "companyAdmin",
+      "/projects": "companyAdmin",
+      "/employees": "companyAdmin",
+      "/company-tasks": "companyAdmin",
+      "/clients": "companyAdmin",
+      "/company-meetings": "companyAdmin",
+      "/revenue": "companyAdmin",
+      "/company-reports": "companyAdmin",
+
+      "/dashboard-leader": "projectLeader",
+      "/project": "projectLeader",
+      "/calendar": "projectLeader",
+      "/project-reports": "projectLeader",
+      "/meetings": "projectLeader",
+      "/meetingss": "projectLeader",
+      "/project/timeline": "projectLeader",
+      "/project/team-performance": "projectLeader",
+      "/project/tasks": "projectLeader",
+      "/project/kanban": "projectLeader",
+
+      "/dashboard-team-member": "teamMember",
+      "/tasks": "teamMember",
+      "/team-member-projects": "teamMember",
+      "/team-meetings": "teamMember",
+      "/chat": "teamMember",
+
+      "/client-dashboard": "client",
+      "/client-projects": "client",
+      "/client-meetings": "client",
+      "/client-calendar": "client",
+    }[location.pathname] || roleMap[user?.role] || "superAdmin"
+  );
+};
 
   const navbarRole = getRole();
 

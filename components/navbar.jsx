@@ -15,8 +15,12 @@ export default function Navbar({ onToggle }) {
   const { profile } = useProfile();
   const { unreadCount: notificationcount } = useNotifications();
 
-  const role = getRoleFromPath(location.pathname);
-  const currentRole = roleConfig[role];
+ const role =
+  location.pathname === "/settings"
+    ? localStorage.getItem("userRole") || "superAdmin"
+    : getRoleFromPath(location.pathname);
+
+const currentRole = roleConfig[role] || roleConfig.superAdmin;
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-slate-200 bg-white px-3 py-3 shadow-sm transition-all duration-300 ease-in-out sm:px-4 sm:py-4 md:px-6">

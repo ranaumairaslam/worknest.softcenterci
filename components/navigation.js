@@ -252,8 +252,9 @@ export const getRoleFromPath = (pathname) => {
     "/client-meetings": "client",
 
     // Shared
+    "/settings": "companyAdmin",
     "/chat": "client",
   };
 
-  return routes[pathname] || "superAdmin";
+  return routes[pathname] || null;
 };
