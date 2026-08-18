@@ -1,0 +1,32 @@
+export const conversations = [
+  {
+    id: 1,
+    name: "Hamza Khan",
+    role: "Project Leader",
+    project: "CRM Portal",
+    online: true,
+    unread: 2,
+    lastMessage: "Sprint meeting at 3 PM.",
+    time: "10:42 AM",
+  },
+  {
+    id: 2,
+    name: "ABC Client",
+    role: "Client",
+    project: "E-Commerce Website",
+    online: false,
+    unread: 0,
+    lastMessage: "Please share the latest update.",
+    time: "Yesterday",
+  },
+  {
+    id: 3,
+    name: "Ali Raza",
+    role: "Team Member",
+    project: "HRMS",
+    online: true,
+    unread: 5,
+    lastMessage: "Task completed.",
+    time: "9:15 AM",
+  },
+];
