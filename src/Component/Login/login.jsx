@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
-import { login, forgotPassword } from "../../../components/authService.js";
+import { login, forgotPassword,changePassword } from "../../services/authService.js";
+
 
 export default function Login() {
   const [formdata, setformdata] = useState({ email: "", password: "" });
