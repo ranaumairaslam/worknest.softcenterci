@@ -1,40 +1,51 @@
-export async function getMyTasks() {
-  return [
-    {
-      id: "t1",
-      title: "Alpha Platform Rebrand 'API Docs'",
-      status: "todo",
-      assignee: { name: "Sarah L.", avatar: "SL" },
-    },
-    {
-      id: "t2",
-      title: "System Deliverable Submission 99.9%",
-      status: "todo",
-      assignee: { name: "Sarah L.", avatar: "SL" },
-    },
-    {
-      id: "t3",
-      title: "Task Deliverable Submission",
-      status: "in_progress",
-      assignee: { name: "Sarah L.", avatar: "SL" },
-    },
-    {
-      id: "t4",
-      title: "My Tasks teams turnover",
-      status: "in_progress",
-      assignee: { name: "Sarah L.", avatar: "SL" },
-    },
-    {
-      id: "t5",
-      title: "Task Reviews cetom and Doe",
-      status: "under_review",
-      assignee: { name: "Sarah L.", avatar: "SL" },
-    },
-    {
-      id: "t6",
-      title: "Sarah t/ Ufmi assigned task Docs",
-      status: "completed",
-      assignee: { name: "Sarah L.", avatar: "SL" },
-    },
-  ];
+import { getCurrentUser } from "./authContext.js";
+import { getTasksByAssignee, getAllTasks } from "./taskService.js";
+import { getAllProjects } from "./projectService.js";
+
+function mapTaskForKanban(task) {
+  const statusMap = {
+    Pending: "todo",
+    "To Do": "todo",
+    "In Progress": "in_progress",
+    Review: "under_review",
+    "Under Review": "under_review",
+    Completed: "completed",
+    Rejected: "in_progress",
+  };
+
+  const initials = (task.assignee || "?")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return {
+    id: task.id,
+    title: task.name,
+    status: statusMap[task.status] || "todo",
+    project: task.project,
+    assignee: { name: task.assignee, avatar: initials },
+  };
+}
+
+export async function getMyTasks(role) {
+  const user = getCurrentUser(role);
+  const tasks = await getTasksByAssignee(user.employeeId, role);
+  return tasks.map(mapTaskForKanban);
+}
+
+export async function getTeamTasks(role) {
+  const user = getCurrentUser(role);
+  const projects = await getAllProjects(role);
+  const myProjectIds = projects.map((p) => p.id);
+  const allTasks = await getAllTasks(role);
+  const teamTasks = allTasks.filter((t) => myProjectIds.includes(t.projectId));
+  return teamTasks.map(mapTaskForKanban);
+}
+
+export async function submitTaskWork(taskId, payload, role) {
+  const { updateTask } = await import("./taskService");
+  const { getActor } = await import("./authContext");
+  return updateTask(taskId, { status: "Review", progress: 85 }, getActor(role));
 }

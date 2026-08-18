@@ -7,9 +7,9 @@ const columns = [
   { key: "completed", title: "Completed" },
 ];
 
-export default function KanbanBoard({ tasks, onTaskClick }) {
+export default function KanbanBoard({ tasks, onTaskClick, onEditTask, onDeleteTask, onDropTask }) {
   return (
-    <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:gap-4">
+    <div className="flex gap-4 overflow-x-auto pb-2">
       {columns.map((col) => (
         <KanbanColumn
           key={col.key}
@@ -17,6 +17,9 @@ export default function KanbanBoard({ tasks, onTaskClick }) {
           statusKey={col.key}
           tasks={tasks.filter((t) => t.status === col.key)}
           onTaskClick={onTaskClick}
+          onEditTask={onEditTask}
+          onDeleteTask={onDeleteTask}
+          onDropTask={onDropTask}
         />
       ))}
     </div>

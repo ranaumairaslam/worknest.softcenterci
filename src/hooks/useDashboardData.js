@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  getStats,
-  getProjectProgress,
-  getInvitations,
-  getTeamOverview,
-} from "../services/dashboardService";
+import { getDashboardSummary } from "../services/dashboardService";
 
 export function useDashboardData() {
   const [data, setData] = useState({
@@ -12,23 +7,28 @@ export function useDashboardData() {
     projects: [],
     invitations: [],
     team: [],
+    revenue: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const refresh = async () => {
+    try {
+      setError(null);
+      setData(await getDashboardSummary());
+    } catch (err) {
+      setError(err);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
 
     async function load() {
       try {
-        const [stats, projects, invitations, team] = await Promise.all([
-          getStats(),
-          getProjectProgress(),
-          getInvitations(),
-          getTeamOverview(),
-        ]);
+        const dashboard = await getDashboardSummary();
         if (isMounted) {
-          setData({ stats, projects, invitations, team });
+          setData(dashboard);
         }
       } catch (err) {
         if (isMounted) setError(err);
@@ -43,5 +43,5 @@ export function useDashboardData() {
     };
   }, []);
 
-  return { ...data, loading, error };
+  return { ...data, loading, error, refresh };
 }
