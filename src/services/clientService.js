@@ -39,24 +39,21 @@ export async function getClientByName(name) {
 
 // =====================================================
 // CREATE CLIENT
+// Backend requires: ClientName, Email, password, projectName, ProjectDescription
 // =====================================================
 export async function createClient(payload) {
   try {
-    // ✅ Revenue ko number bana lein (agar string hai toh)
-    let revenueValue = payload.revenue || '0';
-    revenueValue = String(revenueValue).replace(/[$,\s]/g, '');
-    const revenueNumber = Number(revenueValue) || 0;
-
     const body = {
-      companyName: payload.name,
-      companyEmail: payload.contact || payload.email,
+      ClientName: payload.name,
+      Email: payload.contact || payload.email,
       password: payload.password || 'client12345',
-      address: payload.address || payload.location || 'N/A',
-      industry: payload.industry || '',
-      AccountOwnerName: payload.owner || 'Unknown',
-      companySize: payload.size || 'N/A',
-      revenu: revenueNumber,   // ✅ Number ke tor pe bhej rahe hain
-      location: payload.location || payload.address || 'N/A',
+      projectName: payload.projectName || `${payload.name} - Initial Project`,
+      ProjectDescription: 
+        payload.projectDescription || 
+        `Initial project for ${payload.name}` +
+        (payload.industry ? ` (${payload.industry})` : '') +
+        (payload.owner ? ` - Owner: ${payload.owner}` : '') +
+        (payload.location ? ` - Location: ${payload.location}` : ''),
     };
 
     console.log('📤 Creating client with body:', body);
@@ -66,7 +63,6 @@ export async function createClient(payload) {
   } catch (error) {
     console.error('Error creating client:', error);
     
-    // ✅ Backend errors ko clean format mein throw karein
     if (error.data?.errors && Array.isArray(error.data.errors)) {
       const errorMessages = error.data.errors
         .map((e) => `${e.field}: ${e.message}`)
@@ -76,30 +72,29 @@ export async function createClient(payload) {
       throw newError;
     }
     
-    throw error;
+    throw new Error(error.data?.message || error.message || 'Failed to create client');
   }
 }
 
 // =====================================================
-// UPDATE CLIENT
+// UPDATE CLIENT ⭐ (Now Works!)
+// Backend accepts: ClientName, Email, password, projectName, ProjectDescription
 // =====================================================
 export async function updateClient(id, updates) {
   try {
-    let revenueValue = updates.revenue || '0';
-    revenueValue = String(revenueValue).replace(/[$,\s]/g, '');
-    const revenueNumber = Number(revenueValue) || 0;
+    const body = {};
+    
+    if (updates.name !== undefined) body.ClientName = updates.name;
+    if (updates.contact !== undefined || updates.email !== undefined) {
+      body.Email = updates.contact || updates.email;
+    }
+    if (updates.password) body.password = updates.password;
+    if (updates.projectName !== undefined) body.projectName = updates.projectName;
+    if (updates.projectDescription !== undefined) {
+      body.ProjectDescription = updates.projectDescription;
+    }
 
-    const body = {
-      companyName: updates.name,
-      companyEmail: updates.contact || updates.email,
-      address: updates.address || updates.location,
-      industry: updates.industry,
-      AccountOwnerName: updates.owner,
-      companySize: updates.size,
-      revenu: revenueNumber,
-      location: updates.location,
-      status: updates.status?.toLowerCase(),
-    };
+    console.log('📤 Updating client:', id, body);
 
     const response = await put(`${BASE}/${id}`, body);
     return transformClient(response?.data);
@@ -120,14 +115,16 @@ export async function updateClient(id, updates) {
 }
 
 // =====================================================
-// DELETE CLIENT
+// DELETE CLIENT ⭐ (Now Works!)
 // =====================================================
 export async function deleteClient(id) {
   try {
+    console.log('🗑️ Deleting client:', id);
     await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
     console.error('Error deleting client:', error);
+    alert(`Delete failed: ${error.data?.message || error.message || 'Unknown error'}`);
     return false;
   }
 }
@@ -145,30 +142,56 @@ export async function unlinkProject(clientId, projectId) {
 
 export async function getProjectsByClient(clientId) {
   const client = await getClientById(clientId);
-  return client?.projectIds || [];
+  return client?.projectsList || [];
 }
 
 // =====================================================
 // HELPER: Transform backend client → frontend format
+// Handles Capital C naming convention!
 // =====================================================
 function transformClient(client) {
   if (!client) return null;
 
+  // Backend uses Capital field names — handle both formats
+  const name = 
+    client.ClientName ||
+    client.companyName ||
+    client.company_name ||
+    client.name ||
+    'Unnamed Client';
+
+  const email = 
+    client.Email ||
+    client.companyEmail ||
+    client.company_email ||
+    client.email ||
+    '';
+
+  const owner = 
+    client.AccountOwnerName ||
+    client.account_owner_name ||
+    client.accountOwnerName ||
+    client.owner ||
+    name ||
+    'Not specified';
+
   return {
     id: client.id,
-    name: client.companyName || client.name || '',
-    contact: client.companyEmail || client.email || '',
-    email: client.companyEmail || client.email || '',
+    name: name,
+    contact: email,
+    email: email,
     status: capitalize(client.status || 'Active'),
-    industry: client.industry || 'Unknown',
-    owner: client.AccountOwnerName || client.owner || 'Unassigned',
-    size: client.companySize || client.size || 'Unknown',
+    industry: client.industry || 'Not specified',
+    owner: owner,
+    size: client.companySize || client.company_size || client.size || 'N/A',
     revenue: client.revenu || client.revenue || 0,
-    location: client.location || client.address || 'Unknown',
+    location: client.location || client.address || 'N/A',
     address: client.address || '',
     phone: client.phone || '',
-    projects: client.project_count || 0,
-    projectIds: client.project_ids || [],
+    projects: (client.projects || []).length || client.project_count || 0,
+    projectsList: client.projects || [],
+    projectIds: (client.projects || []).map((p) => p.id),
+    userId: client.user_id || null,
     lastContact: formatDate(client.updated_at || client.created_at),
     createdAt: formatDate(client.created_at),
   };

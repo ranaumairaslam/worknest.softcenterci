@@ -15,7 +15,7 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
   };
 
   const [form, setForm] = useState(emptyForm);
-  const [errors, setErrors] = useState({});   // ✅ Errors state
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -35,23 +35,21 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
     } else {
       setForm(emptyForm);
     }
-    setErrors({});   // Clear errors on open
+    setErrors({});
   }, [client, open]);
 
   if (!open) return null;
 
-  // ✅ VALIDATION FUNCTION
+  // ✅ VALIDATION
   const validate = () => {
     const newErrors = {};
 
-    // Company Name
     if (!form.name.trim()) {
       newErrors.name = "Company Name is required";
     } else if (form.name.trim().length < 2) {
       newErrors.name = "Company Name must be at least 2 characters";
     }
 
-    // Contact Email
     if (!form.contact.trim()) {
       newErrors.contact = "Contact Email is required";
     } else {
@@ -61,7 +59,6 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
       }
     }
 
-    // Password (only when creating new client)
     if (!client) {
       if (!form.password.trim()) {
         newErrors.password = "Password is required";
@@ -70,37 +67,31 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
       }
     }
 
-    // Address
     if (!form.address.trim()) {
       newErrors.address = "Company Address is required";
     }
 
-    // Industry
     if (!form.industry.trim()) {
       newErrors.industry = "Industry is required";
     }
 
-    // Owner
     if (!form.owner.trim()) {
       newErrors.owner = "Account Owner is required";
     }
 
-    // Size
     if (!form.size.trim()) {
       newErrors.size = "Company Size is required";
     }
 
-    // Revenue (must be a number)
     if (!form.revenue.toString().trim()) {
       newErrors.revenue = "Revenue is required";
     } else {
       const cleaned = String(form.revenue).replace(/[$,\s]/g, '');
       if (isNaN(Number(cleaned)) || Number(cleaned) < 0) {
-        newErrors.revenue = "Revenue must be a valid number (e.g. 100000)";
+        newErrors.revenue = "Revenue must be a valid number";
       }
     }
 
-    // Location
     if (!form.location.trim()) {
       newErrors.location = "Location is required";
     }
@@ -108,37 +99,45 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
     return newErrors;
   };
 
+  const handleChange = (field, value) => {
+    setForm({ ...form, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: undefined });
+    }
+  };
+
   const handleSubmit = async () => {
     const validationErrors = validate();
     setErrors(validationErrors);
 
-    // Agar errors hain toh submit mat karo
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
     setSubmitting(true);
     try {
+      console.log("📤 Submitting client:", form);
       await onSubmit?.({
         ...form,
         id: client?.id,
       });
     } catch (err) {
-      // Backend errors ko form errors mein daalein
       if (err.backendErrors) {
         const beErrors = {};
         err.backendErrors.forEach((e) => {
-          // Map backend field names to frontend field names
           const fieldMap = {
             companyName: 'name',
             companyEmail: 'contact',
             AccountOwnerName: 'owner',
             companySize: 'size',
             revenu: 'revenue',
+            revenue: 'revenue',
             address: 'address',
             location: 'location',
             password: 'password',
             industry: 'industry',
+            name: 'name',
+            email: 'contact',
           };
           const field = fieldMap[e.field] || e.field;
           beErrors[field] = e.message;
@@ -152,15 +151,6 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
     }
   };
 
-  // Handler to clear specific error on change
-  const handleChange = (field, value) => {
-    setForm({ ...form, [field]: value });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: undefined });
-    }
-  };
-
-  // ✅ Helper for input classes (adds red border if error)
   const inputClass = (field) =>
     `w-full rounded-lg border p-3 outline-none focus:ring-2 ${
       errors[field]
@@ -168,7 +158,6 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
         : "border-gray-300 focus:ring-[#016472]"
     }`;
 
-  // ✅ Error message component
   const ErrorMessage = ({ field }) =>
     errors[field] ? (
       <p className="mt-1 text-xs text-red-500">{errors[field]}</p>
@@ -210,14 +199,14 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
             <input
               type="password"
               className={inputClass("password")}
-              placeholder={client ? "Password (leave blank)" : "Password * (min 6 chars)"}
+              placeholder={client ? "Password (leave blank)" : "Password *"}
               value={form.password}
               onChange={(e) => handleChange("password", e.target.value)}
             />
             <ErrorMessage field="password" />
           </div>
 
-          {/* Address */}
+          {/* Company Address */}
           <div className="col-span-2">
             <textarea
               rows={3}
@@ -240,7 +229,7 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
             <ErrorMessage field="industry" />
           </div>
 
-          {/* Owner */}
+          {/* Account Owner */}
           <div>
             <input
               className={inputClass("owner")}
@@ -251,7 +240,7 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
             <ErrorMessage field="owner" />
           </div>
 
-          {/* Size */}
+          {/* Company Size */}
           <div>
             <input
               className={inputClass("size")}
@@ -265,7 +254,7 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
           {/* Revenue */}
           <div>
             <input
-              type="number"
+              type="text"
               className={inputClass("revenue")}
               placeholder="Revenue * (e.g. 100000)"
               value={form.revenue}
@@ -286,7 +275,6 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
           </div>
         </div>
 
-        {/* Error Summary */}
         {Object.keys(errors).length > 0 && (
           <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
             ⚠️ Please fix the errors above before submitting.

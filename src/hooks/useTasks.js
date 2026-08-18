@@ -4,6 +4,7 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  updateTaskStatus,
   getTaskStatistics,
 } from "../services/taskService";
 
@@ -65,6 +66,15 @@ export function useTasks() {
     return deleted;
   };
 
+  const changeTaskStatus = async (id, status) => {
+    const task = await updateTaskStatus(id, status);
+    if (task) {
+      setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
+      await loadStats();
+    }
+    return task;
+  };
+
   return {
     tasks,
     statistics,
@@ -73,6 +83,7 @@ export function useTasks() {
     addTask,
     editTask,
     removeTask,
+    changeTaskStatus,
     refresh: load,
   };
 }

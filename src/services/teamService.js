@@ -39,7 +39,7 @@ export async function getTeamByName(name) {
 
 // =====================================================
 // CREATE TEAM
-// Backend requires: teamName (or name), description, TeamLeaderName (optional)
+// Body: { teamName, description, TeamLeaderName (optional) }
 // =====================================================
 export async function createTeam(payload) {
   try {
@@ -48,7 +48,6 @@ export async function createTeam(payload) {
       description: payload.description || '',
     };
     
-    // Optional: If leader name provided
     if (payload.leaderName && String(payload.leaderName).trim()) {
       body.TeamLeaderName = payload.leaderName;
     }
@@ -118,15 +117,48 @@ export async function deleteTeam(id) {
 }
 
 // =====================================================
-// REGISTER NEW MEMBER (creates user + adds to team)
+// ADD EXISTING MEMBER TO TEAM (NEW!)
+// Body: { EmployeeName: "Ali", TeamId: 15 }
+// =====================================================
+export async function addExistingMemberToTeam(teamId, employeeName) {
+  try {
+    console.log('📤 Adding member to team:', teamId, employeeName);
+    
+    const response = await post(`${BASE}/${teamId}/register-member`, {
+      EmployeeName: employeeName,
+    });
+    
+    return response?.data;
+  } catch (error) {
+    console.error('Error adding member to team:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
+    throw new Error(error.data?.message || error.message || 'Failed to add member');
+  }
+}
+
+// =====================================================
+// REGISTER MEMBER (Compatibility)
+// Kept for backward compatibility — accepts old format too
 // =====================================================
 export async function registerTeamMember(teamId, memberData) {
+  // If memberData has just a name (existing employee), use new route
+  if (memberData.name && !memberData.email && !memberData.password) {
+    return addExistingMemberToTeam(teamId, memberData.name);
+  }
+  
+  // Old format — create new employee
   try {
     const body = {
-      name: memberData.name,
-      email: memberData.email || null,
-      password: memberData.password || null,
-      role: memberData.role || 'team_member',
+      EmployeeName: memberData.name,
     };
 
     const response = await post(`${BASE}/${teamId}/register-member`, body);
@@ -138,27 +170,22 @@ export async function registerTeamMember(teamId, memberData) {
 }
 
 // =====================================================
-// ADD EXISTING MEMBER TO TEAM
-// (Backend doesn't have dedicated route, so refresh team)
+// ADD EXISTING MEMBER (compatibility function)
 // =====================================================
-export async function addTeamMember(teamId, employeeId) {
-  try {
-    // Backend uses register-member endpoint or assign-leader
-    // For adding existing member without login creation, no route yet
-    console.warn('addTeamMember: No dedicated backend route yet');
-    return getTeamById(teamId);
-  } catch (error) {
-    console.error('Error adding team member:', error);
-    return getTeamById(teamId);
-  }
+export async function addTeamMember(teamId, employeeName) {
+  return addExistingMemberToTeam(teamId, employeeName);
 }
 
 // =====================================================
 // REMOVE MEMBER FROM TEAM
+// Backend doesn't have dedicated route, so use employee update
 // =====================================================
 export async function removeTeamMember(teamId, employeeId) {
   try {
-    console.warn('removeTeamMember: No dedicated backend route yet');
+    // Set employee's team_id to null via employee update endpoint
+    await put(`/company/employees/${employeeId}`, {
+      teamId: null,
+    });
     return getTeamById(teamId);
   } catch (error) {
     console.error('Error removing team member:', error);
@@ -167,8 +194,8 @@ export async function removeTeamMember(teamId, employeeId) {
 }
 
 // =====================================================
-// ASSIGN TEAM LEADER (promote existing user)
-// Backend: PUT /company/teams/:teamId/assign-leader
+// ASSIGN TEAM LEADER (existing user)
+// PUT /company/teams/:teamId/assign-leader
 // Body: { userId: 21 }
 // =====================================================
 export async function assignTeamLeader(teamId, userId) {
@@ -210,19 +237,19 @@ function transformTeam(team) {
 
   return {
     id: team.id,
-    name: team.name || '',
+    name: team.name || team.teamName || '',
     description: team.description || '',
     status: 'Active',
-    projectLeader: team.leader_name || 'Unassigned',
-    leaderId: team.leader_id || null,
+    projectLeader: team.leader_name || team.TeamLeaderName || 'Unassigned',
+    leaderId: team.leader_id || team.leaderId || null,
     leaderEmail: team.leader_email || null,
     totalMembers: memberCount,
     members: memberIds,
     memberDetails: team.members || [],
     projects: team.project_count || 0,
     projectIds: [],
-    createdAt: formatDate(team.created_at),
-    updatedAt: formatDate(team.updated_at),
+    createdAt: formatDate(team.created_at || team.createdAt),
+    updatedAt: formatDate(team.updated_at || team.updatedAt),
     progress: 0,
   };
 }

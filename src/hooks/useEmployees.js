@@ -45,7 +45,6 @@ export function useEmployees() {
       const { credentials, ...employee } = created;
       setError(null);
       setEmployees((prev) => [employee, ...prev]);
-      // Return object with credentials so the page can show them
       return { ...employee, credentials };
     } catch (err) {
       throw err;
