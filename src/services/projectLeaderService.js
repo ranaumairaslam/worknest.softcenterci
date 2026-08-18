@@ -236,5 +236,14 @@ export async function getTeamProgressStats() {
 // ============ CREATE PROJECT ============
 
 export async function createProject(project, role) {
-  return createCanonicalProject(project, getActor(role));
+  return createCanonicalProject(project);
+}
+
+export async function getLeaderDashboardData() {
+  return getTeamLeaderDashboard();
+}
+
+export async function getLeaderTeamTasks(params = {}) {
+  const tasks = await getTeamLeaderTasks(params);
+  return tasks.map(mapTeamTask);
 }

@@ -1,68 +1,57 @@
-// src/services/projectOversightService.js
-import { get, post } from "./apiClient.js";
+import { post } from "./apiClient.js";
 
-const BASE = "/team-leader";
+import {
+  getTeamLeaderProjects,
+  getTeamLeaderMembers,
+  getTeamLeaderTasks,
+  getTeamLeaderProgress,
+  getTeamLeaderReports,
+  createTeamLeaderTask,
+} from "./teamLeaderService.js";
 
 // ============ HELPERS ============
 
 function getInitials(name = "?") {
-  return name
-    .split(" ")
-    .map((w) => w[0])
+  return String(name)
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return "TBD";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "TBD";
-  return d.toLocaleDateString("en-US", {
-    day: "2-digit",
+function formatDate(dateString) {
+  if (!dateString) return "—";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateString;
+  }
+
+  return date.toLocaleDateString("en-US", {
     month: "short",
+    day: "numeric",
     year: "numeric",
   });
 }
 
 function daysBetween(from, to) {
   if (!from || !to) return 0;
+
   const start = new Date(from);
   const end = new Date(to);
-  const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 0;
+  }
+
+  const diff = Math.ceil(
+    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
   return Math.max(0, diff);
-}
-
-// Map backend status → frontend display
-function mapTaskStatus(status) {
-  const map = {
-    todo: "Pending",
-    in_progress: "In Progress",
-    submitted: "In Progress",
-    under_review: "In Progress",
-    done: "Completed",
-    blocked: "Pending",
-  };
-  return map[status] || "Pending";
-}
-
-// Task status → progress percentage
-function statusToProgress(status) {
-  const map = {
-    todo: 0,
-    in_progress: 50,
-    submitted: 85,
-    under_review: 85,
-    done: 100,
-    blocked: 20,
-  };
-  return map[status] || 0;
-}
-
-function mapPriority(priority) {
-  if (!priority) return "Medium";
-  const p = String(priority).toLowerCase();
-  return p.charAt(0).toUpperCase() + p.slice(1);
 }
 
 function mapProjectStatus(status) {
@@ -74,17 +63,63 @@ function mapProjectStatus(status) {
     on_hold: "At Risk",
     blocked: "At Risk",
   };
-  return map[String(status).toLowerCase()] || "On Track";
+
+  return map[String(status || "").toLowerCase()] || "On Track";
+}
+
+function mapTaskStatus(status) {
+  const map = {
+    todo: "Pending",
+    in_progress: "In Progress",
+    under_review: "In Progress",
+    submitted: "In Progress",
+    completed: "Completed",
+    done: "Completed",
+    blocked: "Pending",
+  };
+
+  return map[String(status || "").toLowerCase()] || "Pending";
+}
+
+function statusToProgress(status) {
+  const map = {
+    todo: 0,
+    in_progress: 60,
+    under_review: 85,
+    submitted: 85,
+    completed: 100,
+    done: 100,
+    blocked: 20,
+  };
+
+  return map[String(status || "").toLowerCase()] || 0;
+}
+
+function mapPriority(priority) {
+  if (!priority) return "Medium";
+
+  const value = String(priority).toLowerCase();
+
+  const map = {
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    urgent: "Urgent",
+  };
+
+  return map[value] || "Medium";
 }
 
 // ============ PROJECTS LIST ============
 
 export async function getProjects() {
   try {
-    const res = await get(`${BASE}/projects`);
-    return (res?.data || []).map((p) => ({
-      id: p.id,
-      name: p.name,
+    const projects = await getTeamLeaderProjects();
+
+    return projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      status: project.status || "active",
     }));
   } catch (err) {
     console.error("getProjects error:", err);
@@ -94,20 +129,23 @@ export async function getProjects() {
 
 // ============ PROJECT SUMMARY ============
 
-export async function getProjectSummary(projectId) {
+export async function getProjectSummary(projectId = null) {
   try {
-    const res = await get(`${BASE}/projects`);
-    const projects = res?.data || [];
-    const project = projects.find((p) => String(p.id) === String(projectId));
+    const projects = await getTeamLeaderProjects();
 
-    if (!project) {
+    const selectedProject =
+      projects.find(
+        (project) => String(project.id) === String(projectId)
+      ) || projects[0];
+
+    if (!selectedProject) {
       return {
         id: projectId,
         name: "Unknown Project",
         status: "On Track",
         description: "",
-        startDate: "TBD",
-        endDate: "TBD",
+        startDate: "—",
+        endDate: "—",
         daysRemaining: 0,
         progress: 0,
         tasksCompleted: 0,
@@ -115,37 +153,45 @@ export async function getProjectSummary(projectId) {
       };
     }
 
-    // Get tasks for this project to compute progress
-    const tasksRes = await get(`${BASE}/tasks`, {
-      projectId: project.id,
-      limit: 100,
+    const tasks = await getTeamLeaderTasks({
+      projectId: selectedProject.id,
     });
-    const tasks = tasksRes?.data || [];
-    const completed = tasks.filter((t) => t.status === "done").length;
+
     const total = tasks.length;
-    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const completed = tasks.filter(
+      (task) => task.status === "completed"
+    ).length;
+
+    const progress =
+      total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return {
-      id: project.id,
-      name: project.name,
-      status: mapProjectStatus(project.status),
-      description: project.description || "No description available.",
-      startDate: formatDate(project.start_date),
-      endDate: formatDate(project.due_date),
-      daysRemaining: daysBetween(new Date(), project.due_date),
+      id: selectedProject.id,
+      name: selectedProject.name,
+      status: mapProjectStatus(selectedProject.status),
+      description:
+        selectedProject.description || "No description available.",
+      startDate: formatDate(selectedProject.startDate),
+      endDate: formatDate(selectedProject.dueDate),
+      daysRemaining: daysBetween(
+        new Date(),
+        selectedProject.dueDate
+      ),
       progress,
       tasksCompleted: completed,
       tasksTotal: total,
     };
   } catch (err) {
     console.error("getProjectSummary error:", err);
+
     return {
       id: projectId,
       name: "Error loading",
       status: "On Track",
       description: "",
-      startDate: "TBD",
-      endDate: "TBD",
+      startDate: "—",
+      endDate: "—",
       daysRemaining: 0,
       progress: 0,
       tasksCompleted: 0,
@@ -158,159 +204,247 @@ export async function getProjectSummary(projectId) {
 
 export async function getStats() {
   try {
-    const res = await get(`${BASE}/progress`);
-    const stats = res?.data || {};
-    return [
-      {
-        id: "total",
-        label: "Total Tasks",
-        value: String(stats.total_tasks || 0),
-        icon: "ClipboardList",
-        color: "slate",
-      },
-      {
-        id: "completed",
-        label: "Completed",
-        value: String(stats.completed_tasks || 0),
-        icon: "CheckCircle2",
-        color: "emerald",
-      },
-      {
-        id: "in-progress",
-        label: "In Progress",
-        value: String(stats.in_progress_tasks || 0),
-        icon: "Clock",
-        color: "blue",
-      },
-      {
-        id: "pending",
-        label: "Pending",
-        value: String(stats.pending_tasks || 0),
-        icon: "Hourglass",
-        color: "amber",
-      },
-    ];
+    const progress = await getTeamLeaderProgress();
+
+    return progress.map((item) => {
+      const iconMap = {
+        "total-tasks": "ClipboardList",
+        completed: "CheckCircle2",
+        "in-progress": "Clock",
+        pending: "Hourglass",
+        blocked: "AlertCircle",
+      };
+
+      return {
+        id: item.id,
+        label: item.label,
+        value: item.value,
+        icon: iconMap[item.id] || "ClipboardList",
+        color: item.color || "slate",
+        note: item.note || "",
+      };
+    });
   } catch (err) {
     console.error("getStats error:", err);
+
     return [];
   }
 }
 
-// ============ TIMELINE (Not in backend — return empty or basic) ============
+// ============ TIMELINE ============
 
-export async function getTimeline(projectId) {
-  // Backend has no timeline endpoint for team_leader yet
-  // Return empty or basic milestones for now
-  return [];
+export async function getTimeline(projectId = null) {
+  try {
+    const project = await getProjectSummary(projectId);
+
+    return [
+      {
+        id: "kickoff",
+        label: "Kickoff",
+        date: project.startDate || "Today",
+        state: "done",
+      },
+      {
+        id: "execution",
+        label: "Execution",
+        date: "Current",
+        state: "current",
+      },
+      {
+        id: "review",
+        label: "Review",
+        date: project.endDate || "Review",
+        state: "upcoming",
+      },
+      {
+        id: "delivery",
+        label: "Delivery",
+        date: project.endDate || "Delivery",
+        state: "upcoming",
+      },
+    ];
+  } catch (err) {
+    console.error("getTimeline error:", err);
+
+    return [];
+  }
 }
 
 // ============ TEAM PERFORMANCE ============
 
-export async function getTeamPerformance(projectId) {
+export async function getTeamPerformance(projectId = null) {
   try {
-    const [membersRes, tasksRes] = await Promise.all([
-      get(`${BASE}/team-members`),
-      get(`${BASE}/tasks`, { projectId, limit: 200 }),
+    const [members, tasks] = await Promise.all([
+      getTeamLeaderMembers(),
+      getTeamLeaderTasks(projectId ? { projectId } : {}),
     ]);
 
-    const members = (membersRes?.data || []).filter(
-      (m) => m.role === "team_member"
-    );
-    const tasks = tasksRes?.data || [];
-
-    return members.map((m) => {
+    return members.map((member) => {
       const memberTasks = tasks.filter(
-        (t) => String(t.assignee_id) === String(m.id)
+        (task) =>
+          String(task.assigneeId) === String(member.id) ||
+          String(task.assignee) === String(member.name)
       );
-      const done = memberTasks.filter((t) => t.status === "done").length;
-      const pending = memberTasks.length - done;
+
+      const completed = memberTasks.filter(
+        (task) => task.status === "completed"
+      ).length;
+
+      const pending = memberTasks.length - completed;
+
       const progress =
         memberTasks.length > 0
-          ? Math.round((done / memberTasks.length) * 100)
+          ? Math.round((completed / memberTasks.length) * 100)
           : 0;
 
       return {
-        id: m.id,
-        name: m.name,
-        role: "Team Member",
-        presence: m.status === "active" ? "online" : "offline",
+        id: member.id,
+        name: member.name,
+        role: member.role || "Team Member",
+        presence:
+          member.status === "active" ? "online" : "offline",
         tasks: memberTasks.length,
-        done,
+        done: completed,
         pending,
         progress,
+        avatar: member.avatar || getInitials(member.name),
       };
     });
   } catch (err) {
     console.error("getTeamPerformance error:", err);
+
     return [];
   }
 }
 
 // ============ TASK OVERVIEW ============
 
-export async function getTaskOverview(projectId) {
+export async function getTaskOverview(projectId = null) {
   try {
-    const res = await get(`${BASE}/tasks`, { projectId, limit: 100 });
-    const tasks = res?.data || [];
+    const tasks = await getTeamLeaderTasks(
+      projectId ? { projectId } : {}
+    );
 
-    return tasks.map((t) => ({
-      id: `TASK-${t.id}`,
-      rawId: t.id,
-      name: t.title,
-      priority: mapPriority(t.priority),
-      status: mapTaskStatus(t.status),
-      assignee: getInitials(t.assignee_name || "?"),
-      assigneeName: t.assignee_name || "Unassigned",
-      assigneeId: t.assignee_id,
-      dueDate: formatDate(t.due_date),
-      progress: statusToProgress(t.status),
-      category: t.project_name || "General",
-      projectId: t.project_id,
-      raw: t,
+    return tasks.map((task) => ({
+      id: `TASK-${task.id}`,
+      rawId: task.id,
+      name: task.title,
+      title: task.title,
+      priority: mapPriority(task.priority),
+      status: mapTaskStatus(task.status),
+      assignee: getInitials(task.assignee),
+      assigneeName: task.assignee || "Unassigned",
+      assigneeId: task.assigneeId,
+      dueDate: formatDate(task.dueDate),
+      progress:
+        task.progress ?? statusToProgress(task.status),
+      category: task.projectName || "General",
+      projectId: task.projectId,
+      raw: task,
     }));
   } catch (err) {
     console.error("getTaskOverview error:", err);
+
     return [];
   }
 }
 
 // ============ KANBAN PREVIEW ============
 
-export async function getKanbanPreview(projectId) {
+export async function getKanbanPreview(projectId = null) {
   try {
-    const res = await get(`${BASE}/tasks`, { projectId, limit: 100 });
-    const tasks = res?.data || [];
+    const tasks = await getTeamLeaderTasks(
+      projectId ? { projectId } : {}
+    );
 
-    const columns = [
-      { key: "todo", title: "To Do" },
-      { key: "in_progress", title: "In Progress" },
-      { key: "submitted", title: "Under Review" },
-      { key: "done", title: "Completed" },
-      { key: "blocked", title: "Blocked" },
-    ];
+    const columns = {
+      todo: {
+        key: "todo",
+        title: "To Do",
+        cards: [],
+      },
+
+      in_progress: {
+        key: "in_progress",
+        title: "In Progress",
+        cards: [],
+      },
+
+      review: {
+        key: "review",
+        title: "Review",
+        cards: [],
+      },
+
+      completed: {
+        key: "completed",
+        title: "Completed",
+        cards: [],
+      },
+
+      blocked: {
+        key: "blocked",
+        title: "Blocked",
+        cards: [],
+      },
+    };
+
+    tasks.forEach((task) => {
+      let column = "todo";
+
+      switch (task.status) {
+        case "in_progress":
+          column = "in_progress";
+          break;
+
+        case "under_review":
+          column = "review";
+          break;
+
+        case "completed":
+          column = "completed";
+          break;
+
+        case "blocked":
+          column = "blocked";
+          break;
+
+        default:
+          column = "todo";
+      }
+
+      columns[column].cards.push({
+        id: task.id,
+        title: task.title,
+        priority: task.priority,
+        assignee: task.assignee,
+        dueDate: formatDate(task.dueDate),
+        progress: task.progress,
+      });
+    });
 
     return {
-      columns: columns.map((col) => {
-        const colTasks = tasks.filter((t) => t.status === col.key);
-        return {
-          key: col.key,
-          title: col.title,
-          count: colTasks.length,
-          cards: colTasks.map((t) => t.title),
-        };
-      }),
+      columns: Object.values(columns).map((column) => ({
+        ...column,
+        count: column.cards.length,
+      })),
     };
   } catch (err) {
     console.error("getKanbanPreview error:", err);
-    return { columns: [] };
+
+    return {
+      columns: [],
+    };
   }
 }
+
 // ============ CREATE TASK ============
 
 const PRIORITY_TO_BACKEND = {
-  High: "high",
-  Medium: "medium",
   Low: "low",
+  Medium: "medium",
+  High: "high",
+  Urgent: "urgent",
 };
 
 export async function createTask(payload) {
@@ -319,39 +453,72 @@ export async function createTask(payload) {
       title: payload.name || payload.title,
       description: payload.description || "",
       projectId: Number(payload.projectId),
-      assigneeId: payload.assigneeId ? Number(payload.assigneeId) : null,
+      assigneeId: payload.assigneeId
+        ? Number(payload.assigneeId)
+        : null,
       dueDate:
-        payload.dueDate && payload.dueDate !== "TBD" ? payload.dueDate : null,
-      priority: PRIORITY_TO_BACKEND[payload.priority] || "medium",
+        payload.dueDate && payload.dueDate !== "TBD"
+          ? payload.dueDate
+          : null,
+      priority:
+        PRIORITY_TO_BACKEND[payload.priority] || "medium",
     };
 
     console.log("📤 Creating task:", body);
 
-    const res = await post("/team-leader/tasks", body);
-    const task = res?.data;
+    const response = await createTeamLeaderTask(body);
 
-    if (!task) throw new Error("No data returned from server");
+    const task = response?.data;
+
+    if (!task) {
+      throw new Error("No task data returned from server");
+    }
 
     return {
       id: `TASK-${task.id}`,
       rawId: task.id,
       name: task.title,
-      priority: payload.priority,
-      status: "Pending",
-      assignee: payload.assigneeName
-        ? payload.assigneeName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-        : "?",
-      assigneeId: task.assignee_id,
-      dueDate: payload.dueDate || "TBD",
-      progress: 0,
-      category: "New",
-      projectId: task.project_id,
+      title: task.title,
+      priority: mapPriority(task.priority || body.priority),
+      status: mapTaskStatus(task.status || "todo"),
+      assignee: getInitials(
+        task.assignee_name || payload.assigneeName || "?"
+      ),
+      assigneeName:
+        task.assignee_name ||
+        payload.assigneeName ||
+        "Unassigned",
+      assigneeId:
+        task.assignee_id ?? payload.assigneeId ?? null,
+      dueDate: formatDate(
+        task.due_date || payload.dueDate
+      ),
+      progress: statusToProgress(task.status || "todo"),
+      category: task.project_name || "New",
+      projectId:
+        task.project_id ?? payload.projectId ?? null,
+      raw: task,
     };
   } catch (err) {
     console.error("createTask error:", err);
     throw err;
+  }
+}
+
+// ============ REPORT SUMMARY ============
+
+export async function getTeamLeaderReportSummary() {
+  try {
+    return await getTeamLeaderReports();
+  } catch (err) {
+    console.error(
+      "getTeamLeaderReportSummary error:",
+      err
+    );
+
+    return {
+      team: null,
+      summary: {},
+    };
   }
 }
