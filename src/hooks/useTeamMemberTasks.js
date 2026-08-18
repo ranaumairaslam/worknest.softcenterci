@@ -5,6 +5,7 @@ import {
   getTeamTasks,
   submitTaskWork,
   startTask,
+  getAssignedTasksFromCompany,
 } from "../services/teamMemberService";
 
 export function useTeamMemberTasks() {
@@ -16,18 +17,32 @@ export function useTeamMemberTasks() {
   const [error, setError] = useState(null);
 
   const loadTasks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [mine, team] = await Promise.all([getMyTasks(), getTeamTasks()]);
-      setMyTasks(mine);
-      setTeamTasks(team);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  setLoading(true);
+  setError(null);
+  try {
+    // ✅ Fetch from BOTH sources and merge
+    const [teamMemberTasks, companyTasks, team] = await Promise.all([
+      getMyTasks(),                    // From /team-member/tasks/assigned
+      getAssignedTasksFromCompany(),   // From /company/tasks?assigneeId=me
+      getTeamTasks(),
+    ]);
+
+    // ✅ Merge, dedupe by ID (prefer company tasks — more complete data)
+    const merged = [...companyTasks];
+    teamMemberTasks.forEach((tmTask) => {
+      if (!merged.find((t) => String(t.id) === String(tmTask.id))) {
+        merged.push(tmTask);
+      }
+    });
+
+    setMyTasks(merged);
+    setTeamTasks(team);
+  } catch (err) {
+    setError(err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     loadTasks();

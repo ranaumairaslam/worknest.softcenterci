@@ -1,10 +1,11 @@
+// src/components/Cards/CreateTaskModal.jsx
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
 export default function CreateTaskModal({
   open,
-  team,
-  projects,
+  team = [],
+  projects = [],
   currentProjectId,
   onClose,
   onCreate,
@@ -16,8 +17,8 @@ export default function CreateTaskModal({
   const [assigneeId, setAssigneeId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
-  // Set current project whenever modal opens
   useEffect(() => {
     if (open) {
       setProjectId(currentProjectId ?? "");
@@ -50,10 +51,11 @@ export default function CreateTaskModal({
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (!validate()) return;
+    if (submitting) return;
 
     const member = team.find(
       (m) => String(m.id) === String(assigneeId)
@@ -63,53 +65,47 @@ export default function CreateTaskModal({
       (p) => String(p.id) === String(projectId)
     );
 
-    onCreate({
-      id: `TASK-${Math.floor(Math.random() * 900 + 100)}`,
+    setSubmitting(true);
 
-      name: name.trim(),
+    try {
+      await onCreate({
+        name: name.trim(),
+        description: description.trim(),
+        projectId,
+        projectName: project?.name ?? "",
+        priority,
+        assigneeId,
+        assigneeName: member?.name ?? "",
+        dueDate: dueDate || null,
+      });
 
-      description: description.trim(),
+      // Reset form
+      setName("");
+      setDescription("");
+      setProjectId(currentProjectId ?? "");
+      setPriority("Medium");
+      setAssigneeId("");
+      setDueDate("");
+      setErrors({});
 
-      projectId,
-
-      projectName: project?.name ?? "",
-
-      priority,
-
-      status: "Pending",
-
-      assignee: member
-        ? member.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-        : "",
-
-      dueDate: dueDate || "TBD",
-
-      progress: 0,
-
-      category: "New",
-    });
-
-    // Reset form
-    setName("");
-    setDescription("");
-    setProjectId(currentProjectId ?? "");
-    setPriority("Medium");
-    setAssigneeId("");
-    setDueDate("");
-    setErrors({});
-
-    onClose();
+      onClose();
+    } catch (err) {
+      setErrors({
+        submit:
+          err.message ||
+          "Failed to create task. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const inputClass = (error) =>
     `w-full border ${
       error ? "border-rose-300" : "border-slate-200"
-    } rounded-lg text-sm px-3 py-2.5 
+    } rounded-lg text-sm px-3 py-2.5
     bg-white text-slate-700
-    focus:outline-none 
+    focus:outline-none
     ${
       error
         ? "focus:ring-2 focus:ring-rose-500/30"
@@ -119,26 +115,27 @@ export default function CreateTaskModal({
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[600px] p-6">
+        
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-slate-800">
-            Assign Task
+          <h2 className="text-sm font-semibold text-slate-800">
+            Create Task
           </h2>
 
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition"
+            className="text-slate-400 hover:text-slate-600"
             aria-label="Close"
           >
-            <X size={22} />
+            <X size={18} />
           </button>
         </div>
 
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="space-y-4"
+          className="space-y-3"
         >
           {/* Task Name */}
           <div>
@@ -164,7 +161,7 @@ export default function CreateTaskModal({
               id="task-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Task Description"
+              placeholder="Task Description *"
               rows={4}
               className={`${inputClass(
                 errors.description
@@ -178,9 +175,8 @@ export default function CreateTaskModal({
             )}
           </div>
 
-          {/* Project + Team Member */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Project */}
+          {/* Project */}
+          {projects.length > 0 && (
             <div>
               <select
                 id="task-project"
@@ -189,10 +185,10 @@ export default function CreateTaskModal({
                 className={inputClass(errors.projectId)}
               >
                 <option value="" disabled>
-                  Select Project *
+                  Select project
                 </option>
 
-                {projects?.map((p) => (
+                {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -204,100 +200,105 @@ export default function CreateTaskModal({
                   {errors.projectId}
                 </p>
               )}
-
-              {projectId &&
-                projectId !== currentProjectId && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    You're viewing a different project — this
-                    task won't appear here until you switch to
-                    it.
-                  </p>
-                )}
             </div>
+          )}
 
-            {/* Team Member */}
-            <div>
-              <select
-                id="task-assignee"
-                value={assigneeId}
-                onChange={(e) =>
-                  setAssigneeId(e.target.value)
-                }
-                className={inputClass(errors.assigneeId)}
-              >
-                <option value="" disabled>
-                  Select Team Member (Optional)
+          {/* Assignee */}
+          <div>
+            <label
+              htmlFor="task-assignee"
+              className="text-xs font-medium text-slate-500 block mb-1"
+            >
+              Assignee
+            </label>
+
+            <select
+              id="task-assignee"
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+              className={inputClass(errors.assigneeId)}
+            >
+              <option value="" disabled>
+                Select team member
+              </option>
+
+              {team.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
                 </option>
+              ))}
+            </select>
 
-                {team?.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-
-              {errors.assigneeId && (
-                <p className="text-xs text-rose-500 mt-1">
-                  {errors.assigneeId}
-                </p>
-              )}
-            </div>
+            {errors.assigneeId && (
+              <p className="text-xs text-rose-500 mt-1">
+                {errors.assigneeId}
+              </p>
+            )}
           </div>
 
-          {/* Priority + Due Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Priority */}
-            <div>
-              <select
-                id="task-priority"
-                value={priority}
-                onChange={(e) =>
-                  setPriority(e.target.value)
-                }
-                className={inputClass(false)}
-              >
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
-            </div>
-
-            {/* Due Date */}
-            <div>
-              <input
-                id="task-due"
-                type="date"
-                value={dueDate}
-                onChange={(e) =>
-                  setDueDate(e.target.value)
-                }
-                className={inputClass(false)}
-              />
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 border border-slate-300 rounded-lg
-              text-sm font-medium text-slate-700
-              hover:bg-slate-50 transition"
+          {/* Priority */}
+          <div>
+            <label
+              htmlFor="task-priority"
+              className="text-xs font-medium text-slate-500 block mb-1"
             >
-              Cancel
-            </button>
+              Priority
+            </label>
 
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-blue-600
-              hover:bg-blue-700 text-white
-              text-sm font-medium rounded-lg
-              transition"
+            <select
+              id="task-priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
-              Assign Task
-            </button>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
           </div>
+
+          {/* Due Date */}
+          <div>
+            <label
+              htmlFor="task-due"
+              className="text-xs font-medium text-slate-500 block mb-1"
+            >
+              Due Date
+            </label>
+
+            <input
+              id="task-due"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+          </div>
+
+          {/* Submit Error */}
+          {errors.submit && (
+            <div className="bg-rose-50 border border-rose-200 rounded-lg p-2">
+              <p className="text-xs text-rose-600">
+                {errors.submit}
+              </p>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg mt-2 flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Task"
+            )}
+          </button>
         </form>
       </div>
     </div>

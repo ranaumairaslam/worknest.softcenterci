@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/hooks/useProjectOversightData.js
+import { useEffect, useState, useCallback } from "react";
 import {
   getProjects,
   getProjectSummary,
@@ -34,74 +35,75 @@ export function useProjectOversightData() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [data, setData] = useState(emptyProjectData);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
 
-  // Load the project list once, pick the first one as default.
+  // Load projects list first
   useEffect(() => {
     let isMounted = true;
 
-    getProjects()
-      .then((list) => {
+    async function loadProjects() {
+      try {
+        const list = await getProjects();
         if (!isMounted) return;
-
         setProjects(list);
-        if (list.length === 0) {
-          setSelectedProjectId(null);
-          setData(emptyProjectData);
-          setError(null);
-          return;
+        if (list.length > 0) {
+          setSelectedProjectId(list[0].id);
+        } else {
+          // No projects at all → stop loading
+          setLoading(false);
         }
-
-        setSelectedProjectId(list[0]?.id ?? null);
-      })
-      .catch((err) => {
+        setProjectsLoaded(true);
+      } catch (err) {
         if (isMounted) {
-          setProjects([]);
-          setSelectedProjectId(null);
-          setData(emptyProjectData);
           setError(err);
+          setLoading(false);
         }
-      });
+      }
+    }
 
+    loadProjects();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  useEffect(() => {
-    if (!selectedProjectId) {
-      setData(emptyProjectData);
-      return;
+  // Load project data when selectedProjectId changes
+  const loadProjectData = useCallback(async () => {
+    if (!selectedProjectId) return;
+    setLoading(true);
+
+    try {
+      const [summary, stats, timeline, team, tasks, kanban] = await Promise.all([
+        getProjectSummary(selectedProjectId),
+        getStats(),
+        getTimeline(selectedProjectId),
+        getTeamPerformance(selectedProjectId),
+        getTaskOverview(selectedProjectId),
+        getKanbanPreview(selectedProjectId),
+      ]);
+
+      setData({ summary, stats, timeline, team, tasks, kanban });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
     }
-
-    let isMounted = true;
-
-    Promise.all([
-      getProjectSummary(selectedProjectId),
-      getStats(),
-      getTimeline(selectedProjectId),
-      getTeamPerformance(selectedProjectId),
-      getTaskOverview(selectedProjectId),
-      getKanbanPreview(selectedProjectId),
-    ])
-      .then(([summary, stats, timeline, team, tasks, kanban]) => {
-        if (isMounted) {
-          setData({ summary, stats, timeline, team, tasks, kanban });
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setData(emptyProjectData);
-          setError(err);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
   }, [selectedProjectId]);
 
-  const loading = Boolean(selectedProjectId) && (!data || data.summary.id !== selectedProjectId);
+  useEffect(() => {
+    if (selectedProjectId) {
+      loadProjectData();
+    }
+  }, [selectedProjectId, loadProjectData]);
 
-  return { projects, selectedProjectId, setSelectedProjectId, data, loading, error };
+  return {
+    projects,
+    selectedProjectId,
+    setSelectedProjectId,
+    data,
+    loading,
+    error,
+    refresh: loadProjectData,
+  };
 }
