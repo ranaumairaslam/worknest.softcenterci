@@ -49,8 +49,22 @@ export async function getSuperAdminDashboard() {
 export async function getSuperAdminCompanies() {
   try {
     const response = await get("/super-admin/companies");
-
-    return response?.data || [];
+    
+    // ✅ Backend response se companies array nikaalein
+    const companiesArray = response?.companies || response?.data || [];
+    
+    // ✅ Har company ko frontend-friendly format mein transform karein
+    return companiesArray.map((c) => ({
+      id: c.id,
+      name: c.name || "",
+      email: c.email || "",
+      industry: c.industry || "N/A",
+      revenue: c.platform_fee || 0,  // platform_fee ko revenue banaya
+      accountStatus:
+        c.status === "active" ? "Active" :
+        c.status === "suspended" ? "Suspended" :
+        c.status === "inactive" ? "Terminated" : "Active",
+    }));
   } catch (error) {
     console.error("Error fetching companies:", error);
     throw error;
