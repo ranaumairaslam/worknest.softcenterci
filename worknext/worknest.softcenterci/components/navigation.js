@@ -1,19 +1,22 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+
 import {
   isAuthenticated,
   getStoredUser,
 } from "../src/services/authService.js";
+
 import { getRoleFromPath } from "./navigation.js";
-import { normalizeRole, getDashboardForRole } from "../src/roleUtils.js";
 
 export default function ProtectedRoute({ children }) {
   const location = useLocation();
+
   const authenticated = isAuthenticated();
 
-  // User login nahi hai
+  // ==========================================
+  // USER IS NOT AUTHENTICATED
+  // ==========================================
   if (!authenticated) {
-    if (location.pathname === "/login") return children;
     return (
       <Navigate
         to="/login"
@@ -23,15 +26,16 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
+  // ==========================================
+  // GET CURRENT USER
+  // ==========================================
   const user = getStoredUser();
-  const currentFrontendRole = user?.role; // ✅ direct use, roleMap conversion nahi chahiye
 
-  // Settings page sab roles ke liye allowed hai
-  const requiredRole =
-    location.pathname === "/settings"
-      ? null
-      : getRoleFromPath(location.pathname);
+  const currentFrontendRole = user?.role;
 
+  // ==========================================
+  // DASHBOARD ROUTES BY ROLE
+  // ==========================================
   const dashboardMap = {
     superAdmin: "/dashboard-admin",
     companyAdmin: "/dashboard-company",
@@ -40,7 +44,17 @@ export default function ProtectedRoute({ children }) {
     client: "/client-dashboard",
   };
 
-  // Role mismatch check
+  // ==========================================
+  // SETTINGS IS AVAILABLE TO ALL ROLES
+  // ==========================================
+  const requiredRole =
+    location.pathname === "/settings"
+      ? null
+      : getRoleFromPath(location.pathname);
+
+  // ==========================================
+  // ROLE MISMATCH CHECK
+  // ==========================================
   if (
     requiredRole &&
     currentFrontendRole !== requiredRole
@@ -48,7 +62,7 @@ export default function ProtectedRoute({ children }) {
     const allowedDashboard =
       dashboardMap[currentFrontendRole] || "/login";
 
-    // Loop guard: agar already sahi jagah hain to redirect mat karo
+    // Prevent redirect loop
     if (location.pathname === allowedDashboard) {
       return children;
     }
@@ -61,5 +75,8 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
+  // ==========================================
+  // ALLOWED
+  // ==========================================
   return children;
 }

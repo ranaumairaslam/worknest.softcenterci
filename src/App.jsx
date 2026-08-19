@@ -18,6 +18,7 @@ import { ProfileProvider } from "../components/ProfileContext.jsx";
 
 // Auth Service
 import { isAuthenticated, getStoredUser } from "./services/authService.js";
+import { normalizeRole, getDashboardForRole } from "./roleUtils.js";
 
 // Super Admin
 import Admin from "./Component/SuperAdmin/superAdmin.jsx";
@@ -75,7 +76,6 @@ const AUTH_PATHS = [
   "/terms",
   "/privacy-policy",
 ];
-
 
 // Custom Hook for Media Query
 function useMediaQuery(query) {
@@ -140,16 +140,8 @@ function AppLayout() {
       : "lg:ml-72"
     : "ml-0";
 
-const getRole = () => {
-  const user = getStoredUser();
-
-  const roleMap = {
-    super_admin: "superAdmin",
-    company: "companyAdmin",
-    team_leader: "projectLeader",
-    team_member: "teamMember",
-    client: "client",
-  };
+  const getRole = () => {
+    const user = getStoredUser();
 
   const pathRoles = {
     "/dashboard-admin": "superAdmin",
@@ -247,161 +239,59 @@ const getRole = () => {
         <main className="p-4 sm:p-6">
           <Routes>
             {/* Super Admin Routes */}
-            <Route
-              path="/dashboard-admin"
-              element={<Admin />}
-            />
-            <Route
-              path="/companies"
-              element={<CompanySidebar />}
-            />
-            <Route
-              path="/reports"
-              element={<ReportsSidebar />}
-            />
-            <Route
-              path="/revenue-super-admin"
-              element={<RevenuePage />}
-            />
-            <Route
-              path="/add-company"
-              element={<AddingCompany />}
-            />
+            <Route path="/dashboard-admin" element={<Admin />} />
+            <Route path="/companies" element={<CompanySidebar />} />
+            <Route path="/reports" element={<ReportsSidebar />} />
+            <Route path="/revenue-super-admin" element={<RevenuePage />} />
+            <Route path="/add-company" element={<AddingCompany />} />
 
             {/* Company Admin Routes */}
-            <Route
-              path="/dashboard-company"
-              element={<Dashboard />}
-            />
-            <Route
-              path="/team-management"
-              element={<TeamManagement />}
-            />
-            <Route
-              path="/projects"
-              element={<ProjectOversight />}
-            />
-            <Route
-              path="/company-reports"
-              element={<CompanyReports />}
-            />
-            <Route
-              path="/employees"
-              element={<Employees />}
-            />
-            <Route
-              path="/company-tasks"
-              element={<CompanyTasks />}
-            />
-            <Route
-              path="/clients"
-              element={<Clients />}
-            />
-            <Route
-              path="/company-meetings"
-              element={<CompanyMeetings />}
-            />
-            <Route
-              path="/revenue"
-              element={<Revenue />}
-            />
+            <Route path="/dashboard-company" element={<Dashboard />} />
+            <Route path="/team-management" element={<TeamManagement />} />
+            <Route path="/projects" element={<ProjectOversight />} />
+            <Route path="/company-reports" element={<CompanyReports />} />
+            <Route path="/employees" element={<Employees />} />
+            <Route path="/company-tasks" element={<CompanyTasks />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/company-meetings" element={<CompanyMeetings />} />
+            <Route path="/revenue" element={<Revenue />} />
 
             {/* Project Leader Routes */}
-            <Route
-              path="/dashboard-leader"
-              element={<LeaderDashboard />}
-            />
-            <Route
-              path="/project"
-              element={<ProjectOversightFull />}
-            />
-            <Route
-              path="/calendar"
-              element={<Calendar />}
-            />
-            <Route
-              path="/project-reports"
-              element={<Reports />}
-            />
-            <Route
-              path="/meetings"
-              element={<Meetings />}
-            />
-            <Route
-              path="/meetingss"
-              element={<LeaderMeetings />}
-            />
+            <Route path="/dashboard-leader" element={<LeaderDashboard />} />
+            <Route path="/project" element={<ProjectOversightFull />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/project-reports" element={<Reports />} />
+            <Route path="/meetings" element={<Meetings />} />
+            <Route path="/meetingss" element={<LeaderMeetings />} />
 
             {/* Project Sub-Pages */}
-            <Route
-              path="/project/timeline"
-              element={<ProjectTimelinePage />}
-            />
-            <Route
-              path="/project/team-performance"
-              element={<TeamPerformancePage />}
-            />
-            <Route
-              path="/project/tasks"
-              element={<TaskOverviewPage />}
-            />
-            <Route
-              path="/project/kanban"
-              element={<KanbanBoardPage />}
-            />
+            <Route path="/project/timeline" element={<ProjectTimelinePage />} />
+            <Route path="/project/team-performance" element={<TeamPerformancePage />} />
+            <Route path="/project/tasks" element={<TaskOverviewPage />} />
+            <Route path="/project/kanban" element={<KanbanBoardPage />} />
 
             {/* Team Member Routes */}
-            <Route
-              path="/dashboard-team-member"
-              element={<TeamDashboard />}
-            />
-            <Route
-              path="/tasks"
-              element={<MyTasks />}
-            />
-            <Route
-              path="/team-member-projects"
-              element={<ProjectOversight />}
-            />
-            <Route
-              path="/team-meetings"
-              element={<TeamMeetings />}
-            />
+            <Route path="/dashboard-team-member" element={<TeamDashboard />} />
+            <Route path="/tasks" element={<MyTasks />} />
+            <Route path="/team-member-projects" element={<ProjectOversight />} />
+            <Route path="/team-meetings" element={<TeamMeetings />} />
 
             {/* Client Routes */}
-            <Route
-              path="/client-dashboard"
-              element={<ClientDashboard />}
-            />
-            <Route
-              path="/client-projects"
-              element={<ProjectsClient />}
-            />
-            <Route
-              path="/client-meetings"
-              element={<Meetings />}
-            />
-            <Route
-              path="/client-calendar"
-              element={<ClientCalendar />}
-            />
+            <Route path="/client-dashboard" element={<ClientDashboard />} />
+            <Route path="/client-projects" element={<ProjectsClient />} />
+            <Route path="/client-meetings" element={<Meetings />} />
+            <Route path="/client-calendar" element={<ClientCalendar />} />
 
             {/* Common Routes */}
-            <Route
-              path="/chat"
-              element={<Chat />}
-            />
-            <Route
-              path="/settings"
-              element={<Settings role={navbarRole} />}
-            />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/settings" element={<Settings role={navbarRole} />} />
 
-            {/* Default Redirect */}
+            {/* Default Redirect - role-aware, superAdmin pe hardcoded nahi */}
             <Route
               path="*"
               element={
                 <Navigate
-                  to="/dashboard-admin"
+                  to={getDashboardForRole(getStoredUser()?.role)}
                   replace
                 />
               }
@@ -425,51 +315,26 @@ export default function App() {
   if (isAuthRoute) {
     if (authenticated) {
       const user = getStoredUser();
+      const redirectUrl = getDashboardForRole(user?.role);
 
-      const dashboardMap = {
-        super_admin: "/dashboard-admin",
-        company: "/dashboard-company",
-        team_leader: "/dashboard-leader",
-        team_member: "/dashboard-team-member",
-        client: "/client-dashboard",
-      };
-
-      const redirectUrl =
-        dashboardMap[user?.role] || "/dashboard-company";
-
-      return (
-        <Navigate
-          to={redirectUrl}
-          replace
-        />
-      );
+      // Loop guard: agar already sahi jagah hain to redirect mat karo
+      if (location.pathname !== redirectUrl) {
+        return <Navigate to={redirectUrl} replace />;
+      }
     }
 
-    // Show auth pages if not authenticated
-    return (
-      <Routes>
-        <Route
-          path="/landing"
-          element={<LandingPage />}
-        />
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-        <Route
-          path="/privacy-policy"
-          element={<PrivacyPolicy />}
-        />
-        <Route
-          path="/terms"
-          element={<TermsAndConditions />}
-        />
-      </Routes>
-    );
+    // Show auth pages if not authenticated (ya already sahi dashboard pe hain)
+    if (!authenticated) {
+      return (
+        <Routes>
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+        </Routes>
+      );
+    }
   }
 
   // Protected routes wrapped in ProfileProvider
@@ -488,17 +353,11 @@ export default function App() {
           path="/"
           element={
             <Navigate
-              to={authenticated ? (() => {
-                const user = getStoredUser();
-                const dashboardMap = {
-                  super_admin: "/dashboard-admin",
-                  company: "/dashboard-company",
-                  team_leader: "/dashboard-leader",
-                  team_member: "/dashboard-team-member",
-                  client: "/client-dashboard",
-                };
-                return dashboardMap[user?.role] || "/dashboard-company";
-              })() : "/landing"}
+              to={
+                authenticated
+                  ? getDashboardForRole(getStoredUser()?.role)
+                  : "/landing"
+              }
               replace
             />
           }
