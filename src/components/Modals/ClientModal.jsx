@@ -5,13 +5,8 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
     name: "",
     contact: "",
     password: "",
-    address: "",
-    status: "Active",
-    industry: "",
-    owner: "",
-    size: "",
-    revenue: "",
-    location: "",
+    projectName: "",
+    projectDescription: "",
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -24,13 +19,8 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
         name: client.name || "",
         contact: client.contact || client.email || "",
         password: "",
-        address: client.address || "",
-        status: client.status || "Active",
-        industry: client.industry || "",
-        owner: client.owner || "",
-        size: client.size || "",
-        revenue: client.revenue || "",
-        location: client.location || "",
+        projectName: "",
+        projectDescription: "",
       });
     } else {
       setForm(emptyForm);
@@ -44,14 +34,16 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
   const validate = () => {
     const newErrors = {};
 
+    // Name
     if (!form.name.trim()) {
-      newErrors.name = "Company Name is required";
+      newErrors.name = "Client Name is required";
     } else if (form.name.trim().length < 2) {
-      newErrors.name = "Company Name must be at least 2 characters";
+      newErrors.name = "Name must be at least 2 characters";
     }
 
+    // Email
     if (!form.contact.trim()) {
-      newErrors.contact = "Contact Email is required";
+      newErrors.contact = "Email is required";
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(form.contact.trim())) {
@@ -59,41 +51,17 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
       }
     }
 
+    // For create only
     if (!client) {
       if (!form.password.trim()) {
         newErrors.password = "Password is required";
       } else if (form.password.trim().length < 6) {
         newErrors.password = "Password must be at least 6 characters";
       }
-    }
 
-    if (!form.address.trim()) {
-      newErrors.address = "Company Address is required";
-    }
-
-    if (!form.industry.trim()) {
-      newErrors.industry = "Industry is required";
-    }
-
-    if (!form.owner.trim()) {
-      newErrors.owner = "Account Owner is required";
-    }
-
-    if (!form.size.trim()) {
-      newErrors.size = "Company Size is required";
-    }
-
-    if (!form.revenue.toString().trim()) {
-      newErrors.revenue = "Revenue is required";
-    } else {
-      const cleaned = String(form.revenue).replace(/[$,\s]/g, '');
-      if (isNaN(Number(cleaned)) || Number(cleaned) < 0) {
-        newErrors.revenue = "Revenue must be a valid number";
+      if (!form.projectName.trim()) {
+        newErrors.projectName = "Project Name is required";
       }
-    }
-
-    if (!form.location.trim()) {
-      newErrors.location = "Location is required";
     }
 
     return newErrors;
@@ -122,30 +90,7 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
         id: client?.id,
       });
     } catch (err) {
-      if (err.backendErrors) {
-        const beErrors = {};
-        err.backendErrors.forEach((e) => {
-          const fieldMap = {
-            companyName: 'name',
-            companyEmail: 'contact',
-            AccountOwnerName: 'owner',
-            companySize: 'size',
-            revenu: 'revenue',
-            revenue: 'revenue',
-            address: 'address',
-            location: 'location',
-            password: 'password',
-            industry: 'industry',
-            name: 'name',
-            email: 'contact',
-          };
-          const field = fieldMap[e.field] || e.field;
-          beErrors[field] = e.message;
-        });
-        setErrors(beErrors);
-      } else {
-        alert(err.message || 'Failed to save client');
-      }
+      alert(err.message || 'Failed to save client');
     } finally {
       setSubmitting(false);
     }
@@ -170,114 +115,91 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
           {client ? "Edit Client" : "Add Client"}
         </h2>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Company Name */}
-          <div className="col-span-2">
+        <div className="grid gap-4">
+          {/* Client Name */}
+          <div>
             <input
               className={inputClass("name")}
-              placeholder="Company Name *"
+              placeholder="Client Name *"
               value={form.name}
               onChange={(e) => handleChange("name", e.target.value)}
             />
             <ErrorMessage field="name" />
           </div>
 
-          {/* Contact Email */}
+          {/* Email */}
           <div>
             <input
               type="email"
               className={inputClass("contact")}
-              placeholder="Contact Email *"
+              placeholder="Email Address *"
               value={form.contact}
               onChange={(e) => handleChange("contact", e.target.value)}
             />
             <ErrorMessage field="contact" />
           </div>
 
-          {/* Password */}
-          <div>
-            <input
-              type="password"
-              className={inputClass("password")}
-              placeholder={client ? "Password (leave blank)" : "Password *"}
-              value={form.password}
-              onChange={(e) => handleChange("password", e.target.value)}
-            />
-            <ErrorMessage field="password" />
-          </div>
+          {/* Password - only for create */}
+          {!client && (
+            <div>
+              <input
+                type="password"
+                className={inputClass("password")}
+                placeholder="Password * (min 6 characters)"
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+              />
+              <ErrorMessage field="password" />
+            </div>
+          )}
 
-          {/* Company Address */}
-          <div className="col-span-2">
-            <textarea
-              rows={3}
-              className={inputClass("address")}
-              placeholder="Company Address *"
-              value={form.address}
-              onChange={(e) => handleChange("address", e.target.value)}
-            />
-            <ErrorMessage field="address" />
-          </div>
+          {/* Project Name - only for create */}
+          {!client && (
+            <>
+              <div className="mt-2 border-t border-slate-200 pt-4">
+                <p className="mb-2 text-sm font-semibold text-slate-700">
+                  Initial Project
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  Every new client needs an initial project.
+                </p>
+              </div>
 
-          {/* Industry */}
-          <div>
-            <input
-              className={inputClass("industry")}
-              placeholder="Industry *"
-              value={form.industry}
-              onChange={(e) => handleChange("industry", e.target.value)}
-            />
-            <ErrorMessage field="industry" />
-          </div>
+              <div>
+                <input
+                  className={inputClass("projectName")}
+                  placeholder="Project Name *"
+                  value={form.projectName}
+                  onChange={(e) => handleChange("projectName", e.target.value)}
+                />
+                <ErrorMessage field="projectName" />
+              </div>
 
-          {/* Account Owner */}
-          <div>
-            <input
-              className={inputClass("owner")}
-              placeholder="Account Owner *"
-              value={form.owner}
-              onChange={(e) => handleChange("owner", e.target.value)}
-            />
-            <ErrorMessage field="owner" />
-          </div>
-
-          {/* Company Size */}
-          <div>
-            <input
-              className={inputClass("size")}
-              placeholder="Company Size * (e.g. 10-50)"
-              value={form.size}
-              onChange={(e) => handleChange("size", e.target.value)}
-            />
-            <ErrorMessage field="size" />
-          </div>
-
-          {/* Revenue */}
-          <div>
-            <input
-              type="text"
-              className={inputClass("revenue")}
-              placeholder="Revenue * (e.g. 100000)"
-              value={form.revenue}
-              onChange={(e) => handleChange("revenue", e.target.value)}
-            />
-            <ErrorMessage field="revenue" />
-          </div>
-
-          {/* Location */}
-          <div className="col-span-2">
-            <input
-              className={inputClass("location")}
-              placeholder="Location *"
-              value={form.location}
-              onChange={(e) => handleChange("location", e.target.value)}
-            />
-            <ErrorMessage field="location" />
-          </div>
+              <div>
+                <textarea
+                  rows={3}
+                  className={inputClass("projectDescription")}
+                  placeholder="Project Description (Optional)"
+                  value={form.projectDescription}
+                  onChange={(e) =>
+                    handleChange("projectDescription", e.target.value)
+                  }
+                />
+                <ErrorMessage field="projectDescription" />
+              </div>
+            </>
+          )}
         </div>
 
         {Object.keys(errors).length > 0 && (
           <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
             ⚠️ Please fix the errors above before submitting.
+          </div>
+        )}
+
+        {client && (
+          <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+            ℹ️ Backend currently supports client name/email updates only.
           </div>
         )}
 

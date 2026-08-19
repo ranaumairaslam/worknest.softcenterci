@@ -1,50 +1,42 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
+  approveTask,
+  assignTask,
+  deleteTask,
+  editTask,
+  getDashboard,
+  getMembers,
   getProjects,
-  getProjectTasks,
-  getPendingDeliverables,
-  approveDeliverable,
-  rejectDeliverable,
-  getTeamProgressStats,
-  getTeamMembers,
-  reassignTask,
-  createProject,
-} from "../services/projectLeaderService";
-import { subscribeDataChange } from "../utils/eventBus";
-import useRole from "./useRole";
+  getProgress,
+  getSubmittedTasks,
+  getTasks,
+  returnTaskForRevision,
+} from "../services/teamLeaderService";
+import { createProject } from "../services/projectLeaderService";
 
 export function useProjectLeaderData() {
-  const role = useRole();
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [deliverables, setDeliverables] = useState([]);
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Tracks project ids created locally for optimistic UI
-  const localProjectIds = useRef(new Set());
-
-  const reloadProjects = useCallback(() => {
-    getProjects(role).then((projectList) => {
-      setProjects(projectList);
-      if (!projectList.find((p) => p.id === selectedProjectId)) {
-        setSelectedProjectId(projectList[0]?.id ?? null);
-      }
-    });
-  }, [role, selectedProjectId]);
-
-  useEffect(() => subscribeDataChange(reloadProjects), [reloadProjects]);
-
   useEffect(() => {
     let isMounted = true;
 
-    getProjects(role)
-      .then((projectList) => {
+    Promise.all([getDashboard(), getProjects(), getMembers(), getProgress()])
+      .then(([dashboard, projectList, members, progress]) => {
         if (isMounted) {
           setProjects(projectList);
+          setTeamMembers(members.map((member) => ({
+            id: member.id,
+            name: member.name,
+            avatar: member.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+          })));
+          setStats(progress || dashboard.stats);
           setSelectedProjectId(projectList[0]?.id ?? null);
         }
       })
@@ -58,42 +50,48 @@ export function useProjectLeaderData() {
     return () => {
       isMounted = false;
     };
-  }, [role]);
+  }, []);
 
   useEffect(() => {
     if (!selectedProjectId) return;
     let isMounted = true;
 
-    Promise.all([
-      getProjectTasks(selectedProjectId, role),
-      getPendingDeliverables(selectedProjectId, role),
-      getTeamProgressStats(selectedProjectId, role),
-      getTeamMembers(selectedProjectId),
-    ]).then(([taskList, deliverableList, statList, members]) => {
+    Promise.all([getTasks({ projectId: selectedProjectId }), getSubmittedTasks()]).then(([taskList, submitted]) => {
       if (isMounted) {
-        setTasks(taskList);
-        setDeliverables(deliverableList);
-        setStats(statList);
-        setTeamMembers(members);
+        setTasks(taskList.map((task) => ({
+          ...task,
+          assignee: {
+            id: task.assigneeId,
+            name: task.assigneeName,
+            avatar: task.assignee,
+          },
+        })));
+        setDeliverables(submitted.map((task) => ({
+          id: task.id,
+          taskId: task.id,
+          member: { name: task.assigneeName, avatar: task.assignee },
+          linkLabel: "View task",
+          url: `/project/tasks?taskId=${task.id}`,
+        })));
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [selectedProjectId, role]);
+  }, [selectedProjectId]);
 
-  const handleApprove = useCallback(async (item, comment) => {
+  const handleApprove = useCallback(async (item) => {
     setDeliverables((prev) => prev.filter((d) => d.id !== item.id));
     setTasks((prev) =>
       prev.map((t) => (t.id === item.taskId ? { ...t, status: "completed" } : t))
     );
     try {
-      await approveDeliverable(item.id, comment, role);
+      await approveTask(item.taskId);
     } catch (err) {
       setError(err);
     }
-  }, [role]);
+  }, []);
 
   const handleReject = useCallback(async (item, comment) => {
     setDeliverables((prev) => prev.filter((d) => d.id !== item.id));
@@ -101,38 +99,52 @@ export function useProjectLeaderData() {
       prev.map((t) => (t.id === item.taskId ? { ...t, status: "in_progress" } : t))
     );
     try {
-      await rejectDeliverable(item.id, comment, role);
+      await returnTaskForRevision(item.taskId, comment);
     } catch (err) {
       setError(err);
     }
-  }, [role]);
+  }, []);
 
   const handleReassign = useCallback(async (taskId, memberId) => {
-    const member = teamMembers.find((m) => m.id === memberId);
+    const member = teamMembers.find((m) => String(m.id) === String(memberId));
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, assignee: member } : t))
     );
     try {
-      await reassignTask(taskId, memberId, role);
+      await assignTask(taskId, memberId);
     } catch (err) {
       setError(err);
     }
-  }, [teamMembers, role]);
+  }, [teamMembers]);
 
-  const handleUpdateTask = useCallback((taskId, updates) => {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
-  }, [role]);
+  const handleUpdateTask = useCallback(async (taskId, updates) => {
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...updates } : task)));
+    try {
+      if (updates.status && updates.status !== "completed") {
+        await editTask(taskId, { ...updates, priority: updates.priority });
+      } else if (updates.status === "completed") {
+        await approveTask(taskId);
+      } else {
+        await editTask(taskId, updates);
+      }
+    } catch (err) {
+      setError(err);
+    }
+  }, []);
 
-  const handleDeleteTask = useCallback((taskId) => {
+  const handleDeleteTask = useCallback(async (taskId) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    try {
+      await deleteTask(taskId);
+    } catch (err) {
+      setError(err);
+    }
   }, []);
 
   const handleCreateProject = useCallback(async (projectInput) => {
     try {
-      const saved = await createProject(projectInput, role);
-      localProjectIds.current.add(saved.id);
+      const saved = await createProject(projectInput);
       setProjects((prev) => [...prev, saved]);
-      setSelectedProjectId(saved.id);
       return saved;
     } catch (err) {
       setError(err);

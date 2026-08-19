@@ -17,6 +17,7 @@ export default function ClientDashboard() {
   const [stats, setStats] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const icons = [
     FolderKanban,
@@ -29,16 +30,41 @@ export default function ClientDashboard() {
     let mounted = true;
 
     async function load() {
-      const data = await getClientDashboard("client");
-      if (mounted) {
-        setStats(data.stats);
-        setProjects(data.projects);
-        setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getClientDashboard("client");
+        if (mounted) {
+          setStats(data.stats || []);
+          setProjects(data.projects || []);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard:", err);
+        if (mounted) {
+          setError("Failed to load dashboard. Please try refreshing the page.");
+          // Set default empty stats on error
+          setStats([
+            { id: 1, title: "Projects", value: 0, color: "bg-cyan-600" },
+            { id: 2, title: "Progress", value: "0%", color: "bg-blue-600" },
+            { id: 3, title: "Meetings", value: 0, color: "bg-violet-600" },
+            { id: 4, title: "Tasks", value: 0, color: "bg-green-600" },
+          ]);
+          setProjects([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     load();
-    return subscribeDataChange(load);
+    const unsubscribe = subscribeDataChange(load);
+    return () => {
+      mounted = false;
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   if (loading) {
@@ -54,6 +80,12 @@ export default function ClientDashboard() {
       <h1 className="mb-8 text-4xl font-bold text-slate-800">
         Client Dashboard
       </h1>
+
+      {error && (
+        <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-700 border border-red-200">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((item, index) => (
@@ -78,15 +110,21 @@ export default function ClientDashboard() {
           </span>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-          {projects.map((project) => (
-            <ProjectProgressCard
-              key={project.id}
-              project={project}
-              onViewDetails={setSelectedProject}
-            />
-          ))}
-        </div>
+        {projects.length === 0 ? (
+          <div className="rounded-lg bg-slate-100 p-8 text-center">
+            <p className="text-slate-500">No projects assigned yet.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project) => (
+              <ProjectProgressCard
+                key={project.id}
+                project={project}
+                onViewDetails={setSelectedProject}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <ProjectDetailsModal

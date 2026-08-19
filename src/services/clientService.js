@@ -17,12 +17,12 @@ export async function getAllClients() {
 }
 
 // =====================================================
-// GET SINGLE CLIENT
+// GET SINGLE CLIENT (frontend fallback — backend route missing)
 // =====================================================
 export async function getClientById(id) {
   try {
-    const response = await get(`${BASE}/${id}`);
-    return transformClient(response?.data);
+    const all = await getAllClients();
+    return all.find((c) => String(c.id) === String(id)) || null;
   } catch (error) {
     console.error('Error fetching client:', error);
     return null;
@@ -101,13 +101,10 @@ export async function updateClient(id, updates) {
   } catch (error) {
     console.error('Error updating client:', error);
     
-    if (error.data?.errors && Array.isArray(error.data.errors)) {
-      const errorMessages = error.data.errors
-        .map((e) => `${e.field}: ${e.message}`)
-        .join('\n');
-      const newError = new Error(errorMessages);
-      newError.backendErrors = error.data.errors;
-      throw newError;
+    if (error.status === 404) {
+      alert('Update failed: Backend does not support client update yet. Please ask backend developer to add PUT /api/company/clients/:id');
+    } else {
+      alert(`Update failed: ${error.data?.message || error.message}`);
     }
     
     throw error;
@@ -197,11 +194,7 @@ function transformClient(client) {
   };
 }
 
-function capitalize(str) {
-  if (!str) return '';
-  return String(str).charAt(0).toUpperCase() + String(str).slice(1).toLowerCase();
-}
-
+// Helper: Format date
 function formatDate(dateString) {
   if (!dateString) return 'N/A';
   try {

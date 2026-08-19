@@ -55,7 +55,7 @@ export default function TaskOverviewTable({ tasks, onEdit, onDelete }) {
   const assignees = [...new Set(tasks.map((t) => t.assignee))];
 
   const filtered = tasks.filter((t) => {
-    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = (t.name || "").toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "All" || t.status === statusFilter;
     const matchesPriority = priorityFilter === "All" || t.priority === priorityFilter;
     const matchesAssignee = assigneeFilter === "All" || t.assignee === assigneeFilter;

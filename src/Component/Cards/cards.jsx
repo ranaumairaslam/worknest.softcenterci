@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import DashboardCardsData from "./dashboardCardsData.js";
-import { getDashboardStats } from "../../services/superAdminService";
-
+import { getSuperAdminDashboard } from "../../services/superAdminService";
 export default function DashboardCards() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,7 +9,7 @@ export default function DashboardCards() {
     const loadData = async () => {
       try {
         setLoading(true);
-        const data = await getDashboardStats();
+        const data = await getSuperAdminDashboard();
         if (data) setStats(data);
       } catch (error) {
         console.error("Error loading dashboard:", error);

@@ -143,12 +143,12 @@ function AppLayout() {
   const getRole = () => {
     const user = getStoredUser();
 
-    const pathRoles = {
-      "/dashboard-admin": "superAdmin",
-      "/companies": "superAdmin",
-      "/revenue-super-admin": "superAdmin",
-      "/reports": "superAdmin",
-      "/add-company": "superAdmin",
+  const pathRoles = {
+    "/dashboard-admin": "superAdmin",
+    "/companies": "superAdmin",
+    "/revenue-super-admin": "superAdmin",
+    "/reports": "superAdmin",
+    "/add-company": "superAdmin",
 
       "/dashboard-company": "companyAdmin",
       "/team-management": "companyAdmin",

@@ -126,11 +126,12 @@ export const navigation = {
       icon: LayoutDashboard,
       path: "/dashboard-leader",
     },
+   
     {
       title: "Projects",
       icon: FolderKanban,
       path: "/project",
-    },
+    }, 
      {
     title: "Tasks",
     icon: CheckSquare,
@@ -146,7 +147,7 @@ export const navigation = {
     icon: Clock3,
     path: "/project/timeline",
   },
-  
+ /* 
   {
     title: "Kanban Board",
     icon: Briefcase,
@@ -156,7 +157,7 @@ export const navigation = {
     title: "Calendar",
     icon: CalendarDays,
     path: "/calendar",
-  },
+  },*/
     {
       title: "Reports",
       icon: BarChart3,

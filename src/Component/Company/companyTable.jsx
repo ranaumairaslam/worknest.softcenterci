@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Trash2, Pencil, Eye, X, MapPin, Mail, User, Building2, CreditCard, FileImage } from "lucide-react";
-import { setSuperAdminCompanyStatus, deleteCompany as deleteCompanyAPI } from "../../services/superAdminService.js";
-
+import {
+ 
+  deleteSuperAdminCompany
+} from "../../services/superAdminService.js";
 const ROWS_PER_PAGE = 5;
 
 function highlightMatch(text, query) {
@@ -28,7 +30,7 @@ export default function CompanyTable({ companies = [], onChanged }) {
   const deleteCompany = async (id) => {
     setDeleting(true);
     try {
-      await deleteCompanyAPI(id);
+      await deleteSuperAdminCompany(id);
       setDeleteId(null);
       if (selectedCompany?.id === id) setSelectedCompany(null);
       await onChanged?.();

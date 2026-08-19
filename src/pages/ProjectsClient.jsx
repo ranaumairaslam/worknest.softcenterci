@@ -2,27 +2,46 @@ import { useEffect, useState } from "react";
 
 import ProjectProgressCard from "../components/client/ProjectProgressCard";
 import ProjectDetailsModal from "../components/client/ProjectDetailsModal";
-import { getClientProjects } from "../services/clientDashboardService";
+import { getClientProjectsList } from "../services/clientDashboardService";
 import { subscribeDataChange } from "../utils/eventBus";
 
 export default function ProjectsClient() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let mounted = true;
 
     async function load() {
-      const data = await getClientProjects("client");
-      if (mounted) {
-        setProjects(data);
-        setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getClientProjectsList();
+        if (mounted) {
+          setProjects(data || []);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Failed to load projects:", err);
+        if (mounted) {
+          setError("Failed to load projects. Please try refreshing the page.");
+          setProjects([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     load();
-    return subscribeDataChange(load);
+    const unsubscribe = subscribeDataChange(load);
+    return () => {
+      mounted = false;
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   if (loading) {
@@ -45,6 +64,12 @@ export default function ProjectsClient() {
         </p>
       </div>
 
+      {error && (
+        <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-700 border border-red-200">
+          {error}
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-800">
           Project Progress
@@ -55,15 +80,21 @@ export default function ProjectsClient() {
         </span>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-        {projects.map((project) => (
-          <ProjectProgressCard
-            key={project.id}
-            project={project}
-            onViewDetails={setSelectedProject}
-          />
-        ))}
-      </div>
+      {projects.length === 0 ? (
+        <div className="rounded-lg bg-slate-100 p-8 text-center">
+          <p className="text-slate-500">No projects assigned yet.</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project) => (
+            <ProjectProgressCard
+              key={project.id}
+              project={project}
+              onViewDetails={setSelectedProject}
+            />
+          ))}
+        </div>
+      )}
 
       <ProjectDetailsModal
         project={selectedProject}

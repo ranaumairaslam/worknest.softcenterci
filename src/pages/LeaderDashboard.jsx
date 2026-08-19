@@ -104,6 +104,23 @@ export default function ProjectLeaderDashboard() {
   if (loading) return <div className="p-6 text-slate-500 text-sm">Loading project…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load project data.</div>;
 
+  if (!projects.length) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h1 className="text-xl font-semibold text-slate-800">MY PROJECT OVERSIGHT</h1>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
+          <p className="text-lg font-medium text-slate-700">No projects assigned yet</p>
+          <p className="mt-2 text-sm text-slate-500">
+            This team leader account does not currently have any projects to monitor.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   function confirmDelete(task) {
     const ok = window.confirm(`Delete task "${task.title}"? This can't be undone.`);
     if (ok) handleDeleteTask(task.id);
