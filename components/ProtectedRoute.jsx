@@ -24,7 +24,7 @@ export default function ProtectedRoute({ children }) {
   }
 
   const user = getStoredUser();
-  const currentFrontendRole = user?.role; // ✅ direct use, roleMap conversion nahi chahiye
+  const currentFrontendRole = normalizeRole(user?.role);
 
   // Settings page sab roles ke liye allowed hai
   const requiredRole =
@@ -32,21 +32,12 @@ export default function ProtectedRoute({ children }) {
       ? null
       : getRoleFromPath(location.pathname);
 
-  const dashboardMap = {
-    superAdmin: "/dashboard-admin",
-    companyAdmin: "/dashboard-company",
-    projectLeader: "/dashboard-leader",
-    teamMember: "/dashboard-team-member",
-    client: "/client-dashboard",
-  };
-
   // Role mismatch check
   if (
     requiredRole &&
     currentFrontendRole !== requiredRole
   ) {
-    const allowedDashboard =
-      dashboardMap[currentFrontendRole] || "/login";
+    const allowedDashboard = getDashboardForRole(currentFrontendRole);
 
     // Loop guard: agar already sahi jagah hain to redirect mat karo
     if (location.pathname === allowedDashboard) {

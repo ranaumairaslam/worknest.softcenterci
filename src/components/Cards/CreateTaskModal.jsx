@@ -9,15 +9,15 @@ export default function CreateTaskModal({
   onClose,
   onCreate,
 }) {
-  const [name, setName] = useState("");
-  const [projectId, setProjectId] = useState(currentProjectId ?? "");
-  const [priority, setPriority] = useState("Medium");
-  const [assigneeId, setAssigneeId] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [errors, setErrors] = useState({});
+const [name, setName] = useState("");
+const [description, setDescription] = useState("");
+const [projectId, setProjectId] = useState(currentProjectId ?? "");
+const [priority, setPriority] = useState("Medium");
+const [assigneeId, setAssigneeId] = useState("");
+const [dueDate, setDueDate] = useState("");
+const [errors, setErrors] = useState({});
+const [submitting, setSubmitting] = useState(false);
 
-  // Keep the project field defaulted to whichever project is
-  // currently being viewed, each time the modal opens.
   useEffect(() => {
     if (open) {
       setProjectId(currentProjectId ?? "");
@@ -50,7 +50,7 @@ export default function CreateTaskModal({
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e) {
+ async function handleSubmit(e) {
     e.preventDefault();
 
     if (!validate()) return;
@@ -64,6 +64,7 @@ export default function CreateTaskModal({
     );
 
     setSubmitting(true);
+    setErrors({});
 
     try {
       await onCreate({
@@ -90,7 +91,7 @@ export default function CreateTaskModal({
     } catch (err) {
       setErrors({
         submit:
-          err.message ||
+          err?.message ||
           "Failed to create task. Please try again.",
       });
     } finally {
@@ -113,7 +114,7 @@ export default function CreateTaskModal({
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[600px] p-6">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-slate-800">
@@ -125,6 +126,7 @@ export default function CreateTaskModal({
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600"
             aria-label="Close"
+            disabled={submitting}
           >
             <X size={18} />
           </button>
@@ -187,7 +189,9 @@ export default function CreateTaskModal({
                 </option>
 
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
 
@@ -199,6 +203,7 @@ export default function CreateTaskModal({
             </div>
           )}
 
+          {/* Assignee */}
           <div>
             <label
               htmlFor="task-assignee"
@@ -218,7 +223,9 @@ export default function CreateTaskModal({
               </option>
 
               {team.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
               ))}
             </select>
 
@@ -229,6 +236,7 @@ export default function CreateTaskModal({
             )}
           </div>
 
+          {/* Priority */}
           <div>
             <label
               htmlFor="task-priority"
@@ -249,6 +257,7 @@ export default function CreateTaskModal({
             </select>
           </div>
 
+          {/* Due Date */}
           <div>
             <label
               htmlFor="task-due"
@@ -278,9 +287,10 @@ export default function CreateTaskModal({
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg mt-2"
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium py-2 rounded-lg mt-2"
           >
-            Create Task
+            {submitting ? "Creating..." : "Create Task"}
           </button>
         </form>
       </div>

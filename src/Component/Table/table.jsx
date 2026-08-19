@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import "./Table.css";
-import { getAllCompanies, setSuperAdminCompanyStatus } from "../../services/superAdminService.js";
-
+import {
+  getSuperAdminCompanies,
+  setSuperAdminCompanyStatus,
+} from "../../services/superAdminService.js";
 const ROWS_PER_PAGE = 5;
 
 export default function Tables() {
@@ -13,7 +15,7 @@ export default function Tables() {
     const loadCompanies = async () => {
       try {
         setLoading(true);
-        const companies = await getAllCompanies();
+        const companies = await getSuperAdminCompanies();
         setData(
           companies.map((c) => ({
             ...c,
@@ -51,8 +53,8 @@ export default function Tables() {
 
   // Send to backend
   try {
-    await setSuperAdminCompanyStatus(id, backendStatus, company);
   } catch (error) {
+    await setSuperAdminCompanyStatus(id, backendStatus, company);
     console.error("Status update failed:", error);
     alert(`❌ ${error.message}`);
 

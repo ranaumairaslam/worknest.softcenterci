@@ -1,141 +1,50 @@
-import { get, post, put, patch } from './apiClient.js';
+import { get, post, put, patch, del } from './apiClient.js';
+const BASE = "/team-leader";
 
-const BASE = '/team-leader';
+/**
+ * Helper:
+ * API response ko safely data mein convert karta hai.
+ */
+const extractData = (response, fallback = []) => {
+  if (response?.data !== undefined) {
+    return response.data;
+  }
 
-const FRONTEND_STATUSES = {
-  todo: 'todo',
-  in_progress: 'in_progress',
-  under_review: 'under_review',
-  submitted: 'under_review',
-  done: 'completed',
-  blocked: 'blocked',
+  return response ?? fallback;
 };
 
-const PRIORITY_LABELS = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  urgent: 'Urgent',
-};
-
-function initialsFromName(name) {
-  const safeName = String(name || 'Unassigned').trim();
-  if (!safeName) return 'NA';
-  return safeName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
-
-export function mapTeamTask(task) {
-  const status = FRONTEND_STATUSES[task.status] || 'todo';
-  const projectId = task.project_id ?? task.projectId ?? null;
-  const projectName = task.project_name || task.projectName || 'Untitled project';
-  const assigneeName = task.assignee_name || task.assignee || 'Unassigned';
-
-  return {
-    id: task.id,
-    title: task.title || task.name || 'Untitled task',
-    name: task.title || task.name || 'Untitled task',
-    status,
-    priority: PRIORITY_LABELS[(task.priority || '').toLowerCase()] || 'Medium',
-    dueDate: task.due_date || task.dueDate || null,
-    assignee: assigneeName,
-    assigneeId: task.assignee_id ?? task.assigneeId ?? null,
-    projectId,
-    projectName,
-    progress: status === 'completed' ? 100 : status === 'under_review' ? 85 : status === 'in_progress' ? 60 : 0,
-    member: {
-      name: assigneeName,
-      avatar: initialsFromName(assigneeName),
-    },
-  };
-}
-
-export async function getTeamLeaderDashboard() {
+/**
+ * GET DASHBOARD
+ */
+export const getTeamLeaderDashboard = async () => {
   const response = await get(`${BASE}/dashboard`);
-  return response?.data || { team: {}, stats: {}, projects: [], members: [], recentTasks: [] };
-}
+  return extractData(response, {});
+};
+export const getDashboard = getTeamLeaderDashboard;
 
-export async function getTeamLeaderMeetings(params = {}) {
-  const response = await get(`${BASE}/meetings`, params);
-  return response?.data || [];
-}
-
-export async function createTeamLeaderMeeting(payload) {
-  const response = await post(`${BASE}/meetings`, payload);
-  return response?.data || null;
-}
-
-export async function cancelTeamLeaderMeeting(meetingId) {
-  const response = await patch(`${BASE}/meetings/${meetingId}/cancel`, {});
-  return response?.data || null;
-}
-
-export async function getTeamLeaderProjects() {
+/**
+ * GET PROJECTS
+ */
+export const getTeamLeaderProjects = async () => {
   const response = await get(`${BASE}/projects`);
-  const projects = response?.data || [];
+  return extractData(response, []);
+};
+export const getProjects = getTeamLeaderProjects;
 
-  return projects.map((project) => ({
-    id: project.id,
-    name: project.name,
-    status: project.status,
-    description: project.description || '',
-    startDate: project.start_date || project.startDate || null,
-    dueDate: project.due_date || project.dueDate || null,
-    taskCount: project.task_count ?? project.taskCount ?? 0,
-    tasks: project.task_count ?? project.taskCount ?? 0,
-    leader: project.team_leader_name || project.leader || 'Unassigned',
-  }));
-}
-
-export async function getTeamLeaderMembers() {
-  const response = await get(`${BASE}/team-members`);
-  const members = response?.data || [];
-
-  return members.map((member) => ({
-    id: member.id,
-    name: member.name,
-    email: member.email,
-    role: member.role,
-    status: member.status,
-    avatar: initialsFromName(member.name),
-  }));
-}
-
-export async function getTeamLeaderTasks(params = {}) {
-  const response = await get(`${BASE}/tasks`, params);
-  const tasks = response?.data || [];
-  return tasks.map(mapTeamTask);
-}
-
-export async function getTeamLeaderSubmittedTasks() {
-  const response = await get(`${BASE}/tasks/submitted`);
-  const tasks = response?.data || [];
-
-  return tasks.map((task) => ({
-    id: `d-${task.id}`,
-    taskId: task.id,
-    projectId: task.project_id ?? null,
-    member: {
-      name: task.assignee_name || 'Unassigned',
-      avatar: initialsFromName(task.assignee_name || 'Unassigned'),
-    },
-    fileLabel: 'Attached files',
-    linkLabel: 'View task',
-    url: '#',
-    title: task.title || 'Task review',
-    status: task.status,
-    priority: task.priority,
-    projectName: task.project_name || 'Untitled project',
-  }));
-}
-
-export async function getTeamLeaderProgress() {
+/**
+ * GET MEMBERS
+ */
+export const getTeamLeaderMembers = async () => {
+  const response = await get(`${BASE}/members`);
+  return extractData(response, []);
+};
+export const getMembers = getTeamLeaderMembers;
+/**
+ * GET PROGRESS
+ */
+export const getTeamLeaderProgress = async () => {
   const response = await get(`${BASE}/progress`);
-  const data = response?.data || {};
+  const data = extractData(response, {});
 
   return [
     { id: 'total-tasks', label: 'Total Tasks', value: String(data.total_tasks ?? 0), note: 'This team', color: 'slate' },
@@ -144,33 +53,102 @@ export async function getTeamLeaderProgress() {
     { id: 'pending', label: 'Pending', value: String(data.pending_tasks ?? 0), note: 'Needs attention', color: 'amber' },
     { id: 'blocked', label: 'Blocked', value: String(data.blocked_tasks ?? 0), note: 'At risk', color: 'rose' },
   ];
-}
+};
+export const getProgress = getTeamLeaderProgress;
 
-export async function getTeamLeaderReports() {
+/**
+ * GET TASKS
+ */
+export const getTeamLeaderTasks = async ({ projectId } = {}) => {
+  const query = projectId
+    ? `?projectId=${encodeURIComponent(projectId)}`
+    : "";
+  const response = await get(`${BASE}/tasks${query}`);
+  return extractData(response, []);
+};
+export const getTasks = getTeamLeaderTasks;
+
+/**
+ * GET SUBMITTED TASKS
+ */
+export const getTeamLeaderSubmittedTasks = async () => {
+  const response = await get(`${BASE}/tasks/submitted`);
+  return extractData(response, []);
+};
+export const getSubmittedTasks = getTeamLeaderSubmittedTasks;
+
+/**
+ * APPROVE TASK
+ */
+export const approveTeamLeaderTask = async (taskId) => {
+  const response = await post(`${BASE}/tasks/${taskId}/approve`);
+  return extractData(response, {});
+};
+export const approveTask = approveTeamLeaderTask;
+
+/**
+ * RETURN TASK FOR REVISION
+ */
+export const returnTeamLeaderTaskForRevision = async (taskId, comment) => {
+  const response = await post(`${BASE}/tasks/${taskId}/return`, { comment });
+  return extractData(response, {});
+};
+export const returnTaskForRevision = returnTeamLeaderTaskForRevision;
+
+/**
+ * ASSIGN TASK
+ */
+export const assignTeamLeaderTask = async (taskId, memberId) => {
+  const response = await post(`${BASE}/tasks/${taskId}/assign`, { memberId });
+  return extractData(response, {});
+};
+export const assignTask = assignTeamLeaderTask;
+
+/**
+ * EDIT TASK
+ */
+export const editTeamLeaderTask = async (taskId, updates) => {
+  const response = await put(`${BASE}/tasks/${taskId}`, updates);
+  return extractData(response, {});
+};
+export const editTask = editTeamLeaderTask;
+
+/**
+ * DELETE TASK
+ */
+export const deleteTeamLeaderTask = async (taskId) => {
+  const response = await del(`${BASE}/tasks/${taskId}`);
+  return extractData(response, {});
+};
+export const deleteTask = deleteTeamLeaderTask;
+
+/**
+ * GET MEETINGS
+ */
+export const getTeamLeaderMeetings = async (params = {}) => {
+  const response = await get(`${BASE}/meetings`, params);
+  return extractData(response, []);
+};
+
+/**
+ * CREATE MEETING
+ */
+export const createTeamLeaderMeeting = async (payload) => {
+  const response = await post(`${BASE}/meetings`, payload);
+  return extractData(response, {});
+};
+
+/**
+ * CANCEL MEETING
+ */
+export const cancelTeamLeaderMeeting = async (meetingId) => {
+  const response = await patch(`${BASE}/meetings/${meetingId}/cancel`, {});
+  return extractData(response, {});
+};
+/**
+ * GET REPORTS
+ */
+export const getTeamLeaderReports = async () => {
   const response = await get(`${BASE}/reports`);
-  return response?.data || { team: null, summary: {} };
-}
-
-export async function createTeamLeaderTask(taskPayload) {
-  return post(`${BASE}/tasks`, taskPayload);
-}
-
-export async function assignTeamLeaderTask(taskId, assigneeId) {
-  return put(`${BASE}/tasks/${taskId}/assign`, { assignedTo: assigneeId });
-}
-
-export async function updateTeamLeaderTaskPriority(taskId, priority) {
-  return put(`${BASE}/tasks/${taskId}/priority`, { priority });
-}
-
-export async function approveTeamLeaderTask(taskId) {
-  return post(`${BASE}/tasks/${taskId}/approve`, {});
-}
-
-export async function reviseTeamLeaderTask(taskId, reviewNote) {
-  return post(`${BASE}/tasks/${taskId}/revision`, { reviewNote });
-}
-
-export async function addTeamLeaderMember(userId, role = 'team_member') {
-  return post(`${BASE}/team-members`, { userId, role });
-}
+  return extractData(response, { team: null, summary: {} });
+};

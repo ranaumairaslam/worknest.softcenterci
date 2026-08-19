@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { getMembers, getProjects, getProgress, getTasks } from "../services/teamLeaderService";
+import {
+  getTeamLeaderMembers,
+  getTeamLeaderProjects,
+  getTeamLeaderProgress,
+  getTeamLeaderTasks,
+} from "../services/teamLeaderService";
 
 const statusTitle = { todo: "Pending", in_progress: "In Progress", under_review: "Under Review", completed: "Completed" };
 
@@ -50,7 +55,7 @@ export function useProjectOversightData() {
   useEffect(() => {
     let isMounted = true;
 
-    getProjects()
+    getTeamLeaderProjects()
       .then((list) => {
         if (isMounted) {
           setProjects(list);
@@ -73,7 +78,7 @@ export function useProjectOversightData() {
     if (!selectedProjectId) return;
     let isMounted = true;
 
-    Promise.all([getProjects(), getTasks({ projectId: selectedProjectId }), getMembers(), getProgress()])
+    Promise.all([getTeamLeaderProjects(), getTeamLeaderTasks({ projectId: selectedProjectId }), getTeamLeaderMembers(), getTeamLeaderProgress()])
       .then(([projectList, tasks, members, progress]) => {
         if (isMounted) {
           const project = projectList.find((item) => String(item.id) === String(selectedProjectId)) || projectList[0];
