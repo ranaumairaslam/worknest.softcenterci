@@ -5,6 +5,7 @@ import {
   getStoredUser,
 } from "../src/services/authService.js";
 import { getRoleFromPath } from "./navigation.js";
+import { normalizeRole, getDashboardForRole } from "../src/roleUtils.js";
 
 export default function ProtectedRoute({ children }) {
   const location = useLocation();
@@ -12,6 +13,7 @@ export default function ProtectedRoute({ children }) {
 
   // User login nahi hai
   if (!authenticated) {
+    if (location.pathname === "/login") return children;
     return (
       <Navigate
         to="/login"
@@ -22,19 +24,7 @@ export default function ProtectedRoute({ children }) {
   }
 
   const user = getStoredUser();
-
-  const backendRole = user?.role;
-
-  // Backend role → Frontend role
-  const roleMap = {
-    super_admin: "superAdmin",
-    company: "companyAdmin",
-    team_leader: "projectLeader",
-    team_member: "teamMember",
-    client: "client",
-  };
-
-  const currentFrontendRole = roleMap[backendRole];
+  const currentFrontendRole = normalizeRole(user?.role);
 
   // Settings page sab roles ke liye allowed hai
   const requiredRole =
@@ -47,16 +37,12 @@ export default function ProtectedRoute({ children }) {
     requiredRole &&
     currentFrontendRole !== requiredRole
   ) {
-    const dashboardMap = {
-      super_admin: "/dashboard-admin",
-      company: "/dashboard-company",
-      team_leader: "/dashboard-leader",
-      team_member: "/dashboard-team-member",
-      client: "/client-dashboard",
-    };
+    const allowedDashboard = getDashboardForRole(currentFrontendRole);
 
-    const allowedDashboard =
-      dashboardMap[backendRole] || "/login";
+    // Loop guard: agar already sahi jagah hain to redirect mat karo
+    if (location.pathname === allowedDashboard) {
+      return children;
+    }
 
     return (
       <Navigate
