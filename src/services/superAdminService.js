@@ -1,147 +1,186 @@
 import { get, post, put, del } from './apiClient.js';
 
-const BASE = '/super-admin';
+/**
+ * =====================================================
+ * SUPER ADMIN DASHBOARD
+ * =====================================================
+ */
 
-// =====================================================
-// GET DASHBOARD STATS
-// =====================================================
-export async function getDashboardStats() {
+/**
+ * Get super admin dashboard data
+ * GET /api/super-admin/dashboard
+ */
+export async function getSuperAdminDashboard() {
   try {
-    const response = await get(`${BASE}/dashboard`);
-    return response?.data || null;
+    const response = await get('/super-admin/dashboard');
+    return response?.data || {
+      total_companies: 0,
+      active_companies: 0,
+      new_this_month: 0,
+      total_employees: 0,
+      pending_approval: 0,
+      suspended: 0,
+      revenue: {
+        total: 0,
+        pending: 0,
+        paid_companies: 0,
+        failed: 0,
+      },
+    };
   } catch (error) {
     console.error('Error fetching dashboard:', error);
-    return null;
+    throw error;
   }
 }
 
-// =====================================================
-// GET ALL COMPANIES
-// =====================================================
-export async function getAllCompanies() {
+/**
+ * =====================================================
+ * COMPANIES
+ * =====================================================
+ */
+
+/**
+ * Get all companies
+ * GET /api/super-admin/companies
+ */
+export async function getSuperAdminCompanies() {
   try {
-    const response = await get(`${BASE}/companies`);
-    const companies = response?.companies || response?.data || [];
-    return companies.map(transformCompany);
+    const response = await get('/super-admin/companies');
+    return response?.data || [];
   } catch (error) {
     console.error('Error fetching companies:', error);
-    return [];
+    throw error;
   }
 }
 
-// =====================================================
-// GET SUPER ADMIN COMPANIES
-// =====================================================
-export async function getSuperAdminCompanies() {
-  return await getAllCompanies();
-}
-
-// =====================================================
-// GET SINGLE COMPANY
-// =====================================================
-export async function getCompanyById(id) {
+/**
+ * Get single company details
+ * GET /api/super-admin/companies/:companyId
+ */
+export async function getCompanyById(companyId) {
   try {
-    const response = await get(`${BASE}/companies/${id}`);
-    return transformCompany(response?.data || response?.company);
+    const response = await get(`/super-admin/companies/${companyId}`);
+    return response?.company || {};
   } catch (error) {
-    console.error('Error fetching company:', error);
-    return null;
+    console.error(`Error fetching company ${companyId}:`, error);
+    throw error;
   }
 }
 
-// =====================================================
-// CREATE COMPANY
-// =====================================================
-export async function createCompany(payload) {
+/**
+ * Create new company
+ * POST /api/super-admin/companies
+ */
+export async function createCompany(companyData) {
   try {
-    console.log('📤 Creating company:', payload);
-    const response = await post(`${BASE}/companies`, payload);
-    return transformCompany(response?.data || response?.company || response);
+    const response = await post('/super-admin/companies', companyData);
+    return response?.company || response;
   } catch (error) {
     console.error('Error creating company:', error);
-    if (error.data?.errors && typeof error.data.errors === 'object') {
-      const msg = Object.entries(error.data.errors)
-        .map(([field, message]) => `${field}: ${message}`)
-        .join('\n');
-      throw new Error(msg);
-    }
-    throw new Error(error.data?.message || error.message || 'Failed to create company');
+    throw error;
   }
 }
 
-// =====================================================
-// UPDATE SUPER ADMIN COMPANY (PUT)
-// =====================================================
-export async function updateSuperAdminCompany(id, payload) {
+/**
+ * Create team leader company
+ * POST /api/super-admin/team-leader-companies
+ */
+export async function createTeamLeaderCompany(companyData) {
   try {
-    console.log('📤 Updating company:', id, payload);
-    const response = await put(`${BASE}/companies/${id}`, payload);
-    return transformCompany(response?.data || response?.company || response);
+    const response = await post('/super-admin/team-leader-companies', companyData);
+    return response?.company || response;
   } catch (error) {
-    console.error('Error updating company:', error);
-    if (error.data?.errors && typeof error.data.errors === 'object') {
-      const msg = Object.entries(error.data.errors)
-        .map(([field, message]) => `${field}: ${message}`)
-        .join('\n');
-      throw new Error(msg);
-    }
-    throw new Error(error.data?.message || error.message || 'Failed to update company');
+    console.error('Error creating team leader company:', error);
+    throw error;
   }
 }
 
-// =====================================================
-// DELETE COMPANY
-// =====================================================
-export async function deleteCompany(id) {
+/**
+ * Update company details
+ * PATCH /api/super-admin/companies/:companyId
+ */
+export async function updateSuperAdminCompany(companyId, companyData) {
   try {
-    console.log('🗑️ Deleting company:', id);
-    await del(`${BASE}/companies/${id}`);
-    return true;
+    const response = await patch(`/super-admin/companies/${companyId}`, companyData);
+    return response?.company || response;
   } catch (error) {
-    console.error('Error deleting company:', error);
-    throw new Error(error.data?.message || error.message || 'Failed to delete company');
+    console.error(`Error updating company ${companyId}:`, error);
+    throw error;
   }
 }
 
-// =====================================================
-// GET REVENUE
-// =====================================================
-export async function getRevenue() {
+/**
+ * Set company status
+ * PATCH /api/super-admin/companies/:companyId/status
+ */
+export async function setSuperAdminCompanyStatus(companyId, status) {
   try {
-    const response = await get(`${BASE}/revenue`);
+    const response = await patch(`/super-admin/companies/${companyId}/status`, { status });
+    return response?.company || response;
+  } catch (error) {
+    console.error(`Error updating company status ${companyId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * =====================================================
+ * REVENUE
+ * =====================================================
+ */
+
+/**
+ * Get revenue data
+ * GET /api/super-admin/revenue
+ */
+export async function getSuperAdminRevenue(status = 'all') {
+  try {
+    const params = new URLSearchParams();
+    if (status && status !== 'all') {
+      params.append('status', status);
+    }
+    
+    const response = await get(`/super-admin/revenue?${params.toString()}`);
     return {
-      summary: response?.summary || {},
-      payments: (response?.payments || []).map(transformPayment),
+      summary: response?.summary || {
+        total_revenue: 0,
+        pending_revenue: 0,
+        paid_companies: 0,
+        failed_revenue: 0,
+      },
+      payments: response?.payments || [],
     };
   } catch (error) {
     console.error('Error fetching revenue:', error);
-    return { summary: {}, payments: [] };
+    throw error;
   }
 }
 
-// =====================================================
-// UPDATE COMPANY STATUS (via PUT)
-// Sends full company data + new status to backend
-// =====================================================
-export async function setSuperAdminCompanyStatus(id, status, companyData) {
+/**
+ * Export revenue as CSV
+ * GET /api/super-admin/revenue/export
+ */
+export async function exportSuperAdminRevenue(status = 'all') {
   try {
-    console.log('📤 Updating company status:', id, status);
-    const response = await put(`${BASE}/companies/${id}`, {
-      companyName: companyData?.name || 'Unknown',
-      industry: companyData?.industry || 'N/A',
-      address: companyData?.address || companyData?.location || 'N/A',
-      status: status,
-    });
-    return transformCompany(response?.data || response?.company);
+    const params = new URLSearchParams();
+    if (status && status !== 'all') {
+      params.append('status', status);
+    }
+    
+    const response = await get(`/super-admin/revenue/export?${params.toString()}`);
+    return response;
   } catch (error) {
-    console.error('Error updating company status:', error);
-    throw new Error(error.data?.message || error.message || 'Failed to update status');
+    console.error('Error exporting revenue:', error);
+    throw error;
   }
 }
 
-// =====================================================
-// COMPANY VIEW MODEL (for external components)
-// =====================================================
+/**
+ * =====================================================
+ * DATA TRANSFORMATIONS
+ * =====================================================
+ */
+
 export function toCompanyViewModel(company) {
   if (!company) return null;
   return {
@@ -149,89 +188,26 @@ export function toCompanyViewModel(company) {
     name: company.name || '',
     email: company.email || '',
     industry: company.industry || 'N/A',
-    owner: company.account_owner || company.owner || company.owner_name || 'N/A',
-    status: company.status || 'Active',
-    accountStatus: company.accountStatus || mapAccountStatus(company.status),
+    owner: company.account_owner || company.owner_name || 'Unassigned',
+    email: company.company_email || company.owner_email || company.login_email || '',
     phone: company.phone || '',
-    revenue: company.revenue || '$0',
-    size: company.size || 'N/A',
-    paymentStatus: company.paymentStatus || 'Pending',
-    location: company.location || company.address || 'N/A',
-    password: company.password || '',
-    receipt: company.receipt || '',
-    createdAt: company.createdAt || company.created_at || null,
-    updatedAt: company.updatedAt || company.updated_at || null,
+    location: company.location || company.address || '',
+    website: company.website || '',
+    size: company.company_size || `${company.employee_count || 0} Employees`,
+    platformFee: company.platform_fee || 0,
+    paymentStatus: company.payment_status || 'Pending',
+    createdAt: company.created_at,
   };
 }
 
-// =====================================================
-// TRANSFORM COMPANY (backend → frontend)
-// =====================================================
-function transformCompany(company) {
-  if (!company) return null;
-  return {
-    id: company.id,
-    name: company.name || '',
-    email: company.email || company.login_email || company.company_email || '',
-    industry: company.industry || 'N/A',
-    phone: company.phone || null,
-    address: company.address || 'N/A',
-    location: company.location || company.address || 'N/A',
-    size: company.company_size || 'N/A',
-    website: company.website || null,
-    owner: company.account_owner || company.owner || company.owner_name || company.admin_name || 'N/A',
-    owner_name: company.account_owner || company.owner_name || company.owner || 'N/A',
-    status: capitalize(company.status || 'active'),
-    revenue: company.platform_fee ? `$${company.platform_fee}` : '$0',
-    paymentStatus: capitalize(company.payment_status || 'pending'),
-    receipt: company.payment_receipt || '',
-    accountStatus: mapAccountStatus(company.status),
-    createdAt: company.created_at || null,
-    updatedAt: company.updated_at || null,
-    created_at: company.created_at || null,
-    updated_at: company.updated_at || null,
-    password: company.password || '',
-    adminRole: company.admin_role || '',
-    loginEmail: company.login_email || company.email || '',
-  };
-}
-
-// =====================================================
-// TRANSFORM PAYMENT (backend → frontend)
-// =====================================================
-function transformPayment(payment) {
-  if (!payment) return null;
+export function toRevenuePaymentViewModel(payment) {
   return {
     id: payment.id,
-    company: payment.company || '',
-    owner: payment.owner || '',
-    email: payment.email || '',
-    revenue: payment.revenue || '0',
-    paymentStatus: capitalize(payment.payment_status || 'pending'),
-    location: payment.location || 'N/A',
-    createdAt: payment.created_at || null,
+    company: payment.company,
+    owner: payment.owner,
+    revenue: payment.revenue || 0,
+    paymentStatus: payment.payment_status || 'Pending',
+    location: payment.location || '',
+    createdAt: payment.created_at,
   };
-}
-
-// =====================================================
-// MAP ACCOUNT STATUS (backend status → frontend display)
-// Backend: active, inactive, suspended, pending
-// Frontend: Active, Terminated, Suspended, Active
-// =====================================================
-function mapAccountStatus(status) {
-  if (!status) return 'Active';
-  const s = String(status).toLowerCase();
-  if (s === 'active') return 'Active';
-  if (s === 'suspended') return 'Suspended';
-  if (s === 'inactive') return 'Terminated';
-  if (s === 'pending') return 'Active';
-  return capitalize(status);
-}
-
-// =====================================================
-// CAPITALIZE
-// =====================================================
-function capitalize(str) {
-  if (!str) return '';
-  return String(str).charAt(0).toUpperCase() + String(str).slice(1).toLowerCase();
 }

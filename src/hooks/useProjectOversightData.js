@@ -9,10 +9,30 @@ import {
   getKanbanPreview,
 } from "../services/projectOversightService";
 
+const emptyProjectData = {
+  summary: {
+    id: "empty-project",
+    name: "No project assigned",
+    status: "Active",
+    description: "No project data available yet.",
+    startDate: "—",
+    endDate: "—",
+    progress: 0,
+    tasksCompleted: 0,
+    tasksTotal: 0,
+    daysRemaining: 0,
+  },
+  stats: [],
+  timeline: [],
+  team: [],
+  tasks: [],
+  kanban: { columns: [] },
+};
+
 export function useProjectOversightData() {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(emptyProjectData);
   const [error, setError] = useState(null);
 
   // Load the project list once, pick the first one as default.

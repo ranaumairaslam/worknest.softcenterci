@@ -1,44 +1,57 @@
 import CompanyCards from "./compnyCard.jsx";
 import CompanyTable from "./companyTable.jsx";
-import { useCallback, useEffect, useState } from "react";
-import { getSuperAdminCompanies, toCompanyViewModel } from "../../services/superAdminService.js";
+import { useLocation } from "react-router-dom";
+import { useSuperAdminCompanies } from "../../hooks/useSuperAdminApi";
+import { toCompanyViewModel } from "../../services/superAdminService";
 
 export default function CompanySidebar() {
-  const [companies, setCompanies] = useState([]);
-  const [error, setError] = useState("");
+  const location = useLocation();
+  const {
+    companies,
+    loading,
+    error,
+    refetch,
+    updateStatus,
+  } = useSuperAdminCompanies();
 
-  const loadCompanies = useCallback(async () => {
-    try {
-      setError("");
-
-      const data = await getSuperAdminCompanies();
-
-      setCompanies(data.map(toCompanyViewModel));
-    } catch (err) {
-      setError(
-        err.message || "Unable to load companies."
-      );
+  // Trigger refetch when route state changes
+  React.useEffect(() => {
+    if (location.state?.refreshCompanies) {
+      refetch();
     }
-  }, []);
+  }, [location.state?.refreshCompanies, refetch]);
 
-  useEffect(() => {
-    loadCompanies();
-  }, [loadCompanies]);
+  if (loading) {
+    return (
+      <div className="mx-6 mt-6 text-center text-slate-500">
+        Loading companies...
+      </div>
+    );
+  }
+
+  const mappedCompanies = companies.map(toCompanyViewModel);
 
   return (
     <>
       {error && (
-        <div className="mx-6 mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+        <div className="mx-6 mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex justify-between items-center">
+          <span>{error}</span>
+          <button
+            onClick={refetch}
+            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
+          >
+            Retry
+          </button>
         </div>
       )}
-
-      <CompanyCards companies={companies} />
-
+      <CompanyCards companies={mappedCompanies} />
       <CompanyTable
-        companies={companies}
-        onChanged={loadCompanies}
+        companies={mappedCompanies}
+        onChanged={refetch}
+        onStatusChange={updateStatus}
       />
     </>
   );
 }
+
+import React from 'react';
