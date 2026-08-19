@@ -113,37 +113,59 @@ export function isAuthenticated() {
 
   return Boolean(user && token);
 }
+export async function forgotPassword(emailOrPhone) {
+  try {
+    const body = {};
+    if (emailOrPhone.includes('@')) {
+      body.email = emailOrPhone;
+    } else {
+      body.phone = emailOrPhone;
+    }
 
-// ==========================================
-// CHANGE PASSWORD
-// ==========================================
-
-export async function changePassword(payload) {
-  const response = await post("/auth/change-password", payload);
-
-  if (!response?.success) {
-    throw new Error(
-      response?.message || "Failed to change password"
-    );
+    const response = await post('/auth/forgot-password', body);
+    return response;
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    throw new Error(error.data?.message || error.message || 'Failed to check account');
   }
-
-  return response;
 }
 
-// ==========================================
-// FORGOT PASSWORD
-// ==========================================
+export async function resetPassword(payload) {
+  try {
+    const body = {
+      firebaseIdToken: payload.firebaseIdToken,
+      newPassword: payload.newPassword,
+      confirmPassword: payload.confirmPassword,
+    };
+    if (payload.email) body.email = payload.email;
+    if (payload.phone) body.phone = payload.phone;
 
-export async function forgotPassword(email) {
-  const response = await post("/auth/forgot-password", {
-    email,
-  });
-
-  if (!response?.success) {
-    throw new Error(
-      response?.message || "Failed to process forgot password request"
-    );
+    const response = await post('/auth/reset-password', body);
+    return response;
+  } catch (error) {
+    console.error('Reset password error:', error);
+    throw new Error(error.data?.message || error.message || 'Failed to reset password');
   }
+}
 
-  return response;
+export async function changePassword(payload) {
+  try {
+    const body = {
+      currentPassword: payload.currentPassword,
+      newPassword: payload.newPassword,
+      confirmPassword: payload.confirmPassword,
+    };
+
+    const response = await post('/auth/change-password', body);
+
+    if (response?.success) {
+      setStoredUser(null);
+      setAuthToken(null);
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Change password error:', error);
+    throw new Error(error.data?.message || error.message || 'Failed to change password');
+  }
 }

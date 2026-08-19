@@ -228,7 +228,7 @@ export const getRoleFromPath = (pathname) => {
     "/subscriptions": "superAdmin",
     "/reports": "superAdmin",
     "/pending": "superAdmin",
-   "/revenue-super-admin": "superAdmin",
+    "/revenue-super-admin": "superAdmin",
 
     // Company Admin
     "/dashboard-company": "companyAdmin",
@@ -264,9 +264,13 @@ export const getRoleFromPath = (pathname) => {
     "/client-meetings": "client",
 
     // Shared
-    "/settings": "companyAdmin",
     "/chat": "client",
   };
 
-  return routes[pathname] || null;
+  // Settings ka role localStorage se lo
+  if (pathname === "/settings") {
+  return null;
+}
+
+return routes[pathname] || null;
 };
