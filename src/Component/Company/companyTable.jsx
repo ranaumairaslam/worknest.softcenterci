@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Trash2, Pencil, Eye, X, MapPin, Mail, User, Building2, CreditCard, FileImage } from "lucide-react";
-import { setSuperAdminCompanyStatus } from "../../services/superAdminService.js";
+import { setSuperAdminCompanyStatus, deleteCompany as deleteCompanyAPI } from "../../services/superAdminService.js";
+
 const ROWS_PER_PAGE = 5;
 
 function highlightMatch(text, query) {
@@ -21,15 +22,20 @@ export default function CompanyTable({ companies = [], onChanged }) {
   const [deleteId, setDeleteId] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleting, setDeleting] = useState(false);
 
+  // ✅ DELETE — Real API Call!
   const deleteCompany = async (id) => {
+    setDeleting(true);
     try {
-      await setSuperAdminCompanyStatus(id, "inactive");
+      await deleteCompanyAPI(id);
       setDeleteId(null);
       if (selectedCompany?.id === id) setSelectedCompany(null);
       await onChanged?.();
     } catch (error) {
-      window.alert(error.message || "Unable to deactivate company.");
+      window.alert(error.message || "Unable to delete company.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -161,6 +167,7 @@ export default function CompanyTable({ companies = [], onChanged }) {
         </div>}
       </div>
 
+      {/* VIEW DETAILS MODAL */}
       {selectedCompany && (
         <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedCompany(null)}>
           <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -204,14 +211,17 @@ export default function CompanyTable({ companies = [], onChanged }) {
         </div>
       )}
 
+      {/* DELETE MODAL */}
       {deleteId !== null && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4" onClick={() => setDeleteId(null)}>
           <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-gray-800">Delete Company</h2>
             <p className="text-sm text-gray-500 mt-2 leading-6">Are you sure you want to delete this company? This action cannot be undone.</p>
             <div className="flex justify-end gap-3 mt-6">
-              <button type="button" onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-              <button type="button" onClick={() => deleteCompany(deleteId)} className="px-4 py-2 text-sm font-medium bg-[#016472] text-white rounded-lg hover:bg-[#014f59]">Delete</button>
+              <button type="button" onClick={() => setDeleteId(null)} disabled={deleting} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={() => deleteCompany(deleteId)} disabled={deleting} className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

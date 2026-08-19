@@ -1,251 +1,78 @@
 import { useEffect, useState } from "react";
 import DashboardCardsData from "./dashboardCardsData.js";
-import Companiesdata from "../Company/companyTable.js";
+import { getDashboardStats } from "../../services/superAdminService";
 
-const STORAGE_KEY = "worknest_companies";
-
-export default function DashboardCards({ stats, companies: propCompanies }) {
-  const [localCompanies, setLocalCompanies] = useState([]);
-  const companies = propCompanies || localCompanies;
-
-  const loadCompanies = () => {
-    if (propCompanies) return;
-    try {
-      const savedCompanies = localStorage.getItem(STORAGE_KEY);
-
-      if (savedCompanies === null) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(Companiesdata)
-        );
-
-        setLocalCompanies(Companiesdata);
-        return;
-      }
-
-      const parsedCompanies = JSON.parse(savedCompanies);
-
-      if (Array.isArray(parsedCompanies)) {
-        setLocalCompanies(parsedCompanies);
-        return;
-      }
-
-      setLocalCompanies(Companiesdata);
-    } catch (error) {
-      console.error("Error loading companies:", error);
-      setLocalCompanies(Companiesdata);
-    }
-  };
+export default function DashboardCards() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (propCompanies) return;
-    loadCompanies();
-
-    const handleCompaniesUpdated = (event) => {
-      if (event.detail) {
-        setLocalCompanies(event.detail);
-      } else {
-        loadCompanies();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const data = await getDashboardStats();
+        if (data) setStats(data);
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+      } finally {
+        setLoading(false);
       }
     };
-
-    window.addEventListener(
-      "companiesUpdated",
-      handleCompaniesUpdated
-    );
-
-    window.addEventListener(
-      "storage",
-      loadCompanies
-    );
-
-    return () => {
-      window.removeEventListener(
-        "companiesUpdated",
-        handleCompaniesUpdated
-      );
-
-      window.removeEventListener(
-        "storage",
-        loadCompanies
-      );
-    };
-  }, [propCompanies]);
-
-  // =========================
-  // COMPANY COUNTS
-  // =========================
-
-  const totalCompanies = companies.length;
-
-  const activeCompanies = companies.filter(
-    (company) => company.status === "Active"
-  ).length;
-
-  const pendingCompanies = companies.filter(
-    (company) => company.status === "Pending"
-  ).length;
-
-  const suspendedCompanies = companies.filter(
-    (company) =>
-      company.status === "Failed" ||
-      company.status === "Inactive"
-  ).length;
-
-  // =========================
-  // EMPLOYEES
-  // =========================
-
-  const activeEmployees = companies.reduce(
-    (total, company) => {
-      const size = String(company.size || "0");
-
-      const numbers = size.match(/\d+/g);
-
-      const employeeNumber =
-        numbers && numbers.length > 0
-          ? Number(numbers[0])
-          : 0;
-
-      return total + employeeNumber;
-    },
-    0
-  );
-
-  // =========================
-  // REVENUE
-  // =========================
-
-  const monthlyRevenue = companies.reduce(
-    (total, company) => {
-      const revenue = String(
-        company.revenue || "0"
-      );
-
-      const numbers =
-        revenue.match(/\d+(\.\d+)?/g);
-
-      const revenueNumber =
-        numbers && numbers.length > 0
-          ? Number(numbers[0])
-          : 0;
-
-      return total + revenueNumber;
-    },
-    0
-  );
-
-  // =========================
-  // PAID COMPANIES
-  // =========================
-
-  const paidCompanies = companies.filter(
-    (company) =>
-      company.paymentStatus === "Paid"
-  ).length;
-
-  // =========================
-  // NEW THIS MONTH
-  // =========================
-
-  const currentDate = new Date();
-
-  const newCompanies = companies.filter(
-    (company) => {
-      if (!company.createdAt) {
-        return false;
-      }
-
-      const createdDate = new Date(
-        company.createdAt
-      );
-
-      return (
-        createdDate.getMonth() ===
-          currentDate.getMonth() &&
-        createdDate.getFullYear() ===
-          currentDate.getFullYear()
-      );
-    }
-  ).length;
-
-  // =========================
-  // CARD VALUES
-  // =========================
+    loadData();
+  }, []);
 
   const cardValues = {
-    totalUsers: stats?.total_users ?? activeEmployees,
-
-    monthlyRevenue: `$${monthlyRevenue.toLocaleString(
-      "en-US"
-    )}`,
-
-    totalCompanies: stats?.total_companies ?? totalCompanies,
-
-    activeEmployees: stats?.total_users ?? activeEmployees,
-
-    pendingCompanies,
-
-    suspendedCompanies,
-
-    paidCompanies,
-
-    newCompanies,
+    totalUsers: stats?.total_employees ?? 0,
+    monthlyRevenue: `$${Number(stats?.revenue?.pending ?? 0).toLocaleString("en-US")}`,
+    totalCompanies: stats?.total_companies ?? 0,
+    activeEmployees: stats?.total_employees ?? 0,
+    pendingCompanies: stats?.pending_approval ?? 0,
+    suspendedCompanies: stats?.suspended ?? 0,
+    paidCompanies: stats?.revenue?.paid_companies ?? 0,
+    newCompanies: stats?.new_this_month ?? 0,
   };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8 shadow-sm animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-3"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-
       {DashboardCardsData.map((card, index) => {
         const Icon = card.icon;
-
-        const value =
-          cardValues[card.key] ?? 0;
+        const value = cardValues[card.key] ?? 0;
 
         return (
           <div
             key={index}
             className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
           >
-
             <div className="flex justify-between items-start gap-4">
-
               <div>
-
-                <h3 className="text-sm font-medium text-gray-500">
-                  {card.title}
-                </h3>
-
-                <h2 className="text-3xl font-bold text-gray-900 mt-3">
-                  {value}
-                </h2>
-
+                <h3 className="text-sm font-medium text-gray-500">{card.title}</h3>
+                <h2 className="text-3xl font-bold text-gray-900 mt-3">{value}</h2>
                 <div className="flex items-center gap-2 mt-3">
-
-                  <span
-                    className={`text-sm font-semibold ${card.color}`}
-                  >
-                    {card.change}
-                  </span>
-
-                  <span className="text-xs text-gray-500">
-                    Last Month
-                  </span>
-
+                  <span className={`text-sm font-semibold ${card.color}`}>{card.change}</span>
+                  <span className="text-xs text-gray-500">Last Month</span>
                 </div>
-
               </div>
-
               <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#a3feff]/40 text-[#016472] shrink-0">
                 <Icon size={22} />
               </div>
-
             </div>
-
           </div>
         );
       })}
-
     </div>
   );
 }

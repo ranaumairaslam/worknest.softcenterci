@@ -8,17 +8,15 @@ import { logout } from "../src/services/authService.js";
 const iconButtonClass =
   "rounded-lg p-2 transition-all duration-300 ease-in-out hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#016472]/30";
 
-export default function Navbar({ onToggle }) {
+export default function Navbar({ role: propRole, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const { profile } = useProfile();
   const { unreadCount: notificationcount } = useNotifications();
 
- const role =
-  location.pathname === "/settings"
-    ? localStorage.getItem("userRole") || "superAdmin"
-    : getRoleFromPath(location.pathname);
+  // Get role according to current page
+const role = propRole || getRoleFromPath(location.pathname);
 
 const currentRole = roleConfig[role] || roleConfig.superAdmin;
 
@@ -27,6 +25,7 @@ const currentRole = roleConfig[role] || roleConfig.superAdmin;
       <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-4">
 
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+
           <button
             type="button"
             onClick={onToggle}
@@ -45,10 +44,12 @@ const currentRole = roleConfig[role] || roleConfig.superAdmin;
               {currentRole.role}
             </p>
           </div>
+
         </div>
 
         <div className="flex shrink-0 items-center gap-2 md:gap-3 lg:gap-4">
 
+          {/* Notifications */}
           <button
             type="button"
             className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#016472]/30"
@@ -63,24 +64,32 @@ const currentRole = roleConfig[role] || roleConfig.superAdmin;
             )}
           </button>
 
+          {/* Profile / Settings */}
           <div
-            onClick={() =>
-              navigate("/settings", {
-                state: {
-                  role,
-                },
-              })
-            }
+           onClick={() => {
+  localStorage.setItem("userRole", role);
+
+  navigate("/settings", {
+    state: {
+      role,
+    },
+  });
+}}
             className="flex cursor-pointer items-center gap-3"
           >
             <div className="flex items-center gap-3">
+
               <img
-                src={profile.image || "https://ui-avatars.com/api/?name=User"}
+                src={
+                  profile.image ||
+                  "https://ui-avatars.com/api/?name=User"
+                }
                 alt="Profile"
                 className="h-10 w-10 rounded-full border border-slate-200 object-cover"
               />
 
               <div className="hidden md:block">
+
                 <p className="truncate text-sm font-semibold text-slate-800">
                   {profile.fullName}
                 </p>
@@ -88,10 +97,12 @@ const currentRole = roleConfig[role] || roleConfig.superAdmin;
                 <p className="truncate text-xs text-slate-500">
                   {currentRole.role}
                 </p>
+
               </div>
             </div>
           </div>
 
+          {/* Logout */}
           <button
             type="button"
             onClick={() => {

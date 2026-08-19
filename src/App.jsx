@@ -41,7 +41,7 @@ import Revenue from "./pages/Revenue.jsx";
 // Leader
 import LeaderDashboard from "./pages/LeaderDashboard.jsx";
 import Reports from "./pages/Reports.jsx";
-
+import Calendar from "./pages/Calendar.jsx";
 import LeaderMeetings from "./pages/Meetings.jsx";
 
 // Team Member
@@ -63,7 +63,7 @@ import Settings from "../components/Setting.jsx";
 import ProjectTimelinePage from "./pages/ProjectTimelinePage.jsx";
 import TeamPerformancePage from "./pages/TeamPerformancePage.jsx";
 import TaskOverviewPage from "./pages/TaskOverviewPage.jsx";
-
+import KanbanBoardPage from "./pages/KanbanBoardPage.jsx";
 
 
 const DESKTOP_BREAKPOINT = 1024;
@@ -151,52 +151,78 @@ const getRole = () => {
     client: "client",
   };
 
-  // Settings par actual logged-in user ka role use hoga
-  if (location.pathname === "/settings") {
-    return roleMap[user?.role] || "superAdmin";
+  const pathRoles = {
+    "/dashboard-admin": "superAdmin",
+    "/companies": "superAdmin",
+    "/revenue-super-admin": "superAdmin",
+    "/reports": "superAdmin",
+    "/add-company": "superAdmin",
+
+    "/dashboard-company": "companyAdmin",
+    "/team-management": "companyAdmin",
+    "/projects": "companyAdmin",
+    "/employees": "companyAdmin",
+    "/company-tasks": "companyAdmin",
+    "/clients": "companyAdmin",
+    "/company-meetings": "companyAdmin",
+    "/revenue": "companyAdmin",
+    "/company-reports": "companyAdmin",
+
+    "/dashboard-leader": "projectLeader",
+    "/project": "projectLeader",
+    "/calendar": "projectLeader",
+    "/project-reports": "projectLeader",
+    "/meetings": "projectLeader",
+    "/meetingss": "projectLeader",
+    "/project/timeline": "projectLeader",
+    "/project/team-performance": "projectLeader",
+    "/project/tasks": "projectLeader",
+    "/project/kanban": "projectLeader",
+
+    "/dashboard-team-member": "teamMember",
+    "/tasks": "teamMember",
+    "/team-member-projects": "teamMember",
+    "/team-meetings": "teamMember",
+    "/chat": "teamMember",
+
+    "/client-dashboard": "client",
+    "/client-projects": "client",
+    "/client-meetings": "client",
+    "/client-calendar": "client",
+  };
+
+  // 1. Current page ka role sab se pehle
+  const pathRole = pathRoles[location.pathname];
+
+  if (pathRole) {
+    return pathRole;
   }
 
-  return (
-    {
-      "/dashboard-admin": "superAdmin",
-      "/companies": "superAdmin",
-      "/revenue-super-admin": "superAdmin",
-      "/reports": "superAdmin",
-      "/add-company": "superAdmin",
+  // 2. Settings par Navbar/Sidebar se bheja gaya role
+  if (location.pathname === "/settings") {
+    const stateRole = location.state?.role;
 
-      "/dashboard-company": "companyAdmin",
-      "/team-management": "companyAdmin",
-      "/projects": "companyAdmin",
-      "/employees": "companyAdmin",
-      "/company-tasks": "companyAdmin",
-      "/clients": "companyAdmin",
-      "/company-meetings": "companyAdmin",
-      "/revenue": "companyAdmin",
-      "/company-reports": "companyAdmin",
+    if (stateRole) {
+      return stateRole;
+    }
+  }
 
-      "/dashboard-leader": "projectLeader",
-      "/project": "projectLeader",
-      "/calendar": "projectLeader",
-      "/project-reports": "projectLeader",
-      "/meetings": "projectLeader",
-      "/meetingss": "projectLeader",
-      "/project/timeline": "projectLeader",
-      "/project/team-performance": "projectLeader",
-      "/project/tasks": "projectLeader",
-      "/project/kanban": "projectLeader",
+  // 3. Actual logged-in user ka backend role
+  const storedUserRole = roleMap[user?.role];
 
-      "/dashboard-team-member": "teamMember",
-      "/tasks": "teamMember",
-      "/team-member-projects": "teamMember",
-      "/team-meetings": "teamMember",
-      "/chat": "teamMember",
+  if (storedUserRole) {
+    return storedUserRole;
+  }
 
-      "/client-dashboard": "client",
-      "/client-projects": "client",
-      "/client-meetings": "client",
-      "/client-calendar": "client",
-    }[location.pathname] || roleMap[user?.role] || "superAdmin"
-  );
+  // 4. localStorage sirf last fallback hai
+  const savedRole = localStorage.getItem("userRole");
+
+  if (savedRole) {
+    return savedRole;
+  }
+
+  // 5. Final fallback
+  return "superAdmin";
 };
 
   const navbarRole = getRole();
@@ -289,7 +315,10 @@ const getRole = () => {
               path="/project"
               element={<ProjectOversightFull />}
             />
-            
+            <Route
+              path="/calendar"
+              element={<Calendar />}
+            />
             <Route
               path="/project-reports"
               element={<Reports />}
@@ -316,7 +345,10 @@ const getRole = () => {
               path="/project/tasks"
               element={<TaskOverviewPage />}
             />
-            
+            <Route
+              path="/project/kanban"
+              element={<KanbanBoardPage />}
+            />
 
             {/* Team Member Routes */}
             <Route

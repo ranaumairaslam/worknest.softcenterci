@@ -147,7 +147,16 @@ export const navigation = {
     path: "/project/timeline",
   },
   
-  
+  {
+    title: "Kanban Board",
+    icon: Briefcase,
+    path: "/project/kanban",
+  },
+  {
+    title: "Calendar",
+    icon: CalendarDays,
+    path: "/calendar",
+  },
     {
       title: "Reports",
       icon: BarChart3,
@@ -218,7 +227,7 @@ export const getRoleFromPath = (pathname) => {
     "/subscriptions": "superAdmin",
     "/reports": "superAdmin",
     "/pending": "superAdmin",
-   "/revenue-super-admin": "superAdmin",
+    "/revenue-super-admin": "superAdmin",
 
     // Company Admin
     "/dashboard-company": "companyAdmin",
@@ -234,10 +243,12 @@ export const getRoleFromPath = (pathname) => {
     // Project Leader
     "/dashboard-leader": "projectLeader",
     "/project": "projectLeader",
+    "/calendar": "projectLeader",
     "/project-reports": "projectLeader",
     "/project/timeline": "projectLeader",
     "/project/team-performance": "projectLeader",
     "/project/tasks": "projectLeader",
+    "/project/kanban": "projectLeader",
     "/meetingss": "projectLeader",
 
     // Team Member
@@ -252,9 +263,13 @@ export const getRoleFromPath = (pathname) => {
     "/client-meetings": "client",
 
     // Shared
-    "/settings": "companyAdmin",
     "/chat": "client",
   };
 
-  return routes[pathname] || null;
+  // Settings ka role localStorage se lo
+  if (pathname === "/settings") {
+  return null;
+}
+
+return routes[pathname] || null;
 };

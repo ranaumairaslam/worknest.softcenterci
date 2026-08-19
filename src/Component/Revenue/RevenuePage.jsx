@@ -26,21 +26,10 @@ function StatCard({ label, value, sub, icon }) {
       <div className="flex items-center justify-between gap-3">
 
         <div>
-          <p className="text-sm text-gray-500 font-medium">
-            {label}
-          </p>
-
-          <h3 className="text-2xl sm:text-3xl font-bold text-black mt-2">
-            {value}
-          </h3>
-
-          {sub && (
-            <p className="text-xs text-gray-500 mt-2">
-              {sub}
-            </p>
-          )}
+          <p className="text-sm text-gray-500 font-medium">{label}</p>
+          <h3 className="text-2xl sm:text-3xl font-bold text-black mt-2">{value}</h3>
+          {sub && <p className="text-xs text-gray-500 mt-2">{sub}</p>}
         </div>
-
         <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#a3feff]/40 text-[#016472] text-xl">
           {icon}
         </div>
@@ -173,7 +162,6 @@ function CompanyModal({ company, onClose }) {
             </span>
 
           </div>
-
         </div>
 
 
@@ -185,7 +173,6 @@ function CompanyModal({ company, onClose }) {
         >
           Close
         </button>
-
       </div>
     </div>
   );
@@ -491,7 +478,6 @@ export default function RevenuePage() {
             </option>
 
           </select>
-
         </div>
 
 
@@ -726,7 +712,6 @@ export default function RevenuePage() {
             </button>
 
           </div>
-
         </div>
 
       )}
@@ -734,13 +719,7 @@ export default function RevenuePage() {
 
       {/* Modal */}
 
-      <CompanyModal
-        company={selectedCompany}
-        onClose={() =>
-          setSelectedCompany(null)
-        }
-      />
-
+      <CompanyModal company={selectedCompany} onClose={() => setSelectedCompany(null)} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { get, post, patch } from './apiClient.js';
+import { get, post, put, del } from './apiClient.js';
 
 /**
  * =====================================================
@@ -182,10 +182,11 @@ export async function exportSuperAdminRevenue(status = 'all') {
  */
 
 export function toCompanyViewModel(company) {
+  if (!company) return null;
   return {
     id: company.id,
-    name: company.name,
-    status: company.status === 'active' ? 'Active' : 'Inactive',
+    name: company.name || '',
+    email: company.email || '',
     industry: company.industry || 'N/A',
     owner: company.account_owner || company.owner_name || 'Unassigned',
     email: company.company_email || company.owner_email || company.login_email || '',

@@ -15,7 +15,7 @@ import {
   uploadAvatar,
   deleteAvatar,
 } from "./profileService.js";
-import { changePassword, forgotPassword } from "./authService.js";
+import { changePassword, forgotPassword } from "../src/services/authService.js";
 
 const ROLE_LABELS = {
   superAdmin: "Super Admin",

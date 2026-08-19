@@ -1,5 +1,4 @@
-// src/hooks/useProjectOversightData.js
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import {
   getProjects,
   getProjectSummary,
@@ -35,75 +34,60 @@ export function useProjectOversightData() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [data, setData] = useState(emptyProjectData);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [projectsLoaded, setProjectsLoaded] = useState(false);
 
-  // Load projects list first
+  // Load the project list once, pick the first one as default.
   useEffect(() => {
     let isMounted = true;
 
-    async function loadProjects() {
-      try {
-        const list = await getProjects();
-        if (!isMounted) return;
-        setProjects(list);
-        if (list.length > 0) {
-          setSelectedProjectId(list[0].id);
-        } else {
-          // No projects at all → stop loading
-          setLoading(false);
-        }
-        setProjectsLoaded(true);
-      } catch (err) {
+    getProjects()
+      .then((list) => {
         if (isMounted) {
-          setError(err);
-          setLoading(false);
+          setProjects(list);
+          setSelectedProjectId(list[0]?.id ?? null);
         }
-      }
-    }
+      })
+      .catch((err) => {
+        if (isMounted) setError(err);
+      });
 
-    loadProjects();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Load project data when selectedProjectId changes
-  const loadProjectData = useCallback(async () => {
+  // Re-fetch everything whenever the selected project changes.
+  // No setState is called synchronously here — only inside the
+  // resolved promise callback, which the React Compiler allows.
+  useEffect(() => {
     if (!selectedProjectId) return;
-    setLoading(true);
+    let isMounted = true;
 
-    try {
-      const [summary, stats, timeline, team, tasks, kanban] = await Promise.all([
-        getProjectSummary(selectedProjectId),
-        getStats(),
-        getTimeline(selectedProjectId),
-        getTeamPerformance(selectedProjectId),
-        getTaskOverview(selectedProjectId),
-        getKanbanPreview(selectedProjectId),
-      ]);
+    Promise.all([
+      getProjectSummary(selectedProjectId),
+      getStats(),
+      getTimeline(selectedProjectId),
+      getTeamPerformance(selectedProjectId),
+      getTaskOverview(selectedProjectId),
+      getKanbanPreview(selectedProjectId),
+    ])
+      .then(([summary, stats, timeline, team, tasks, kanban]) => {
+        if (isMounted) {
+          setData({ summary, stats, timeline, team, tasks, kanban });
+        }
+      })
+      .catch((err) => {
+        if (isMounted) setError(err);
+      });
 
-      setData({ summary, stats, timeline, team, tasks, kanban });
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
+    return () => {
+      isMounted = false;
+    };
   }, [selectedProjectId]);
 
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadProjectData();
-    }
-  }, [selectedProjectId, loadProjectData]);
+  // Derived, not stored: loading is true whenever we don't yet have
+  // data for the CURRENTLY selected project (e.g. right after
+  // switching projects, before the new fetch resolves).
+  const loading = !data || data.summary.id !== selectedProjectId;
 
-  return {
-    projects,
-    selectedProjectId,
-    setSelectedProjectId,
-    data,
-    loading,
-    error,
-    refresh: loadProjectData,
-  };
+  return { projects, selectedProjectId, setSelectedProjectId, data, loading, error };
 }

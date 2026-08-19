@@ -1,16 +1,7 @@
-// src/components/Meetings/MeetingsList.jsx
 import MeetingCard from "./MeetingCard";
 
-export default function MeetingsList({
-  meetings,
-  canManage,
-  onEdit,
-  onCancel,
-  onJoin,             // ✅ NEW
-}) {
-  const sorted = [...meetings].sort((a, b) =>
-    String(a.date).localeCompare(String(b.date))
-  );
+export default function MeetingsList({ meetings, canManage, onEdit, onCancel }) {
+  const sorted = [...meetings].sort((a, b) => a.date.localeCompare(b.date));
 
   if (sorted.length === 0) {
     return (
@@ -29,8 +20,6 @@ export default function MeetingsList({
           canManage={canManage}
           onEdit={onEdit}
           onCancel={onCancel}
-          onJoin={onJoin}     
-          /* ✅ NEW */
         />
       ))}
     </div>

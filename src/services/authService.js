@@ -53,3 +53,59 @@ export function logout() {
 export function isAuthenticated() {
   return Boolean(getStoredUser() && typeof window !== 'undefined' && localStorage.getItem('worknest_token'));
 }
+export async function forgotPassword(emailOrPhone) {
+  try {
+    const body = {};
+    if (emailOrPhone.includes('@')) {
+      body.email = emailOrPhone;
+    } else {
+      body.phone = emailOrPhone;
+    }
+
+    const response = await post('/auth/forgot-password', body);
+    return response;
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    throw new Error(error.data?.message || error.message || 'Failed to check account');
+  }
+}
+
+export async function resetPassword(payload) {
+  try {
+    const body = {
+      firebaseIdToken: payload.firebaseIdToken,
+      newPassword: payload.newPassword,
+      confirmPassword: payload.confirmPassword,
+    };
+    if (payload.email) body.email = payload.email;
+    if (payload.phone) body.phone = payload.phone;
+
+    const response = await post('/auth/reset-password', body);
+    return response;
+  } catch (error) {
+    console.error('Reset password error:', error);
+    throw new Error(error.data?.message || error.message || 'Failed to reset password');
+  }
+}
+
+export async function changePassword(payload) {
+  try {
+    const body = {
+      currentPassword: payload.currentPassword,
+      newPassword: payload.newPassword,
+      confirmPassword: payload.confirmPassword,
+    };
+
+    const response = await post('/auth/change-password', body);
+
+    if (response?.success) {
+      setStoredUser(null);
+      setAuthToken(null);
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Change password error:', error);
+    throw new Error(error.data?.message || error.message || 'Failed to change password');
+  }
+}

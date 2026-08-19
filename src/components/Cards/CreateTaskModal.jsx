@@ -1,4 +1,3 @@
-// src/components/Cards/CreateTaskModal.jsx
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
@@ -11,14 +10,14 @@ export default function CreateTaskModal({
   onCreate,
 }) {
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState(currentProjectId ?? "");
   const [priority, setPriority] = useState("Medium");
   const [assigneeId, setAssigneeId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
 
+  // Keep the project field defaulted to whichever project is
+  // currently being viewed, each time the modal opens.
   useEffect(() => {
     if (open) {
       setProjectId(currentProjectId ?? "");
@@ -51,11 +50,10 @@ export default function CreateTaskModal({
     return Object.keys(next).length === 0;
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
 
     if (!validate()) return;
-    if (submitting) return;
 
     const member = team.find(
       (m) => String(m.id) === String(assigneeId)
@@ -189,9 +187,7 @@ export default function CreateTaskModal({
                 </option>
 
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
 
@@ -203,7 +199,6 @@ export default function CreateTaskModal({
             </div>
           )}
 
-          {/* Assignee */}
           <div>
             <label
               htmlFor="task-assignee"
@@ -223,9 +218,7 @@ export default function CreateTaskModal({
               </option>
 
               {team.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
+                <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
 
@@ -236,7 +229,6 @@ export default function CreateTaskModal({
             )}
           </div>
 
-          {/* Priority */}
           <div>
             <label
               htmlFor="task-priority"
@@ -257,7 +249,6 @@ export default function CreateTaskModal({
             </select>
           </div>
 
-          {/* Due Date */}
           <div>
             <label
               htmlFor="task-due"
@@ -287,17 +278,9 @@ export default function CreateTaskModal({
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg mt-2 flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg mt-2"
           >
-            {submitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Task"
-            )}
+            Create Task
           </button>
         </form>
       </div>

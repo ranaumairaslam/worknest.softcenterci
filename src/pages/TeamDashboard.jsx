@@ -1,10 +1,8 @@
-// src/pages/TeamDashboard.jsx
 import { useState } from "react";
 import { ChevronDown, Check, Users, User } from "lucide-react";
 import KanbanBoard from "../components/Kanban/KanbanBoard";
 import TaskDetailModal from "../components/Modals/TaskDetailModal";
 import { useTeamMemberTasks } from "../hooks/useTeamMemberTasks";
-import LoadingShimmer from "../components/common/LoadingShimmer";
 
 // Top-level component — React Compiler forbids defining components
 // inside another component's render function.
@@ -49,14 +47,13 @@ export default function TeamMemberDashboard() {
     viewMode,
     setViewMode,
     submitTask,
-    startTask,   // ✅ NEW - from updated hook
     loading,
     error,
   } = useTeamMemberTasks();
 
   const [selectedTask, setSelectedTask] = useState(null);
 
- if (loading) return <LoadingShimmer message="Loading tasks..." variant="kanban" />;
+  if (loading) return <div className="p-6 text-slate-500 text-sm">Loading tasks…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load tasks.</div>;
 
   return (
@@ -84,19 +81,13 @@ export default function TeamMemberDashboard() {
       <KanbanBoard tasks={tasks} onTaskClick={setSelectedTask} />
 
       <TaskDetailModal
-  task={selectedTask}
-  onClose={() => setSelectedTask(null)}
-  onStart={(taskId) => {
-    console.log("🔵 taskId received:", taskId);
-    console.log("🔵 Full selectedTask:", selectedTask);   // ✅ Check what's inside
-    startTask(taskId);
-    setSelectedTask(null);
-  }}
-  onSubmit={(payload) => {
-    submitTask(selectedTask.id, payload);
-    setSelectedTask(null);
-  }}
-/>
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onSubmit={(payload) => {
+          submitTask(selectedTask.id, payload);
+          setSelectedTask(null);
+        }}
+      />
     </div>
   );
 }

@@ -73,11 +73,15 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <div className="mb-4">
-        <h1 className="text-3xl font-semibold text-slate-900">Super Admin Dashboard</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">
+          Super Admin Dashboard
+        </h1>
+
         <p className="mt-2 text-sm text-slate-500">
           Global overview of tenant company registries, user accounts, and system metrics.
         </p>
       </div>
+
       <Cards stats={stats} companies={mappedCompanies} />
       <Tables companies={mappedCompanies} onRefresh={refetch} />
     </div>

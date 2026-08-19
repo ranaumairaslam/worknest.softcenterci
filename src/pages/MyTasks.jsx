@@ -4,13 +4,12 @@ import StatCardSimple from "../components/Cards/StatCardSimple";
 import MyTasksTable from "../components/Tables/MyTasksTable";
 import NewTaskModal from "../components/Modals/NewTaskModal";
 import { useMyTasksData } from "../hooks/useMyTasksData";
-import LoadingShimmer from "../components/common/LoadingShimmer";
 
 export default function MyTasks() {
   const { stats, tasks, loading, error, toggleComplete, addTask, removeTask } = useMyTasksData();
   const [showNewTask, setShowNewTask] = useState(false);
 
-  if (loading) return <LoadingShimmer message="Loading tasks..." variant="cards" />;
+  if (loading) return <div className="p-6 text-slate-500 text-sm">Loading tasks…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load tasks.</div>;
 
   return (
