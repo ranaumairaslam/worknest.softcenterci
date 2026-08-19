@@ -34,11 +34,16 @@ export default function MiniKanbanPreview({ columns }) {
                 {col.title} ({col.count})
               </div>
               <div className="space-y-2">
-                {visibleCards.map((card) => (
-                  <div key={card} className="bg-slate-50 rounded-lg p-2 text-xs text-slate-600">
-                    {card}
-                  </div>
-                ))}
+                {visibleCards.map((card, index) => (
+  <div
+    key={`${col.key}-${card?.id ?? card?.name ?? card?.title ?? index}`}
+    className="bg-slate-50 rounded-lg p-2 text-xs text-slate-600"
+  >
+    {typeof card === "object"
+      ? card.name || card.title || "Untitled Task"
+      : card}
+  </div>
+))}
                 {!showAllInCol && col.count > col.cards.length && (
                   <button
                     onClick={() => setExpandedCol(col.key)}
