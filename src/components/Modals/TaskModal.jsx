@@ -3,6 +3,22 @@ import { useState, useEffect } from "react";
 const STATUSES = ["Pending", "In Progress", "Under Review", "Completed", "Rejected"];
 const PRIORITIES = ["High", "Medium", "Low"];
 
+function toDateInputValue(value) {
+  if (!value || value === "TBD" || value === "Unassigned") return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(String(value))) return String(value).slice(0, 10);
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function cleanLabel(value) {
+  if (!value || value === "Unassigned" || value === "TBD") return "";
+  return String(value);
+}
+
 export default function TaskModal({
   open,
   task,
@@ -28,34 +44,52 @@ export default function TaskModal({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!open) return;
+
     if (task) {
+      const projectName = cleanLabel(task.project);
+      const assigneeName = cleanLabel(task.assignee);
+
+      const projectMatch =
+        projects.find((p) => String(p.id) === String(task.projectId)) ||
+        projects.find((p) => p.name === projectName);
+
+      const memberMatch =
+        teamMembers.find((m) => String(m.id) === String(task.assigneeId)) ||
+        teamMembers.find((m) => m.name === assigneeName);
+
       setForm({
         name: task?.name || task?.title || "",
         description: task?.description || "",
-        project: task?.project || "",
-        projectId: task?.projectId || null,
+        project: projectMatch?.name || projectName,
+        projectId: projectMatch?.id ?? task?.projectId ?? null,
         priority: task?.priority || "Medium",
         status: task?.status || "Pending",
-        dueDate: task?.dueDate || "",
-        assignee: task?.assignee || "",
-        assigneeId: task?.assigneeId || null,
+        dueDate: toDateInputValue(task?.dueDateRaw || task?.dueDate),
+        assignee: memberMatch?.name || assigneeName,
+        assigneeId: memberMatch?.id ?? task?.assigneeId ?? null,
       });
     } else {
       setForm(emptyForm);
     }
     setErrors({});
-  }, [task, open, projects]);
+  }, [task, open, projects, teamMembers]);
 
   if (!open) return null;
 
-  // ✅ VALIDATION
   const validate = () => {
     const newErrors = {};
 
     if (!form.name.trim()) {
       newErrors.name = "Task Name is required";
     }
-    if (!form.project || !form.projectId) {
+
+    // resolve project id from name if needed
+    const project =
+      projects.find((p) => String(p.id) === String(form.projectId)) ||
+      projects.find((p) => p.name === form.project);
+
+    if (!form.project || !project?.id) {
       newErrors.project = "Please select a project";
     }
 
@@ -65,65 +99,83 @@ export default function TaskModal({
   const handleProjectChange = (e) => {
     const projectName = e.target.value;
     const project = projects.find((p) => p.name === projectName);
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       project: projectName,
       projectId: project?.id || null,
-    });
-    if (errors.project) {
-      setErrors({ ...errors, project: undefined });
-    }
+    }));
+    if (errors.project) setErrors((prev) => ({ ...prev, project: undefined }));
   };
 
   const handleAssigneeChange = (e) => {
     const assigneeName = e.target.value;
     const member = teamMembers.find((m) => m.name === assigneeName);
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       assignee: assigneeName,
       assigneeId: member?.id || null,
-    });
+    }));
   };
 
   const handleFieldChange = (field, value) => {
-    setForm({ ...form, [field]: value });
+    setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors({ ...errors, [field]: undefined });
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
   const handleSubmit = async () => {
     const validationErrors = validate();
     setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
+    const project =
+      projects.find((p) => String(p.id) === String(form.projectId)) ||
+      projects.find((p) => p.name === form.project);
+
+    const member =
+      teamMembers.find((m) => String(m.id) === String(form.assigneeId)) ||
+      teamMembers.find((m) => m.name === form.assignee);
+
+    const payload = {
+      id: task?.id,
+      name: form.name.trim(),
+      title: form.name.trim(),
+      description: form.description.trim(),
+      project: project?.name || form.project || "",
+      projectId: project?.id ?? form.projectId ?? null,
+      priority: form.priority,
+      status: form.status, // ✅ "In Progress" etc
+      dueDate: form.dueDate || null,
+      assignee: member?.name || form.assignee || "",
+      assigneeId: member?.id ?? form.assigneeId ?? null,
+    };
+
+    console.log("📝 TaskModal submit payload:", payload);
 
     setSubmitting(true);
     try {
-      console.log("📤 Submitting task:", form);
-      await onSubmit?.({ ...form, id: task?.id });
+      await onSubmit?.(payload);
     } catch (err) {
       if (err.backendErrors) {
         const beErrors = {};
         err.backendErrors.forEach((e) => {
           const fieldMap = {
-            TaskName: 'name',
-            title: 'name',
-            description: 'description',
-            projectId: 'project',
-            priority: 'priority',
-            status: 'status',
-            dueDate: 'dueDate',
-            assigneeId: 'assignee',
+            TaskName: "name",
+            title: "name",
+            description: "description",
+            projectId: "project",
+            priority: "priority",
+            status: "status",
+            dueDate: "dueDate",
+            assigneeId: "assignee",
           };
           const field = fieldMap[e.field] || e.field;
           beErrors[field] = e.message;
         });
         setErrors(beErrors);
       } else {
-        alert(err.message || 'Failed to save task');
+        alert(err.message || "Failed to save task");
       }
     } finally {
       setSubmitting(false);
@@ -150,7 +202,6 @@ export default function TaskModal({
         </h2>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {/* Task Name */}
           <div className="col-span-2">
             <input
               className={inputClass("name")}
@@ -161,7 +212,6 @@ export default function TaskModal({
             <ErrorMessage field="name" />
           </div>
 
-          {/* Description */}
           <div className="col-span-2">
             <textarea
               rows={4}
@@ -173,7 +223,6 @@ export default function TaskModal({
             <ErrorMessage field="description" />
           </div>
 
-          {/* Project */}
           <div>
             <select
               className={inputClass("project")}
@@ -190,7 +239,6 @@ export default function TaskModal({
             <ErrorMessage field="project" />
           </div>
 
-          {/* Assignee */}
           <div>
             <select
               className={inputClass("assignee")}
@@ -207,7 +255,6 @@ export default function TaskModal({
             <ErrorMessage field="assignee" />
           </div>
 
-          {/* Priority */}
           <div>
             <select
               className={inputClass("priority")}
@@ -223,7 +270,6 @@ export default function TaskModal({
             <ErrorMessage field="priority" />
           </div>
 
-          {/* Due Date */}
           <div>
             <input
               type="date"
@@ -234,23 +280,21 @@ export default function TaskModal({
             <ErrorMessage field="dueDate" />
           </div>
 
-          {/* Status (only for updates) */}
-          {task && (
-            <div className="col-span-2">
-              <select
-                className={inputClass("status")}
-                value={form.status}
-                onChange={(e) => handleFieldChange("status", e.target.value)}
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <ErrorMessage field="status" />
-            </div>
-          )}
+          {/* Status (create + update both) */}
+          <div className="col-span-2">
+            <select
+              className={inputClass("status")}
+              value={form.status}
+              onChange={(e) => handleFieldChange("status", e.target.value)}
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <ErrorMessage field="status" />
+          </div>
         </div>
 
         {Object.keys(errors).length > 0 && (
@@ -272,11 +316,7 @@ export default function TaskModal({
             disabled={submitting}
             className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {submitting
-              ? "Saving..."
-              : task
-              ? "Save Changes"
-              : "Assign Task"}
+            {submitting ? "Saving..." : task ? "Save Changes" : "Assign Task"}
           </button>
         </div>
       </div>

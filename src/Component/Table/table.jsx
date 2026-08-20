@@ -7,6 +7,51 @@ import {
 
 const ROWS_PER_PAGE = 5;
 
+/** Facebook-style Shimmer Block */
+function Shimmer({ className = "" }) {
+  return <div className={`wn-shimmer ${className}`} />;
+}
+
+/** Table Loading Skeleton */
+function TableSkeleton() {
+  return (
+    <div className="bg-[#fbfbfb] mt-[20px] text-black py-[5px] px-3 rounded-md text-[12px]">
+      <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3 mb-5">
+        <Shimmer className="h-5 w-48 rounded-md" />
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm mt-5 overflow-x-auto">
+        <table className="min-w-[900px] w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-24 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-32 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-24 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-16 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-12 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-12 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-12 rounded" /></th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: ROWS_PER_PAGE }).map((_, row) => (
+              <tr key={row} className="border-b border-gray-50 last:border-0">
+                <td className="px-5 py-4"><Shimmer className="h-4 w-28 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-4 w-36 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-4 w-24 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-4 w-16 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-5 w-5 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-5 w-5 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-5 w-5 rounded-md" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function Tables() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,12 +121,9 @@ export default function Tables() {
     if (totalPages === 0 && currentPage !== 1) setCurrentPage(1);
   }, [data.length, currentPage, totalPages]);
 
+  // ✅ Facebook-style Shimmer Skeleton while loading
   if (loading) {
-    return (
-      <div className="bg-[#fbfbfb] mt-[20px] py-[5px] px-3 rounded-md">
-        <p className="text-center py-10 text-gray-500">Loading companies...</p>
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   return (
@@ -108,7 +150,6 @@ export default function Tables() {
               currentCompanies.map((item) => {
                 const currentStatus = String(item.accountStatus || item.status || "").toLowerCase();
 
-                // ✅ FIXED: Flexible check for Terminated / Inactive
                 const isActive = currentStatus === "active";
                 const isSuspended = currentStatus === "suspended";
                 const isTerminated = currentStatus === "terminated" || currentStatus === "inactive";
