@@ -50,21 +50,26 @@ export async function getSuperAdminCompanies() {
   try {
     const response = await get("/super-admin/companies");
     
-    // ✅ Backend response se companies array nikaalein
     const companiesArray = response?.companies || response?.data || [];
     
-    // ✅ Har company ko frontend-friendly format mein transform karein
-    return companiesArray.map((c) => ({
-      id: c.id,
-      name: c.name || "",
-      email: c.email || "",
-      industry: c.industry || "N/A",
-      revenue: c.platform_fee || 0,  // platform_fee ko revenue banaya
-      accountStatus:
-        c.status === "active" ? "Active" :
+    return companiesArray.map((c) => {
+      const normalized = 
         c.status === "suspended" ? "Suspended" :
-        c.status === "inactive" ? "Terminated" : "Active",
-    }));
+        c.status === "active" ? "Active" :
+        (c.status === "inactive" || c.status === "terminated") ? "Inactive" : "Active";
+
+      return {
+        id: c.id,
+        name: c.name || c.companyName || "",
+        email: c.email || c.companyEmail || "",
+        industry: c.industry || "Software",
+        revenue: c.platform_fee || c.revenue || 0,
+        status: normalized,
+        accountStatus: normalized,
+        owner: c.account_owner || c.owner_name || "Unassigned",
+        rawCompany: c,
+      };
+    });
   } catch (error) {
     console.error("Error fetching companies:", error);
     throw error;
@@ -149,19 +154,33 @@ export async function updateSuperAdminCompany(
 }
 
 /**
- * Update company status
+ * ✅ FIXED: Update company status (Passes full required validation payload)
  * PUT /api/super-admin/companies/:companyId
  */
 export async function setSuperAdminCompanyStatus(
   companyId,
-  status
+  status,
+  company = {}
 ) {
   try {
+    const name = company.name || company.companyName || "Company";
+    const email = company.email || company.companyEmail || "";
+    const industry = company.industry || "Software";
+
+    // Send all required fields so backend validation passes
+    const payload = {
+      ...(company.rawCompany || {}),
+      name,
+      companyName: name,
+      email,
+      companyEmail: email,
+      industry,
+      status,
+    };
+
     const response = await put(
       `/super-admin/companies/${companyId}`,
-      {
-        status,
-      }
+      payload
     );
 
     return response?.company || response?.data || response;
@@ -323,12 +342,5 @@ export function toRevenuePaymentViewModel(payment) {
  * =====================================================
  */
 
-/**
- * Old name used by table.jsx
- */
 export const getAllCompanies = getSuperAdminCompanies;
-
-/**
- * Old name used by dashboard cards
- */
 export const getDashboardStats = getSuperAdminDashboard;
