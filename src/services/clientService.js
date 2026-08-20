@@ -146,6 +146,13 @@ export async function getProjectsByClient(clientId) {
 // HELPER: Transform backend client → frontend format
 // Handles Capital C naming convention!
 // =====================================================
+function capitalize(value) {
+  if (!value) return "";
+
+  const text = String(value);
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 function transformClient(client) {
   if (!client) return null;
 

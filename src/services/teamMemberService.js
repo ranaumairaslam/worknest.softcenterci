@@ -1,6 +1,7 @@
 import { getCurrentUser } from "./authContext.js";
 import { getTasksByAssignee, getAllTasks } from "./taskService.js";
 import { getAllProjects } from "./projectService.js";
+import { get, post } from "./apiClient.js";
 
 function mapTaskForKanban(task) {
   const statusMap = {
@@ -44,8 +45,14 @@ export async function getTeamTasks(role) {
   return teamTasks.map(mapTaskForKanban);
 }
 
-export async function submitTaskWork(taskId, payload, role) {
-  const { updateTask } = await import("./taskService");
-  const { getActor } = await import("./authContext");
-  return updateTask(taskId, { status: "Review", progress: 85 }, getActor(role));
+export async function submitTaskWork(taskId, payload) {
+  const response = await post(
+    `/team-member/tasks/${taskId}/submit`,
+    {
+      comment: payload?.comment || "",
+      attachments: payload?.attachments || [],
+    }
+  );
+
+  return response;
 }

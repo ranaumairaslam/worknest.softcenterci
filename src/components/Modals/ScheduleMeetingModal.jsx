@@ -21,13 +21,21 @@ export default function ScheduleMeetingModal({ open, teamMembers, meeting, onClo
     if (!open) return;
 
     if (meeting) {
-      setTitle(meeting.title);
-      setDate(meeting.date);
-      setTime(meeting.time === "TBD" ? "" : meeting.time);
+      setTitle(meeting.title ?? "");
+setDate(meeting.date ?? "");
+setTime(
+  meeting.time && meeting.time !== "TBD"
+    ? meeting.time
+    : ""
+);
       setLink(meeting.link || "");
-      const ids = teamMembers
-        .filter((m) => meeting.attendees.includes(m.name))
-        .map((m) => m.id);
+   const attendees = Array.isArray(meeting.attendees)
+  ? meeting.attendees
+  : [];
+
+const ids = teamMembers
+  .filter((m) => attendees.includes(m.name))
+  .map((m) => m.id);
       setAttendeeIds(ids);
       setGuestEmails(meeting.guests || []);
     } else {
