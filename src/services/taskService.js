@@ -202,6 +202,42 @@ export async function updateTask(id, updates) {
     throw error;
   }
 }
+export async function updateTeamMemberTask(id, updates) {
+  try {
+    const body = {};
+
+    if (updates.name !== undefined || updates.title !== undefined) {
+      body.TaskName = updates.name ?? updates.title;
+    }
+
+    if (updates.description !== undefined) {
+      body.description = updates.description;
+    }
+
+    if (updates.dueDate !== undefined) {
+      body.dueDate = updates.dueDate;
+    }
+
+    if (updates.priority !== undefined) {
+      body.priority =
+        PRIORITY_TO_BACKEND[updates.priority] ||
+        String(updates.priority).toLowerCase();
+    }
+
+    if (updates.status !== undefined) {
+      body.status =
+        STATUS_TO_BACKEND[updates.status] || "todo";
+    }
+
+    console.log("📤 Updating Team Member task:", id, body);
+
+    const response = await put(`${BASE}/${id}`, body);
+    return transformTask(response?.data);
+  } catch (error) {
+    console.error("Error updating Team Member task:", error);
+    throw error;
+  }
+}
 
 // =====================================================
 // UPDATE TASK STATUS ONLY (PATCH)

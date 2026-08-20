@@ -20,6 +20,9 @@ const statusLabel = {
 function TaskListRow({ task, onOpenAssign, onEdit, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const assigneeName = task.assignee_name || "Unassigned";
+  const taskTitle = task.title || "Untitled Task";
+
   return (
     <div className="w-full flex items-center justify-between py-3 hover:bg-slate-50 px-2 rounded-lg">
       <button
@@ -28,14 +31,23 @@ function TaskListRow({ task, onOpenAssign, onEdit, onDelete }) {
         className="flex-1 flex items-center justify-between text-left"
       >
         <div>
-          <p className="text-sm font-medium text-slate-700">{task.title}</p>
-          <p className="text-xs text-slate-400">{statusLabel[task.status]}</p>
+          <p className="text-sm font-medium text-slate-700">
+            {taskTitle}
+          </p>
+
+          <p className="text-xs text-slate-400">
+            {statusLabel[task.status] || task.status || "Pending"}
+          </p>
         </div>
+
         <div className="flex items-center gap-2 mr-3">
           <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-[10px] font-medium flex items-center justify-center">
-            {task.assignee.avatar}
+            {assigneeName.charAt(0).toUpperCase()}
           </div>
-          <span className="text-xs text-slate-500">{task.assignee.name}</span>
+
+          <span className="text-xs text-slate-500">
+            {assigneeName}
+          </span>
         </div>
       </button>
 
@@ -48,6 +60,7 @@ function TaskListRow({ task, onOpenAssign, onEdit, onDelete }) {
         >
           <MoreHorizontal size={16} />
         </button>
+
         {menuOpen && (
           <div className="absolute right-0 mt-1 w-28 bg-white border border-slate-200 rounded-lg shadow-lg z-10 py-1">
             <button
@@ -58,8 +71,10 @@ function TaskListRow({ task, onOpenAssign, onEdit, onDelete }) {
               }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
             >
-              <Pencil size={12} /> Edit
+              <Pencil size={12} />
+              Edit
             </button>
+
             <button
               type="button"
               onClick={() => {
@@ -68,7 +83,8 @@ function TaskListRow({ task, onOpenAssign, onEdit, onDelete }) {
               }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50"
             >
-              <Trash2 size={12} /> Delete
+              <Trash2 size={12} />
+              Delete
             </button>
           </div>
         )}

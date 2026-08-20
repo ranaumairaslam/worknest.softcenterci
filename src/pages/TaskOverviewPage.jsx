@@ -13,7 +13,12 @@ export default function TaskOverviewPage() {
   const [taskList, setTaskList] = useState([]);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-
+useEffect(() => {
+  if (data) {
+    console.log("TASKS FROM API:", data.tasks);
+    setTaskList(data.tasks);
+  }
+}, [data]);
   useEffect(() => {
     if (data) {
       setTaskList(data.tasks);
