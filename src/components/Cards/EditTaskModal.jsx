@@ -12,7 +12,7 @@ export default function EditTaskModal({ task, team = [], onClose, onSave }) {
   useEffect(() => {
     if (!task) return;
 
-    setName(task.title ?? "");
+  setName(task.name ?? task.title ?? "");
 
     const normalizedPriority =
       task.priority
@@ -25,19 +25,18 @@ export default function EditTaskModal({ task, team = [], onClose, onSave }) {
     setStatus(task.status ?? "Pending");
 
     // API already gives assignee_id
-    setAssigneeId(
-      task.assignee_id !== undefined && task.assignee_id !== null
-        ? String(task.assignee_id)
-        : ""
-    );
+   setAssigneeId(
+  task.assigneeId !== undefined && task.assigneeId !== null
+    ? String(task.assigneeId)
+    : ""
+);
 
     // API gives ISO date
     setDueDate(
-      task.due_date
-        ? String(task.due_date).slice(0, 10)
-        : ""
-    );
-
+  task.dueDate && task.dueDate !== "TBD"
+    ? String(task.dueDate).slice(0, 10)
+    : ""
+);
     setErrors({});
   }, [task]);
 
@@ -59,28 +58,24 @@ export default function EditTaskModal({ task, team = [], onClose, onSave }) {
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+ function handleSubmit(e) {
+  e.preventDefault();
 
-    if (!validate()) return;
+  if (!validate()) return;
 
-    const member = team.find(
-      (m) => String(m.id) === String(assigneeId)
-    );
+  const payload = {
+    name: name.trim(),
+    priority,
+    status,
+    assigneeId: Number(assigneeId),
+    dueDate: dueDate || null,
+  };
 
-    const payload = {
-      title: name.trim(),
-      priority: priority.toLowerCase(),
-      status,
-      assignee_id: Number(assigneeId),
-      assignee_name: member?.name ?? task.assignee_name ?? "",
-      due_date: dueDate || null,
-    };
+  console.log("📤 Saving task:", task.id, payload);
 
-    onSave(task.id, payload);
-    onClose();
-  }
-
+  onSave(task.id, payload);
+  onClose();
+}
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">

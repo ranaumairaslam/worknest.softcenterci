@@ -45,14 +45,51 @@ export async function getTeamTasks(role) {
   return teamTasks.map(mapTaskForKanban);
 }
 
-export async function submitTaskWork(taskId, payload) {
-  const response = await post(
-    `/team-member/tasks/${taskId}/submit`,
+export async function submitTaskWork(taskId, payload = {}) {
+  const token = localStorage.getItem("worknest_token");
+
+  const formData = new FormData();
+
+  // REQUIRED
+  formData.append("description", payload.description || "");
+
+  // File
+  if (payload.file) {
+    formData.append("file", payload.file);
+  }
+
+  console.log("📤 SUBMIT TASK");
+  console.log("Task ID:", taskId);
+  console.log("Description:", payload.description);
+  console.log("File:", payload.file);
+
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/team-member/submit`,
     {
-      comment: payload?.comment || "",
-      attachments: payload?.attachments || [],
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
     }
   );
 
-  return response;
+  const result = await response.json().catch(() => null);
+
+  console.log("📥 Submit response:", response.status, result);
+
+  if (!response.ok) {
+    const error = new Error(
+      result?.message ||
+      result?.error ||
+      "Failed to submit task"
+    );
+
+    error.status = response.status;
+    error.data = result;
+
+    throw error;
+  }
+
+  return result;
 }
