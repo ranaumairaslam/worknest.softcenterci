@@ -216,73 +216,90 @@ export default function AddCompany() {
   // =========================
   // SUBMIT FORM
   // =========================
+    // =========================
+  // SUBMIT FORM
+  // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate form
     if (!validateForm()) {
       return;
     }
 
+    // Backend status mapping
+    const statusMap = {
+      Active: "active",
+      Pending: "pending",
+      Inactive: "inactive",
+      Suspended: "suspended",
+      Terminated: "inactive",
+    };
+
+    const backendStatus =
+      statusMap[formData.status] ||
+      String(formData.status || "active").toLowerCase();
+
+    const backendPaymentStatus = String(
+      formData.paymentStatus || "pending"
+    ).toLowerCase();
+
+    const platformFee = Number(
+      String(formData.revenue || "0").replace(/[$,]/g, "").trim()
+    );
+
+    // ✅ Full payload backend validation ke liye
+    const payload = {
+      // name aliases (backend kabhi name, kabhi companyName maangta hai)
+      name: formData.companyName.trim(),
+      companyName: formData.companyName.trim(),
+      company_name: formData.companyName.trim(),
+
+      // email aliases
+      email: formData.email.trim(),
+      companyEmail: formData.email.trim(),
+      company_email: formData.email.trim(),
+
+      // owner aliases
+      ownerName: formData.owner.trim(),
+      owner_name: formData.owner.trim(),
+      account_owner: formData.owner.trim(),
+      AccountOwnerName: formData.owner.trim(),
+      owner: formData.owner.trim(),
+
+      industry: formData.industry,
+
+      address: formData.location.trim(),
+      location: formData.location.trim(),
+
+      company_size: formData.size.trim(),
+      companySize: formData.size.trim(),
+
+      platform_fee: platformFee,
+      revenue: platformFee,
+
+      status: backendStatus,
+      payment_status: backendPaymentStatus,
+      paymentStatus: backendPaymentStatus,
+    };
+
+    // optional receipt
+    if (formData.receipt) {
+      payload.receipt = formData.receipt;
+      payload.payment_receipt = formData.receipt;
+    }
+
+    // password only on create
+    if (!isEditMode && formData.password) {
+      payload.password = formData.password;
+    }
+
     try {
-      // =========================
-      // UPDATE COMPANY
-      // =========================
       if (isEditMode) {
-        await updateSuperAdminCompany(companyToEdit.id, {
-          companyName: formData.companyName.trim(),
-
-          ownerName: formData.owner.trim(),
-
-          account_owner: formData.owner.trim(),
-
-          industry: formData.industry,
-
-          address: formData.location.trim(),
-
-          location: formData.location.trim(),
-
-          company_size: formData.size.trim(),
-
-          platform_fee: formData.revenue
-            .replace("$", "")
-            .trim(),
-
-          status: formData.status.toLowerCase(),
-
-          payment_status:
-            formData.paymentStatus.toLowerCase(),
-        });
+        await updateSuperAdminCompany(companyToEdit.id, payload);
+      } else {
+        await createCompany(payload);
       }
 
-      // =========================
-      // CREATE COMPANY
-      // =========================
-      else {
-        await createCompany({
-          companyName: formData.companyName.trim(),
-
-          ownerName: formData.owner.trim(),
-
-          account_owner: formData.owner.trim(),
-
-          email: formData.email.trim(),
-
-          password: formData.password,
-
-          industry: formData.industry,
-
-          address: formData.location.trim(),
-
-          location: formData.location.trim(),
-
-          company_size: formData.size.trim(),
-
-          platform_fee: formData.revenue.trim(),
-        });
-      }
-
-      // Go back to companies
       navigate("/companies", {
         replace: true,
         state: {
@@ -292,10 +309,24 @@ export default function AddCompany() {
     } catch (error) {
       console.error("Company save error:", error);
 
+      // Backend validation errors dikhao
+      const backendErrors = error?.data?.errors || error?.data?.fieldErrors;
+      let message = error?.message || "Unable to save company.";
+
+      if (backendErrors && typeof backendErrors === "object") {
+        if (Array.isArray(backendErrors)) {
+          message = backendErrors
+            .map((e) => e.message || e.msg || JSON.stringify(e))
+            .join(", ");
+        } else {
+          message = Object.entries(backendErrors)
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(", ");
+        }
+      }
+
       setErrors({
-        submit:
-          error?.message ||
-          "Unable to save company.",
+        submit: message,
       });
     }
   };

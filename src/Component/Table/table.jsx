@@ -17,12 +17,7 @@ export default function Tables() {
       try {
         setLoading(true);
         const companies = await getSuperAdminCompanies();
-        setData(
-          companies.map((c) => ({
-            ...c,
-            accountStatus: c.accountStatus || "Active",
-          }))
-        );
+        setData(companies);
       } catch (error) {
         console.error("Error loading companies:", error);
       } finally {
@@ -32,7 +27,6 @@ export default function Tables() {
     loadCompanies();
   }, []);
 
-  // ✅ FIXED: Passes full company data to satisfy backend validation
   const updateAccountStatus = async (id, status) => {
     const company = data.find((c) => c.id === id);
     if (!company) return;
@@ -48,14 +42,14 @@ export default function Tables() {
 
     const backendStatus = statusMap[status] || status.toLowerCase();
 
-    // 1. Instantly update UI (Optimistic Update)
+    // 1. Instantly update UI
     setData((prev) =>
       prev.map((c) =>
-        c.id === id ? { ...c, accountStatus: status } : c
+        c.id === id ? { ...c, accountStatus: status, status: status } : c
       )
     );
 
-    // 2. Call backend API with company context
+    // 2. Call backend API with company payload
     try {
       await setSuperAdminCompanyStatus(id, backendStatus, company);
     } catch (error) {
@@ -65,7 +59,7 @@ export default function Tables() {
       // Revert back on failure
       setData((prev) =>
         prev.map((c) =>
-          c.id === id ? { ...c, accountStatus: previousStatus } : c
+          c.id === id ? { ...c, accountStatus: previousStatus, status: previousStatus } : c
         )
       );
     }
@@ -112,9 +106,12 @@ export default function Tables() {
           <tbody>
             {currentCompanies.length > 0 ? (
               currentCompanies.map((item) => {
-                const isActive = item.accountStatus === "Active";
-                const isSuspended = item.accountStatus === "Suspended";
-                const isTerminated = item.accountStatus === "Terminated";
+                const currentStatus = String(item.accountStatus || item.status || "").toLowerCase();
+
+                // ✅ FIXED: Flexible check for Terminated / Inactive
+                const isActive = currentStatus === "active";
+                const isSuspended = currentStatus === "suspended";
+                const isTerminated = currentStatus === "terminated" || currentStatus === "inactive";
 
                 return (
                   <tr
