@@ -67,7 +67,7 @@ export async function getProjectsByClient(clientId) {
 }
 
 // =====================================================
-// GET PROJECT CLIENT (NEW!)
+// GET PROJECT CLIENT
 // =====================================================
 export async function getProjectClient(projectId) {
   try {
@@ -80,7 +80,7 @@ export async function getProjectClient(projectId) {
 }
 
 // =====================================================
-// GET PROJECT TASKS (NEW!)
+// GET PROJECT TASKS
 // =====================================================
 export async function getProjectTasks(projectId) {
   try {
@@ -93,7 +93,7 @@ export async function getProjectTasks(projectId) {
 }
 
 // =====================================================
-// CREATE TASK FOR PROJECT (NEW!)
+// CREATE TASK FOR PROJECT
 // =====================================================
 export async function createProjectTask(projectId, taskPayload) {
   try {
@@ -127,6 +127,9 @@ export async function createProject(payload) {
       ProjectPriority: PRIORITY_TO_BACKEND[payload.priority] || 'medium',
       date: payload.dueDate,
       clientName: payload.client,
+      teamId: payload.teamId || null,
+      leaderId: payload.leaderId || null,
+      clientId: payload.clientId || null,
     };
 
     console.log('📤 Creating project with body:', body);
@@ -150,37 +153,121 @@ export async function createProject(payload) {
 }
 
 // =====================================================
-// UPDATE PROJECT
+// UPDATE PROJECT (FIXED: team/client/leader/date/progress)
 // =====================================================
 export async function updateProject(id, updates) {
   try {
     const body = {};
-    
-    if (updates.name !== undefined) body.name = updates.name;
-    if (updates.description !== undefined) body.description = updates.description;
-    if (updates.clientId !== undefined) body.clientId = updates.clientId;
-    if (updates.startDate !== undefined) body.startDate = updates.startDate;
-    if (updates.dueDate !== undefined) body.dueDate = updates.dueDate;
-    if (updates.status !== undefined) {
-      body.status = STATUS_TO_BACKEND[updates.status] || updates.status.toLowerCase();
+
+    if (updates.name !== undefined) {
+      body.name = updates.name;
+      body.projectName = updates.name;
     }
 
-    console.log('📤 Updating project:', id, body);
+    if (updates.description !== undefined) {
+      body.description = updates.description;
+    }
+
+    // ✅ Team name + id
+    if (updates.team !== undefined) {
+      body.ProjectTeam = updates.team;
+      body.team = updates.team;
+      body.teamName = updates.team;
+    }
+    if (updates.teamId !== undefined && updates.teamId !== null && updates.teamId !== "") {
+      body.teamId = updates.teamId;
+      body.TeamId = updates.teamId;
+      body.team_id = updates.teamId;
+    }
+
+    // ✅ Leader name + id
+    if (updates.leader !== undefined) {
+      body.TeamLeaderName = updates.leader;
+      body.project_leader_name = updates.leader;
+      body.leader = updates.leader;
+    }
+    if (updates.leaderId !== undefined && updates.leaderId !== null && updates.leaderId !== "") {
+      body.teamLeaderId = updates.leaderId;
+      body.project_leader_id = updates.leaderId;
+      body.leaderId = updates.leaderId;
+    }
+
+    // ✅ Client name + id
+    if (updates.client !== undefined) {
+      body.clientName = updates.client;
+      body.client_name = updates.client;
+      body.client = updates.client;
+    }
+    if (updates.clientId !== undefined && updates.clientId !== null && updates.clientId !== "") {
+      body.clientId = updates.clientId;
+      body.client_id = updates.clientId;
+    }
+
+    if (updates.status !== undefined) {
+      body.status = STATUS_TO_BACKEND[updates.status] || String(updates.status).toLowerCase();
+      body.ProjectStatus = body.status;
+    }
+
+    if (updates.priority !== undefined) {
+      body.priority =
+        PRIORITY_TO_BACKEND[updates.priority] || String(updates.priority).toLowerCase();
+      body.ProjectPriority = body.priority;
+    }
+
+    if (updates.dueDate !== undefined) {
+      body.dueDate = updates.dueDate;
+      body.date = updates.dueDate;
+      body.due_date = updates.dueDate;
+    }
+
+    if (updates.startDate !== undefined) {
+      body.startDate = updates.startDate;
+      body.start_date = updates.startDate;
+    }
+
+    // ✅ PROGRESS (ye missing tha)
+    if (updates.progress !== undefined) {
+      const progressValue = Number(updates.progress);
+      body.progress = Number.isFinite(progressValue)
+        ? Math.min(100, Math.max(0, progressValue))
+        : 0;
+    }
+
+    console.log("📤 Updating project:", id, body);
 
     const response = await put(`${BASE}/${id}`, body);
-    return transformProject(response?.data);
+
+    // optional assign-team
+    if (updates.teamId && updates.leaderId) {
+      try {
+        await put(`${BASE}/${id}/assign-team`, {
+          teamId: updates.teamId,
+          leaderId: updates.leaderId,
+        });
+      } catch (e) {
+        console.warn("Optional assign-team call bypassed:", e?.message || e);
+      }
+    }
+
+    // fresh data
+    try {
+      const fresh = await get(`${BASE}/${id}`);
+      return transformProject(fresh?.data || response?.data);
+    } catch {
+      return transformProject(response?.data);
+    }
   } catch (error) {
-    console.error('Error updating project:', error);
-    
+    console.error("Error updating project:", error);
+
     if (error.data?.errors && Array.isArray(error.data.errors)) {
       const errorMessages = error.data.errors
         .map((e) => `${e.field}: ${e.message}`)
-        .join('\n');
+        .join("\n");
       const newError = new Error(errorMessages);
       newError.backendErrors = error.data.errors;
       throw newError;
     }
-    
+
     throw error;
   }
 }
@@ -216,11 +303,11 @@ export async function markProjectCompleted(id) {
 }
 
 // =====================================================
-// ASSIGN PROJECT LEADER
+// ASSIGN PROJECT LEADER (Restored Export)
 // =====================================================
 export async function assignProjectLeader(id, leaderName) {
   try {
-    return getProjectById(id);
+    return await getProjectById(id);
   } catch (error) {
     console.error('Error assigning leader:', error);
     throw error;
@@ -244,7 +331,7 @@ export async function assignTeamToProject(projectId, teamId, leaderId) {
 }
 
 // =====================================================
-// GET COMPANY EMPLOYEES (for leader selection)
+// GET COMPANY EMPLOYEES
 // =====================================================
 export async function getCompanyEmployees() {
   try {
@@ -290,21 +377,41 @@ function transformProject(project) {
   const priorityRaw = project.ProjectPriority || project.priority || 'medium';
   const frontendStatus = STATUS_TO_FRONTEND[statusRaw] || capitalize(statusRaw);
 
+  const rawDue = project.date || project.due_date || project.dueDate || null;
+  const rawStart = project.start_date || project.startDate || null;
+
+  const teamName =
+    project.ProjectTeam || project.team_name || project.teamName || project.team || null;
+  const clientName =
+    project.clientName ||
+    project.client_company_name ||
+    project.client_name ||
+    project.client ||
+    null;
+  const leaderName =
+    project.TeamLeaderName ||
+    project.project_leader_name ||
+    project.project_leader ||
+    project.leader ||
+    null;
+
   return {
     id: project.id,
     name: project.projectName || project.name || '',
     description: project.description || '',
-    leader: project.TeamLeaderName || project.project_leader_name || project.project_leader || 'Unassigned',
-    leaderId: project.teamLeaderId || project.project_leader_id || null,
-    team: project.ProjectTeam || project.team_name || 'Unassigned',
+    leader: leaderName || 'Unassigned',
+    leaderId: project.teamLeaderId || project.project_leader_id || project.leaderId || null,
+    team: teamName || 'Unassigned',
     teamId: project.teamId || project.team_id || null,
-    client: project.clientName || project.client_company_name || project.client_name || null,
+    client: clientName || null,
     clientId: project.clientId || project.client_id || null,
     status: frontendStatus,
     priority: capitalize(priorityRaw),
     progress: Number(project.progress) || 0,
-    dueDate: formatDate(project.date || project.due_date),
-    startDate: formatDate(project.start_date),
+    dueDate: formatDate(rawDue),
+    dueDateRaw: rawDue,
+    startDate: formatDate(rawStart),
+    startDateRaw: rawStart,
     completedTasks: project.completed_tasks || 0,
     totalTasks: project.total_tasks || 0,
     members: project.members_count || 0,

@@ -197,11 +197,7 @@ export default function ClientModal({ open, client, onClose, onSubmit }) {
           </div>
         )}
 
-        {client && (
-          <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
-            ℹ️ Backend currently supports client name/email updates only.
-          </div>
-        )}
+        
 
         <div className="mt-6 flex justify-end gap-3">
           <button
