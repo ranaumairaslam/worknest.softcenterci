@@ -4,7 +4,53 @@ import {
   getSuperAdminCompanies,
   setSuperAdminCompanyStatus,
 } from "../../services/superAdminService.js";
+
 const ROWS_PER_PAGE = 5;
+
+/** Facebook-style Shimmer Block */
+function Shimmer({ className = "" }) {
+  return <div className={`wn-shimmer ${className}`} />;
+}
+
+/** Table Loading Skeleton */
+function TableSkeleton() {
+  return (
+    <div className="bg-[#fbfbfb] mt-[20px] text-black py-[5px] px-3 rounded-md text-[12px]">
+      <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3 mb-5">
+        <Shimmer className="h-5 w-48 rounded-md" />
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm mt-5 overflow-x-auto">
+        <table className="min-w-[900px] w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-24 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-32 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-24 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-16 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-12 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-12 rounded" /></th>
+              <th className="px-5 py-3.5 text-left"><Shimmer className="h-3.5 w-12 rounded" /></th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: ROWS_PER_PAGE }).map((_, row) => (
+              <tr key={row} className="border-b border-gray-50 last:border-0">
+                <td className="px-5 py-4"><Shimmer className="h-4 w-28 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-4 w-36 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-4 w-24 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-4 w-16 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-5 w-5 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-5 w-5 rounded-md" /></td>
+                <td className="px-5 py-4"><Shimmer className="h-5 w-5 rounded-md" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 export default function Tables() {
   const [data, setData] = useState([]);
@@ -16,12 +62,7 @@ export default function Tables() {
       try {
         setLoading(true);
         const companies = await getSuperAdminCompanies();
-        setData(
-          companies.map((c) => ({
-            ...c,
-            accountStatus: c.accountStatus || "Active",
-          }))
-        );
+        setData(companies);
       } catch (error) {
         console.error("Error loading companies:", error);
       } finally {
@@ -31,40 +72,43 @@ export default function Tables() {
     loadCompanies();
   }, []);
 
-  // ✅ STATUS UPDATE — Backend + Frontend Connected!
   const updateAccountStatus = async (id, status) => {
-  const company = data.find((c) => c.id === id);
+    const company = data.find((c) => c.id === id);
+    if (!company) return;
 
-  // Map frontend display → backend status
-  const statusMap = {
-    Active: "active",
-    Suspended: "suspended",
-    Terminated: "inactive",
-  };
+    const previousStatus = company.accountStatus;
 
-  const backendStatus = statusMap[status] || status.toLowerCase();
+    // Map frontend display -> backend status
+    const statusMap = {
+      Active: "active",
+      Suspended: "suspended",
+      Terminated: "inactive",
+    };
 
-  // Update UI immediately
-  setData((prev) =>
-    prev.map((c) =>
-      c.id === id ? { ...c, accountStatus: status } : c
-    )
-  );
+    const backendStatus = statusMap[status] || status.toLowerCase();
 
-  // Send to backend
-  try {
-  } catch (error) {
-    await setSuperAdminCompanyStatus(id, backendStatus, company);
-    console.error("Status update failed:", error);
-    alert(`❌ ${error.message}`);
+    // 1. Instantly update UI
+    setData((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, accountStatus: status, status: status } : c
+      )
+    );
 
-    // Revert
+    // 2. Call backend API with company payload
     try {
-      const companies = await getAllCompanies();
-      setData(companies.map((c) => ({ ...c, accountStatus: c.accountStatus || "Active" })));
-    } catch {}
-  }
-};
+      await setSuperAdminCompanyStatus(id, backendStatus, company);
+    } catch (error) {
+      console.error("Status update failed:", error);
+      alert(`❌ Status update failed: ${error.message || "Failed to update status"}`);
+
+      // Revert back on failure
+      setData((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, accountStatus: previousStatus, status: previousStatus } : c
+        )
+      );
+    }
+  };
 
   // Pagination
   const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
@@ -77,12 +121,9 @@ export default function Tables() {
     if (totalPages === 0 && currentPage !== 1) setCurrentPage(1);
   }, [data.length, currentPage, totalPages]);
 
+  // ✅ Facebook-style Shimmer Skeleton while loading
   if (loading) {
-    return (
-      <div className="bg-[#fbfbfb] mt-[20px] py-[5px] px-3 rounded-md">
-        <p className="text-center py-10 text-gray-500">Loading companies...</p>
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   return (
@@ -107,9 +148,11 @@ export default function Tables() {
           <tbody>
             {currentCompanies.length > 0 ? (
               currentCompanies.map((item) => {
-                const isActive = item.accountStatus === "Active";
-                const isSuspended = item.accountStatus === "Suspended";
-                const isTerminated = item.accountStatus === "Terminated";
+                const currentStatus = String(item.accountStatus || item.status || "").toLowerCase();
+
+                const isActive = currentStatus === "active";
+                const isSuspended = currentStatus === "suspended";
+                const isTerminated = currentStatus === "terminated" || currentStatus === "inactive";
 
                 return (
                   <tr

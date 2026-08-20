@@ -105,3 +105,104 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+/* ===== Facebook-like shimmer ===== */
+.wn-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: #e4e6eb; /* FB gray */
+  border-radius: 6px;
+}
+
+.wn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(228, 230, 235, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(228, 230, 235, 0) 100%
+  );
+  animation: wn-shimmer-wave 1.2s ease-in-out infinite;
+}
+
+@keyframes wn-shimmer-wave {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* dark sidebar friendly variant (optional) */
+.wn-shimmer-dark {
+  background: #3a3b3c;
+}
+.wn-shimmer-dark::after {
+  background: linear-gradient(
+    90deg,
+    rgba(58, 59, 60, 0) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(58, 59, 60, 0) 100%
+  );
+}
+/* ===== Facebook-like shimmer ===== */
+.wn-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #e4e6eb;
+  border-radius: 6px;
+}
+
+.wn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(228, 230, 235, 0) 0%,
+    rgba(255, 255, 255, 0.65) 45%,
+    rgba(228, 230, 235, 0) 100%
+  );
+  animation: wn-shimmer-wave 1.25s ease-in-out infinite;
+}
+
+@keyframes wn-shimmer-wave {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .wn-shimmer::after {
+    animation: none;
+  }
+}
+/* ===== Facebook-like Shimmer Effect ===== */
+.wn-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #e4e6eb;
+  border-radius: 6px;
+}
+
+.wn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(228, 230, 235, 0) 0%,
+    rgba(255, 255, 255, 0.65) 45%,
+    rgba(228, 230, 235, 0) 100%
+  );
+  animation: wn-shimmer-wave 1.25s ease-in-out infinite;
+}
+
+@keyframes wn-shimmer-wave {
+  100% {
+    transform: translateX(100%);
+  }
+}

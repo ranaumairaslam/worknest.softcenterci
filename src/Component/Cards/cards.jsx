@@ -1,6 +1,31 @@
 import { useEffect, useState } from "react";
 import DashboardCardsData from "./dashboardCardsData.js";
 import { getSuperAdminDashboard } from "../../services/superAdminService";
+
+/** Single shimmer block */
+function Shimmer({ className = "" }) {
+  return <div className={`wn-shimmer ${className}`} />;
+}
+
+/** One card skeleton — matches real card layout */
+function CardSkeleton() {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8 shadow-sm">
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <Shimmer className="h-3.5 w-28 rounded-md" />
+          <Shimmer className="h-8 w-16 rounded-lg mt-3" />
+          <div className="flex items-center gap-2 mt-3">
+            <Shimmer className="h-3 w-12 rounded" />
+            <Shimmer className="h-3 w-16 rounded" />
+          </div>
+        </div>
+        <Shimmer className="w-12 h-12 rounded-full shrink-0" />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardCards() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,15 +56,12 @@ export default function DashboardCards() {
     newCompanies: stats?.new_this_month ?? 0,
   };
 
+  // ✅ Facebook-style shimmer while loading
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8 shadow-sm animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-3"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-          </div>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <CardSkeleton key={i} />
         ))}
       </div>
     );
@@ -61,7 +83,9 @@ export default function DashboardCards() {
                 <h3 className="text-sm font-medium text-gray-500">{card.title}</h3>
                 <h2 className="text-3xl font-bold text-gray-900 mt-3">{value}</h2>
                 <div className="flex items-center gap-2 mt-3">
-                  <span className={`text-sm font-semibold ${card.color}`}>{card.change}</span>
+                  <span className={`text-sm font-semibold ${card.color}`}>
+                    {card.change}
+                  </span>
                   <span className="text-xs text-gray-500">Last Month</span>
                 </div>
               </div>

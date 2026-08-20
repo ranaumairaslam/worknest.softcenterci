@@ -3,32 +3,35 @@ import { get, post, put, patch, del } from "./apiClient.js";
 const BASE = "/company/tasks";
 
 // =====================================================
-// STATUS MAPPING
+// STATUS MAPPING (Frontend ↔ Backend)
 // =====================================================
-
 const STATUS_TO_BACKEND = {
   Pending: "todo",
   "To Do": "todo",
+  Todo: "todo",
   "In Progress": "in_progress",
   "Under Review": "in_progress",
   Review: "in_progress",
   Completed: "done",
   Rejected: "blocked",
   Blocked: "blocked",
-  Todo: "todo",
 };
 
 const STATUS_TO_FRONTEND = {
   todo: "Pending",
+  pending: "Pending",
   in_progress: "In Progress",
+  review: "Under Review",
+  under_review: "Under Review",
   done: "Completed",
+  completed: "Completed",
   blocked: "Rejected",
+  rejected: "Rejected",
 };
 
 // =====================================================
 // PRIORITY MAPPING
 // =====================================================
-
 const PRIORITY_TO_BACKEND = {
   Low: "low",
   Medium: "medium",
@@ -44,7 +47,6 @@ const PRIORITY_TO_FRONTEND = {
 // =====================================================
 // STATUS PROGRESS
 // =====================================================
-
 const STATUS_PROGRESS = {
   Pending: 0,
   "In Progress": 50,
@@ -54,19 +56,45 @@ const STATUS_PROGRESS = {
   Rejected: 20,
 };
 
+function toBackendStatus(status) {
+  if (!status) return "todo";
+  if (STATUS_TO_BACKEND[status]) return STATUS_TO_BACKEND[status];
+  const s = String(status).toLowerCase().trim().replace(/\s+/g, "_");
+  if (s === "pending" || s === "todo") return "todo";
+  if (s === "in_progress" || s === "in-progress") return "in_progress";
+  if (s === "under_review" || s === "review") return "in_progress";
+  if (s === "completed" || s === "done") return "done";
+  if (s === "rejected" || s === "blocked") return "blocked";
+  return s;
+}
+
+function toBackendPriority(priority) {
+  if (!priority) return "medium";
+  if (PRIORITY_TO_BACKEND[priority]) return PRIORITY_TO_BACKEND[priority];
+  return String(priority).toLowerCase();
+}
+
+function normalizeDateForApi(value) {
+  if (!value || value === "TBD" || value === "Unassigned") return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(String(value))) {
+    return String(value).slice(0, 10);
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // =====================================================
 // GET ALL TASKS
 // =====================================================
-
 export async function getAllTasks() {
   try {
     const response = await get(BASE, { limit: 100 });
-
     const tasksData = response?.data || [];
-
-    return tasksData
-      .map(transformTask)
-      .filter(Boolean);
+    return tasksData.map(transformTask).filter(Boolean);
   } catch (error) {
     console.error("❌ Error fetching tasks:", error);
     return [];
@@ -76,11 +104,9 @@ export async function getAllTasks() {
 // =====================================================
 // GET SINGLE TASK
 // =====================================================
-
 export async function getTaskById(id) {
   try {
     const response = await get(`${BASE}/${id}`);
-
     return transformTask(response?.data);
   } catch (error) {
     console.error("❌ Error fetching task:", error);
@@ -91,16 +117,10 @@ export async function getTaskById(id) {
 // =====================================================
 // GET TASKS BY PROJECT
 // =====================================================
-
 export async function getTasksByProject(projectId) {
   try {
-    const response = await get(
-      `${BASE}/projectId/${projectId}`
-    );
-
-    return (response?.data || [])
-      .map(transformTask)
-      .filter(Boolean);
+    const response = await get(`${BASE}/projectId/${projectId}`);
+    return (response?.data || []).map(transformTask).filter(Boolean);
   } catch (error) {
     console.error("❌ Error fetching project tasks:", error);
     return [];
@@ -110,17 +130,13 @@ export async function getTasksByProject(projectId) {
 // =====================================================
 // GET TASKS BY ASSIGNEE
 // =====================================================
-
 export async function getTasksByAssignee(assigneeId) {
   try {
     const response = await get(BASE, {
       assigneeId,
       limit: 100,
     });
-
-    return (response?.data || [])
-      .map(transformTask)
-      .filter(Boolean);
+    return (response?.data || []).map(transformTask).filter(Boolean);
   } catch (error) {
     console.error("❌ Error fetching assignee tasks:", error);
     return [];
@@ -130,24 +146,12 @@ export async function getTasksByAssignee(assigneeId) {
 // =====================================================
 // GET TASKS BY STATUS
 // =====================================================
-
 export async function getTasksByStatus(status) {
   try {
-    if (status === "All") {
-      return getAllTasks();
-    }
-
-    const backendStatus =
-      STATUS_TO_BACKEND[status] || "todo";
-
-    const response = await get(BASE, {
-      status: backendStatus,
-      limit: 100,
-    });
-
-    return (response?.data || [])
-      .map(transformTask)
-      .filter(Boolean);
+    if (status === "All") return getAllTasks();
+    const backendStatus = toBackendStatus(status);
+    const response = await get(BASE, { status: backendStatus, limit: 100 });
+    return (response?.data || []).map(transformTask).filter(Boolean);
   } catch (error) {
     console.error("❌ Error fetching tasks by status:", error);
     return [];
@@ -157,143 +161,155 @@ export async function getTasksByStatus(status) {
 // =====================================================
 // CREATE TASK
 // =====================================================
-
 export async function createTask(payload) {
   try {
     const body = {
-      TaskName:
-        payload.name ||
-        payload.title ||
-        "",
-
-      description:
-        payload.description || "",
-
-      projectId:
-        payload.projectId || null,
-
-      priority:
-        PRIORITY_TO_BACKEND[payload.priority] ||
-        "medium",
-
-      dueDate:
-        payload.dueDate || null,
+      TaskName: payload.name || payload.title || "",
+      title: payload.name || payload.title || "",
+      description: payload.description || "",
+      projectId: payload.projectId || null,
+      project_id: payload.projectId || null,
+      priority: toBackendPriority(payload.priority),
+      dueDate: normalizeDateForApi(payload.dueDate),
+      due_date: normalizeDateForApi(payload.dueDate),
     };
 
-    // Assignee
     if (payload.assigneeId) {
       body.assigneeId = payload.assigneeId;
-    } else if (payload.assignee) {
+      body.assignee_id = payload.assigneeId;
+    } else if (payload.assignee && payload.assignee !== "Unassigned") {
       body.EmployeeName = payload.assignee;
+      body.assigneeName = payload.assignee;
+    }
+
+    if (payload.status) {
+      body.status = toBackendStatus(payload.status);
     }
 
     if (!body.projectId) {
-      throw new Error(
-        "Please select a project for this task."
-      );
+      throw new Error("Please select a project for this task.");
     }
 
-    console.log(
-      "📤 Creating task with body:",
-      body
-    );
+    console.log("📤 Creating task with body:", body);
 
     const response = await post(BASE, body);
-
     return transformTask(response?.data);
   } catch (error) {
-    console.error(
-      "❌ Error creating task:",
-      error
-    );
+    console.error("❌ Error creating task:", error);
+
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join("\n");
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
 
     throw error;
   }
 }
 
 // =====================================================
-// UPDATE COMPANY TASK
+// UPDATE TASK
 // =====================================================
-
 export async function updateTask(id, updates) {
   try {
     const body = {};
 
-    if (
-      updates.name !== undefined ||
-      updates.title !== undefined
-    ) {
-      body.TaskName =
-        updates.name ??
-        updates.title;
+    if (updates.name !== undefined || updates.title !== undefined) {
+      body.TaskName = updates.name || updates.title;
+      body.title = updates.name || updates.title;
     }
 
-    if (
-      updates.description !== undefined
-    ) {
-      body.description =
-        updates.description;
+    if (updates.description !== undefined) {
+      body.description = updates.description;
     }
 
+    // Project mapping
     if (
-      updates.dueDate !== undefined
+      updates.projectId !== undefined &&
+      updates.projectId !== null &&
+      updates.projectId !== ""
     ) {
-      body.dueDate =
-        updates.dueDate;
+      body.projectId = updates.projectId;
+      body.project_id = updates.projectId;
+    }
+    if (updates.project && updates.project !== "Unassigned") {
+      body.projectName = updates.project;
+      body.project_name = updates.project;
     }
 
-    if (
-      updates.priority !== undefined
-    ) {
-      body.priority =
-        PRIORITY_TO_BACKEND[
-          updates.priority
-        ] ||
-        String(
-          updates.priority
-        ).toLowerCase();
+    // Due date mapping
+    if (updates.dueDate !== undefined) {
+      const d = normalizeDateForApi(updates.dueDate);
+      body.dueDate = d;
+      body.due_date = d;
     }
 
-    if (
-      updates.status !== undefined
-    ) {
-      body.status =
-        STATUS_TO_BACKEND[
-          updates.status
-        ] || "todo";
+    // Priority mapping
+    if (updates.priority !== undefined) {
+      body.priority = toBackendPriority(updates.priority);
     }
 
-    if (
-      updates.assigneeId !== undefined
-    ) {
-      body.assigneeId =
-        updates.assigneeId;
-    } else if (
-      updates.assignee !== undefined
-    ) {
-      body.EmployeeName =
-        updates.assignee;
+    // Status mapping (sets multiple keys for backend compatibility)
+    let backendStatus = null;
+    if (updates.status !== undefined) {
+      backendStatus = toBackendStatus(updates.status);
+      body.status = backendStatus;
+      body.TaskStatus = backendStatus;
     }
 
-    console.log(
-      "📤 Updating Company task:",
-      id,
-      body
-    );
+    // Assignee mapping
+    if (updates.assigneeId !== undefined) {
+      if (updates.assigneeId === null || updates.assigneeId === "") {
+        body.assigneeId = null;
+        body.assignee_id = null;
+      } else {
+        body.assigneeId = updates.assigneeId;
+        body.assignee_id = updates.assigneeId;
+      }
+    }
+    if (updates.assignee !== undefined && updates.assignee !== "Unassigned") {
+      body.EmployeeName = updates.assignee;
+      body.assigneeName = updates.assignee;
+    }
 
-    const response = await put(
-      `${BASE}/${id}`,
-      body
-    );
+    console.log("📤 Updating Company task:", id, body);
 
-    return transformTask(
-      response?.data
-    );
+    const response = await put(`${BASE}/${id}`, body);
+
+    // PATCH fallback if backend expects status updates via status route
+    if (backendStatus) {
+      try {
+        await patch(`${BASE}/${id}/status`, { status: backendStatus });
+      } catch (e) {
+        try {
+          await patch(`${BASE}/${id}`, { status: backendStatus });
+        } catch (e2) {
+          console.warn("Status patch fallback bypassed:", e2?.message || e2);
+        }
+      }
+    }
+
+    // Fetch fresh data to ensure UI sync
+    try {
+      const fresh = await get(`${BASE}/${id}`);
+      return transformTask(fresh?.data || response?.data);
+    } catch {
+      return transformTask(response?.data);
+    }
   } catch (error) {
-    console.error(
-      "❌ Error updating Company task:",
-      error
-    );
+    console.error("❌ Error updating Company task:", error);
+
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join("\n");
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
 
     throw error;
   }
@@ -302,210 +318,42 @@ export async function updateTask(id, updates) {
 // =====================================================
 // UPDATE TEAM MEMBER TASK
 // =====================================================
-
-export async function updateTeamMemberTask(
-  id,
-  updates
-) {
-  try {
-    const body = {};
-
-    if (
-      updates.name !== undefined ||
-      updates.title !== undefined
-    ) {
-      body.TaskName =
-        updates.name ??
-        updates.title;
-    }
-
-    if (
-      updates.description !== undefined
-    ) {
-      body.description =
-        updates.description;
-    }
-
-    if (
-      updates.dueDate !== undefined
-    ) {
-      body.dueDate =
-        updates.dueDate;
-    }
-
-    if (
-      updates.priority !== undefined
-    ) {
-      body.priority =
-        PRIORITY_TO_BACKEND[
-          updates.priority
-        ] ||
-        String(
-          updates.priority
-        ).toLowerCase();
-    }
-
-    if (
-      updates.status !== undefined
-    ) {
-      body.status =
-        STATUS_TO_BACKEND[
-          updates.status
-        ] || "todo";
-    }
-
-    console.log(
-      "📤 Updating Team Member task:",
-      id,
-      body
-    );
-
-    /*
-      NOTE:
-      Team Member should NOT use this endpoint
-      if backend does not allow PUT /company/tasks/:id.
-
-      Team Member submission should use:
-      POST /team-member/tasks/:taskId/submit
-    */
-
-    const response = await put(
-      `${BASE}/${id}`,
-      body
-    );
-
-    return transformTask(
-      response?.data
-    );
-  } catch (error) {
-    console.error(
-      "❌ Error updating Team Member task:",
-      error
-    );
-
-    throw error;
-  }
+export async function updateTeamMemberTask(id, updates) {
+  return updateTask(id, updates);
 }
 
 // =====================================================
-// ⭐ UPDATE TEAM LEADER TASK
+// UPDATE TEAM LEADER TASK
 // =====================================================
-
-export async function updateTeamLeaderTask(
-  id,
-  updates
-) {
+export async function updateTeamLeaderTask(id, updates) {
   try {
     const body = {};
 
-    // -----------------------------
-    // Task Name
-    // -----------------------------
-
-    if (
-      updates.name !== undefined ||
-      updates.title !== undefined
-    ) {
-      body.TaskName =
-        updates.name ??
-        updates.title;
+    if (updates.name !== undefined || updates.title !== undefined) {
+      body.TaskName = updates.name ?? updates.title;
+    }
+    if (updates.description !== undefined) {
+      body.description = updates.description;
+    }
+    if (updates.dueDate !== undefined) {
+      body.dueDate = normalizeDateForApi(updates.dueDate);
+    }
+    if (updates.priority !== undefined) {
+      body.priority = toBackendPriority(updates.priority);
+    }
+    if (updates.status !== undefined) {
+      body.status = toBackendStatus(updates.status);
+    }
+    if (updates.assigneeId !== undefined) {
+      body.assigneeId = updates.assigneeId;
     }
 
-    // -----------------------------
-    // Description
-    // -----------------------------
+    console.log("📤 Updating Team Leader task:", id, body);
 
-    if (
-      updates.description !== undefined
-    ) {
-      body.description =
-        updates.description;
-    }
-
-    // -----------------------------
-    // Due Date
-    // -----------------------------
-
-    if (
-      updates.dueDate !== undefined
-    ) {
-      body.dueDate =
-        updates.dueDate;
-    }
-
-    // -----------------------------
-    // Priority
-    // -----------------------------
-
-    if (
-      updates.priority !== undefined
-    ) {
-      body.priority =
-        PRIORITY_TO_BACKEND[
-          updates.priority
-        ] ||
-        String(
-          updates.priority
-        ).toLowerCase();
-    }
-
-    // -----------------------------
-    // Status
-    // -----------------------------
-
-    if (
-      updates.status !== undefined
-    ) {
-      body.status =
-        STATUS_TO_BACKEND[
-          updates.status
-        ] || "todo";
-    }
-
-    // -----------------------------
-    // Assignee
-    // -----------------------------
-
-    if (
-      updates.assigneeId !== undefined
-    ) {
-      body.assigneeId =
-        updates.assigneeId;
-    }
-
-    console.log(
-      "📤 Updating Team Leader task:",
-      id,
-      body
-    );
-
-    /*
-      BACKEND ENDPOINT:
-
-      PUT /api/team-leader/tasks/:id
-
-      apiClient automatically adds /api
-    */
-
-    const response = await put(
-      `/team-leader/tasks/${id}`,
-      body
-    );
-
-    console.log(
-      "✅ Team Leader task updated:",
-      response
-    );
-
-    return transformTask(
-      response?.data
-    );
+    const response = await put(`/team-leader/tasks/${id}`, body);
+    return transformTask(response?.data);
   } catch (error) {
-    console.error(
-      "❌ Error updating Team Leader task:",
-      error
-    );
-
+    console.error("❌ Error updating Team Leader task:", error);
     throw error;
   }
 }
@@ -513,32 +361,15 @@ export async function updateTeamLeaderTask(
 // =====================================================
 // UPDATE TASK STATUS ONLY
 // =====================================================
-
-export async function updateTaskStatus(
-  id,
-  status
-) {
+export async function updateTaskStatus(id, status) {
   try {
-    const backendStatus =
-      STATUS_TO_BACKEND[status] ||
-      "todo";
-
-    const response = await patch(
-      `${BASE}/${id}/status`,
-      {
-        status: backendStatus,
-      }
-    );
-
-    return transformTask(
-      response?.data
-    );
+    const backendStatus = toBackendStatus(status);
+    const response = await patch(`${BASE}/${id}/status`, {
+      status: backendStatus,
+    });
+    return transformTask(response?.data);
   } catch (error) {
-    console.error(
-      "❌ Error updating task status:",
-      error
-    );
-
+    console.error("❌ Error updating task status:", error);
     throw error;
   }
 }
@@ -546,49 +377,35 @@ export async function updateTaskStatus(
 // =====================================================
 // DELETE TASK
 // =====================================================
-
 export async function deleteTask(id) {
   try {
-    console.log(
-      "🗑️ Deleting task:",
-      id
-    );
-
-    await del(
-      `${BASE}/${id}`
-    );
-
+    console.log("🗑️ Deleting task:", id);
+    await del(`${BASE}/${id}`);
     return true;
   } catch (error) {
-    console.error(
-      "❌ Error deleting task:",
-      error
+    console.error("❌ Error deleting task:", error);
+    alert(
+      `Delete failed: ${error.data?.message || error.message || "Unknown error"}`
     );
-
-    throw error;
+    return false;
   }
 }
 
 // =====================================================
 // TASK STATISTICS
 // =====================================================
-
 export async function getTaskStatistics() {
   try {
     const all = await getAllTasks();
 
-    const counts =
-      all.reduce(
-        (acc, task) => {
-          acc.total += 1;
-
-          acc[task.status] =
-            (acc[task.status] || 0) + 1;
-
-          return acc;
-        },
-        { total: 0 }
-      );
+    const counts = all.reduce(
+      (acc, task) => {
+        acc.total += 1;
+        acc[task.status] = (acc[task.status] || 0) + 1;
+        return acc;
+      },
+      { total: 0 }
+    );
 
     return [
       {
@@ -600,46 +417,36 @@ export async function getTaskStatistics() {
       {
         id: "pending-tasks",
         label: "Pending Tasks",
-        value:
-          counts.Pending || 0,
+        value: counts.Pending || 0,
         note: "Requires action",
       },
       {
         id: "in-progress-tasks",
         label: "In Progress",
-        value:
-          counts["In Progress"] || 0,
+        value: counts["In Progress"] || 0,
         note: "On track",
       },
       {
         id: "review-tasks",
         label: "Under Review",
-        value:
-          (counts.Review || 0) +
-          (counts["Under Review"] || 0),
+        value: (counts.Review || 0) + (counts["Under Review"] || 0),
         note: "Needs approval",
       },
       {
         id: "completed-tasks",
         label: "Completed Tasks",
-        value:
-          counts.Completed || 0,
+        value: counts.Completed || 0,
         note: "Finished work",
       },
       {
         id: "rejected-tasks",
         label: "Rejected Tasks",
-        value:
-          counts.Rejected || 0,
+        value: counts.Rejected || 0,
         note: "Needs rework",
       },
     ];
   } catch (error) {
-    console.error(
-      "❌ Error building task statistics:",
-      error
-    );
-
+    console.error("❌ Error building task statistics:", error);
     return [];
   }
 }
@@ -647,111 +454,68 @@ export async function getTaskStatistics() {
 // =====================================================
 // TRANSFORM BACKEND TASK
 // =====================================================
-
 function transformTask(task) {
   if (!task) return null;
 
+  const rawStatus = task.status || task.TaskStatus || "todo";
   const frontendStatus =
-    STATUS_TO_FRONTEND[
-      task.status
-    ] || "Pending";
+    STATUS_TO_FRONTEND[rawStatus] ||
+    STATUS_TO_FRONTEND[String(rawStatus).toLowerCase()] ||
+    "Pending";
 
+  const rawPriority = task.priority || "medium";
   const frontendPriority =
-    PRIORITY_TO_FRONTEND[
-      task.priority
-    ] || "Medium";
+    PRIORITY_TO_FRONTEND[rawPriority] ||
+    PRIORITY_TO_FRONTEND[String(rawPriority).toLowerCase()] ||
+    "Medium";
+
+  const rawDue = task.due_date || task.dueDate || null;
 
   return {
     id: task.id,
-
-    name:
-      task.title ||
-      task.TaskName ||
-      "",
-
-    title:
-      task.title ||
-      task.TaskName ||
-      "",
-
-    description:
-      task.description || "",
-
+    name: task.title || task.TaskName || task.name || "",
+    title: task.title || task.TaskName || task.name || "",
+    description: task.description || "",
     project:
-      task.project_name ||
-      "Unassigned",
-
-    projectId:
-      task.project_id ||
-      null,
-
-    priority:
-      frontendPriority,
-
-    status:
-      frontendStatus,
-
-    dueDate:
-      formatDate(task.due_date),
-
+      task.project_name || task.projectName || task.project || "Unassigned",
+    projectId: task.project_id || task.projectId || null,
+    priority: frontendPriority,
+    status: frontendStatus,
+    dueDate: formatDate(rawDue),
+    dueDateRaw: rawDue,
     assignee:
       task.assignee_name ||
+      task.assigneeName ||
+      task.EmployeeName ||
       "Unassigned",
-
-    assigneeId:
-      task.assignee_id ||
-      null,
-
-    assigneeEmail:
-      task.assignee_email ||
-      null,
-
-    progress:
-      STATUS_PROGRESS[
-        frontendStatus
-      ] ?? 0,
-
-    createdAt:
-      formatDate(
-        task.created_at
-      ),
-
-    updatedAt:
-      formatDate(
-        task.updated_at
-      ),
+    assigneeId: task.assignee_id || task.assigneeId || null,
+    assigneeEmail: task.assignee_email || null,
+    progress: STATUS_PROGRESS[frontendStatus] ?? 0,
+    createdAt: formatDate(task.created_at),
+    updatedAt: formatDate(task.updated_at),
   };
 }
 
 // =====================================================
 // FORMAT DATE
 // =====================================================
-
 function formatDate(dateString) {
   if (!dateString) {
     return "TBD";
   }
 
   try {
-    const date =
-      new Date(dateString);
+    const date = new Date(dateString);
 
-    if (
-      isNaN(
-        date.getTime()
-      )
-    ) {
+    if (isNaN(date.getTime())) {
       return "TBD";
     }
 
-    return date.toLocaleDateString(
-      "en-US",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return "TBD";
   }
