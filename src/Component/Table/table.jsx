@@ -4,6 +4,7 @@ import {
   getSuperAdminCompanies,
   setSuperAdminCompanyStatus,
 } from "../../services/superAdminService.js";
+
 const ROWS_PER_PAGE = 5;
 
 export default function Tables() {
@@ -31,40 +32,44 @@ export default function Tables() {
     loadCompanies();
   }, []);
 
-  // ✅ STATUS UPDATE — Backend + Frontend Connected!
+  // ✅ FIXED: Passes full company data to satisfy backend validation
   const updateAccountStatus = async (id, status) => {
-  const company = data.find((c) => c.id === id);
+    const company = data.find((c) => c.id === id);
+    if (!company) return;
 
-  // Map frontend display → backend status
-  const statusMap = {
-    Active: "active",
-    Suspended: "suspended",
-    Terminated: "inactive",
-  };
+    const previousStatus = company.accountStatus;
 
-  const backendStatus = statusMap[status] || status.toLowerCase();
+    // Map frontend display -> backend status
+    const statusMap = {
+      Active: "active",
+      Suspended: "suspended",
+      Terminated: "inactive",
+    };
 
-  // Update UI immediately
-  setData((prev) =>
-    prev.map((c) =>
-      c.id === id ? { ...c, accountStatus: status } : c
-    )
-  );
+    const backendStatus = statusMap[status] || status.toLowerCase();
 
-  // Send to backend
-  try {
-  } catch (error) {
-    await setSuperAdminCompanyStatus(id, backendStatus, company);
-    console.error("Status update failed:", error);
-    alert(`❌ ${error.message}`);
+    // 1. Instantly update UI (Optimistic Update)
+    setData((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, accountStatus: status } : c
+      )
+    );
 
-    // Revert
+    // 2. Call backend API with company context
     try {
-      const companies = await getAllCompanies();
-      setData(companies.map((c) => ({ ...c, accountStatus: c.accountStatus || "Active" })));
-    } catch {}
-  }
-};
+      await setSuperAdminCompanyStatus(id, backendStatus, company);
+    } catch (error) {
+      console.error("Status update failed:", error);
+      alert(`❌ Status update failed: ${error.message || "Failed to update status"}`);
+
+      // Revert back on failure
+      setData((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, accountStatus: previousStatus } : c
+        )
+      );
+    }
+  };
 
   // Pagination
   const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
