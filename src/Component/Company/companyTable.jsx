@@ -5,16 +5,27 @@ import { deleteSuperAdminCompany } from "../../services/superAdminService.js";
 
 const ROWS_PER_PAGE = 5;
 
-// Helper function to normalize status for display
 function normalizeStatus(rawStatus) {
   if (!rawStatus) return "Active";
-  const s = String(rawStatus).toLowerCase();
+  const s = String(rawStatus).toLowerCase().trim();
   if (s === "suspended") return "Suspended";
-  if (s === "active") return "Active";
-  if (s === "inactive" || s === "terminated") return "Inactive";
+  if (s === "inactive" || s === "terminated") return "Terminated";
   if (s === "pending") return "Pending";
   if (s === "failed") return "Failed";
-  return rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+  if (s === "active") return "Active";
+  // already normalized
+  if (rawStatus === "Suspended" || rawStatus === "Terminated" || rawStatus === "Active") {
+    return rawStatus;
+  }
+  return rawStatus;
+}
+
+function normalizePaymentStatus(rawStatus) {
+  if (!rawStatus) return "Pending";
+  const s = String(rawStatus).toLowerCase().trim();
+  if (s === "paid" || s === "completed" || s === "success") return "Paid";
+  if (s === "failed" || s === "rejected") return "Failed";
+  return "Pending";
 }
 
 function highlightMatch(text, query) {
@@ -44,7 +55,6 @@ export default function CompanyTable({ companies = [], onChanged }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [deleting, setDeleting] = useState(false);
 
-  // ✅ DELETE — Real API Call!
   const deleteCompany = async (id) => {
     setDeleting(true);
     try {
@@ -81,17 +91,16 @@ export default function CompanyTable({ companies = [], onChanged }) {
     setCurrentPage(1);
   }, [search, statusFilter, industryFilter, ownerFilter]);
 
-  const totalPages = Math.ceil(filteredCompanies.length / ROWS_PER_PAGE);
+  const totalPages = Math.ceil(filteredCompanies.length / ROWS_PER_PAGE) || 0;
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
   const endIndex = startIndex + ROWS_PER_PAGE;
   const currentCompanies = filteredCompanies.slice(startIndex, endIndex);
+  const owners = [...new Set(companies.map((c) => c.owner).filter(Boolean))];
 
-  const owners = [...new Set(companies.map((company) => company.owner).filter(Boolean))];
-
-  // ✅ FIXED: Added Suspended styling
   const statusStyles = {
     Active: "bg-emerald-50 text-emerald-600 border border-emerald-200",
     Suspended: "bg-red-50 text-red-600 border border-red-200",
+    Terminated: "bg-gray-100 text-gray-600 border border-gray-300",
     Inactive: "bg-gray-100 text-gray-600 border border-gray-300",
     Pending: "bg-amber-50 text-amber-600 border border-amber-200",
     Failed: "bg-red-50 text-red-600 border border-red-200",
@@ -111,9 +120,8 @@ export default function CompanyTable({ companies = [], onChanged }) {
               <option value="All">All</option>
               <option value="Active">Active</option>
               <option value="Suspended">Suspended</option>
-              <option value="Inactive">Inactive</option>
+              <option value="Terminated">Terminated</option>
               <option value="Pending">Pending</option>
-              <option value="Failed">Failed</option>
             </select>
           </div>
 
@@ -125,20 +133,10 @@ export default function CompanyTable({ companies = [], onChanged }) {
               className="bg-white text-gray-700 text-sm p-2 rounded-lg border border-gray-200 outline-none focus:border-[#016472] w-full sm:w-auto cursor-pointer"
             >
               <option value="All">All</option>
+              <option value="Software">Software</option>
               <option value="Software Development">Software Development</option>
               <option value="Web Development">Web Development</option>
-              <option value="Mobile App Development">Mobile App Development</option>
-              <option value="UI/UX Design">UI/UX Design</option>
-              <option value="Artificial Intelligence">Artificial Intelligence</option>
-              <option value="Machine Learning">Machine Learning</option>
-              <option value="Data Science">Data Science</option>
-              <option value="Cloud Computing">Cloud Computing</option>
-              <option value="Cyber Security">Cyber Security</option>
               <option value="IT Consulting">IT Consulting</option>
-              <option value="Digital Marketing">Digital Marketing</option>
-              <option value="E-Commerce">E-Commerce</option>
-              <option value="SaaS">SaaS</option>
-              <option value="Finance">Finance</option>
               <option value="Other">Other</option>
             </select>
           </div>
@@ -176,25 +174,38 @@ export default function CompanyTable({ companies = [], onChanged }) {
         <table className="w-full min-w-[1000px] border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Company Name</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Status</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Industry</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Account Owner</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Login Email</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Payment Status</th>
-              <th className="px-5 py-3.5 text-center text-xs font-semibold text-black uppercase tracking-wider whitespace-nowrap">Action</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider">Company Name</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider">Status</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider">Industry</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider">Account Owner</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider">Login Email</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-black uppercase tracking-wider">Payment Status</th>
+              <th className="px-5 py-3.5 text-center text-xs font-semibold text-black uppercase tracking-wider">Action</th>
             </tr>
           </thead>
           <tbody>
             {currentCompanies.length > 0 ? (
               currentCompanies.map((company) => {
                 const displayStatus = normalizeStatus(company.status || company.accountStatus);
+                const paymentStatus = normalizePaymentStatus(company.paymentStatus);
+                const isBad = displayStatus === "Suspended" || displayStatus === "Terminated";
 
                 return (
-                  <tr key={company.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition">
-                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 whitespace-nowrap">{highlightMatch(company.name, search)}</td>
+                  <tr
+                    key={company.id}
+                    className={`border-b border-gray-50 transition ${
+                      displayStatus === "Suspended"
+                        ? "bg-red-50/60"
+                        : displayStatus === "Terminated"
+                        ? "bg-gray-50 opacity-80"
+                        : "hover:bg-gray-50/70"
+                    }`}
+                  >
+                    <td className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap ${isBad ? "line-through text-red-600" : "text-gray-800"}`}>
+                      {highlightMatch(company.name, search)}
+                    </td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${statusStyles[displayStatus] || "bg-gray-50 text-gray-600 border border-gray-200"}`}>
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${statusStyles[displayStatus] || "bg-gray-50 text-gray-600 border"}`}>
                         {displayStatus}
                       </span>
                     </td>
@@ -212,25 +223,25 @@ export default function CompanyTable({ companies = [], onChanged }) {
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span
                         className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
-                          company.paymentStatus === "Paid"
+                          paymentStatus === "Paid"
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                            : company.paymentStatus === "Failed"
+                            : paymentStatus === "Failed"
                             ? "bg-red-50 text-red-600 border border-red-200"
                             : "bg-amber-50 text-amber-600 border border-amber-200"
                         }`}
                       >
-                        {company.paymentStatus || "Pending"}
+                        {paymentStatus}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-center gap-3">
-                        <button type="button" onClick={() => setSelectedCompany(company)} className="inline-flex items-center justify-center hover:scale-110 transition" title="View Details">
+                        <button type="button" onClick={() => setSelectedCompany(company)} title="View">
                           <Eye size={18} className="text-[#016472]" />
                         </button>
-                        <button type="button" onClick={() => navigate("/add-company", { state: { company } })} className="inline-flex items-center justify-center hover:scale-110 transition" title="Edit Company">
+                        <button type="button" onClick={() => navigate("/add-company", { state: { company } })} title="Edit">
                           <Pencil size={18} className="text-gray-600" />
                         </button>
-                        <button type="button" onClick={() => setDeleteId(company.id)} className="inline-flex items-center justify-center hover:scale-110 transition" title="Delete Company">
+                        <button type="button" onClick={() => setDeleteId(company.id)} title="Delete">
                           <Trash2 size={18} className="text-red-500" />
                         </button>
                       </div>
@@ -261,52 +272,17 @@ export default function CompanyTable({ companies = [], onChanged }) {
             "Showing 0 companies"
           )}
         </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => prev - 1)}
-              disabled={currentPage === 1}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium ${
-                currentPage === 1 ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-gray-300 text-black hover:bg-[#a3feff]/30 hover:border-[#016472]"
-              }`}
-            >
-              Previous
-            </button>
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium ${currentPage === page ? "bg-[#016472] text-white" : "text-black hover:bg-[#a3feff]/40"}`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium ${
-                currentPage === totalPages ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-gray-300 text-black hover:bg-[#a3feff]/30 hover:border-[#016472]"
-              }`}
-            >
-              Next
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* VIEW DETAILS MODAL */}
       {selectedCompany && (
         <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedCompany(null)}>
           <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 sm:px-7 py-5 border-b border-gray-200 sticky top-0 bg-white">
+            <div className="flex items-center justify-between px-5 sm:px-7 py-5 border-b sticky top-0 bg-white">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">Company Details</h2>
                 <p className="text-sm text-gray-500 mt-1">Complete company information</p>
               </div>
-              <button type="button" onClick={() => setSelectedCompany(null)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
+              <button type="button" onClick={() => setSelectedCompany(null)} className="w-9 h-9 rounded-lg hover:bg-gray-100">
                 <X size={20} />
               </button>
             </div>
@@ -324,70 +300,53 @@ export default function CompanyTable({ companies = [], onChanged }) {
             </div>
 
             <div className="p-5 sm:p-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border border-gray-200 rounded-xl p-4">
+              <div className="border rounded-xl p-4">
                 <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase mb-2">
-                  <User size={15} />
-                  Account Owner
+                  <User size={15} /> Account Owner
                 </div>
-                <p className="text-sm font-medium text-gray-800">{selectedCompany.owner || "N/A"}</p>
+                <p className="text-sm font-medium">{selectedCompany.owner || "N/A"}</p>
               </div>
-              <div className="border border-gray-200 rounded-xl p-4">
+              <div className="border rounded-xl p-4">
                 <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase mb-2">
-                  <Mail size={15} />
-                  Login Email
+                  <Mail size={15} /> Login Email
                 </div>
-                <p className="text-sm font-medium text-gray-800 break-all">{selectedCompany.email || "N/A"}</p>
+                <p className="text-sm font-medium break-all">{selectedCompany.email || "N/A"}</p>
               </div>
-              <div className="border border-gray-200 rounded-xl p-4">
-                <div className="text-gray-500 text-xs font-semibold uppercase mb-2">Login Password</div>
-                <p className="text-sm font-mono font-medium text-gray-800">{selectedCompany.password || "No Password"}</p>
-              </div>
-              <div className="border border-gray-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase mb-2">
-                  <Building2 size={15} />
-                  Company Size
-                </div>
-                <p className="text-sm font-medium text-gray-800">{selectedCompany.size || "N/A"}</p>
-              </div>
-              <div className="border border-gray-200 rounded-xl p-4 sm:col-span-2">
-                <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase mb-2">
-                  <MapPin size={15} />
-                  Location
-                </div>
-                <p className="text-sm font-medium text-gray-800">{selectedCompany.location || "N/A"}</p>
-              </div>
-              <div className="border border-gray-200 rounded-xl p-4">
+              <div className="border rounded-xl p-4">
                 <div className="text-gray-500 text-xs font-semibold uppercase mb-2">Company Status</div>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusStyles[normalizeStatus(selectedCompany.status || selectedCompany.accountStatus)] || "bg-gray-50 text-gray-600 border border-gray-200"}`}>
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusStyles[normalizeStatus(selectedCompany.status || selectedCompany.accountStatus)]}`}>
                   {normalizeStatus(selectedCompany.status || selectedCompany.accountStatus)}
                 </span>
               </div>
-              <div className="border border-gray-200 rounded-xl p-4">
-                <div className="text-gray-500 text-xs font-semibold uppercase mb-2">Industry</div>
-                <p className="text-sm font-medium text-gray-800">{selectedCompany.industry || "N/A"}</p>
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase mb-2">
+                  <MapPin size={15} /> Location
+                </div>
+                <p className="text-sm font-medium">{selectedCompany.location || "N/A"}</p>
               </div>
-              <div className="border border-gray-200 rounded-xl p-4 sm:col-span-2">
+              <div className="border rounded-xl p-4 sm:col-span-2">
                 <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase mb-3">
-                  <FileImage size={15} />
-                  Payment Receipt
+                  <FileImage size={15} /> Payment Receipt
                 </div>
                 {selectedCompany.receipt ? (
-                  <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
-                    <img src={selectedCompany.receipt} alt="Payment Receipt" className="w-full max-h-[350px] object-contain" />
-                  </div>
+                  <img src={selectedCompany.receipt} alt="Receipt" className="w-full max-h-[350px] object-contain rounded-xl border" />
                 ) : (
-                  <div className="flex items-center justify-center h-32 rounded-xl bg-gray-50 border border-dashed border-gray-300">
+                  <div className="flex items-center justify-center h-32 rounded-xl bg-gray-50 border border-dashed">
                     <p className="text-sm text-gray-400">No receipt uploaded</p>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="px-5 sm:px-7 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button type="button" onClick={() => setSelectedCompany(null)} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100">
+            <div className="px-5 sm:px-7 py-4 border-t flex justify-end gap-3">
+              <button type="button" onClick={() => setSelectedCompany(null)} className="px-5 py-2.5 border rounded-lg text-sm">
                 Close
               </button>
-              <button type="button" onClick={() => navigate("/add-company", { state: { company: selectedCompany } })} className="px-5 py-2.5 bg-[#016472] text-white rounded-lg text-sm font-medium hover:bg-[#01535e]">
+              <button
+                type="button"
+                onClick={() => navigate("/add-company", { state: { company: selectedCompany } })}
+                className="px-5 py-2.5 bg-[#016472] text-white rounded-lg text-sm"
+              >
                 Edit Company
               </button>
             </div>
@@ -395,17 +354,16 @@ export default function CompanyTable({ companies = [], onChanged }) {
         </div>
       )}
 
-      {/* DELETE MODAL */}
       {deleteId !== null && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4" onClick={() => setDeleteId(null)}>
           <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-gray-800">Delete Company</h2>
-            <p className="text-sm text-gray-500 mt-2 leading-6">Are you sure you want to delete this company? This action cannot be undone.</p>
+            <h2 className="text-lg font-semibold">Delete Company</h2>
+            <p className="text-sm text-gray-500 mt-2">Are you sure? This cannot be undone.</p>
             <div className="flex justify-end gap-3 mt-6">
-              <button type="button" onClick={() => setDeleteId(null)} disabled={deleting} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50">
+              <button type="button" onClick={() => setDeleteId(null)} disabled={deleting} className="px-4 py-2 text-sm bg-gray-100 rounded-lg">
                 Cancel
               </button>
-              <button type="button" onClick={() => deleteCompany(deleteId)} disabled={deleting} className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+              <button type="button" onClick={() => deleteCompany(deleteId)} disabled={deleting} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg">
                 {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
