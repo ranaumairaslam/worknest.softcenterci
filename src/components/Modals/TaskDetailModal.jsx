@@ -1,53 +1,61 @@
 import { useState } from "react";
 import { X, Upload } from "lucide-react";
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
-
 export default function TaskDetailModal({ task, onClose, onSubmit }) {
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (!task) return null;
 
-  function handleFileChange(e) {
-    const selectedFile = e.target.files?.[0] || null;
-
+  const handleSubmit = async () => {
     setError("");
 
-    if (!selectedFile) {
-      setFile(null);
+    // File required
+    if (!file) {
+      setError("Please upload a proof of work file.");
       return;
     }
 
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("File size must be 15MB or less.");
-      e.target.value = "";
-      setFile(null);
-      return;
-    }
-
-    setFile(selectedFile);
-  }
-
-  async function handleSubmit() {
-    setError("");
-
+    // Description required
     if (!description.trim()) {
-      setError("Submission description is required.");
+      setError("Please enter a submission description.");
+      return;
+    }
+
+    // 15 MB limit
+    if (file.size > 15 * 1024 * 1024) {
+      setError("File size must be less than 15MB.");
       return;
     }
 
     try {
+      setSubmitting(true);
+
+      console.log("📤 Submitting from modal:", {
+        taskId: task.id,
+        description,
+        file: file.name,
+      });
+
       await onSubmit?.({
         taskId: task.id,
         file,
         description: description.trim(),
       });
+
+      // Clear only after successful submission
+      setDescription("");
+      setFile(null);
+      onClose();
     } catch (err) {
+      console.error("❌ Submission failed:", err);
       setError(err?.message || "Failed to submit task.");
+    } finally {
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
@@ -62,8 +70,8 @@ export default function TaskDetailModal({ task, onClose, onSubmit }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
-            aria-label="Close"
+            disabled={submitting}
+            className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
           >
             <X size={18} />
           </button>
@@ -71,7 +79,7 @@ export default function TaskDetailModal({ task, onClose, onSubmit }) {
 
         <div className="space-y-4">
 
-          {/* Upload */}
+          {/* File */}
           <div>
             <p className="text-xs font-medium text-slate-500 mb-2">
               Upload Proof of Work
@@ -87,8 +95,21 @@ export default function TaskDetailModal({ task, onClose, onSubmit }) {
               <input
                 type="file"
                 className="hidden"
-                accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                onChange={handleFileChange}
+                accept="
+                  image/*,
+                  application/pdf,
+                  .doc,
+                  .docx,
+                  .xls,
+                  .xlsx,
+                  .ppt,
+                  .pptx
+                "
+                onChange={(e) => {
+                  const selectedFile = e.target.files?.[0] || null;
+                  setFile(selectedFile);
+                  setError("");
+                }}
               />
             </label>
 
@@ -107,9 +128,9 @@ export default function TaskDetailModal({ task, onClose, onSubmit }) {
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
-                if (error) setError("");
+                setError("");
               }}
-              rows={4}
+              rows={5}
               className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               placeholder="Describe your completed work..."
             />
@@ -117,18 +138,19 @@ export default function TaskDetailModal({ task, onClose, onSubmit }) {
 
           {/* Error */}
           {error && (
-            <p className="text-xs text-rose-500 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
+            <div className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
               {error}
-            </p>
+            </div>
           )}
 
           {/* Submit */}
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full bg-blue-600 hover:bg-blue-700 transition-colors text-white text-sm font-medium py-2 rounded-lg"
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 transition-colors text-white text-sm font-medium py-3 rounded-lg"
           >
-            Submit
+            {submitting ? "Submitting..." : "Submit"}
           </button>
         </div>
       </div>

@@ -117,12 +117,41 @@ export async function getTaskById(id) {
 // =====================================================
 // GET TASKS BY PROJECT
 // =====================================================
+// =====================================================
+// GET TASKS BY PROJECT
+// =====================================================
 export async function getTasksByProject(projectId) {
   try {
-    const response = await get(`${BASE}/projectId/${projectId}`);
-    return (response?.data || []).map(transformTask).filter(Boolean);
+    if (!projectId) {
+      console.warn("⚠️ No project ID provided");
+      return [];
+    }
+
+    console.log("📡 Loading tasks for project:", projectId);
+
+    const response = await get(BASE, {
+      projectId,
+      project_id: projectId,
+      limit: 100,
+    });
+
+    console.log("📥 PROJECT TASKS RESPONSE:", response);
+
+    const tasks = Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response)
+      ? response
+      : [];
+
+    return tasks
+      .map(transformTask)
+      .filter(Boolean);
   } catch (error) {
-    console.error("❌ Error fetching project tasks:", error);
+    console.error(
+      "❌ Error fetching project tasks:",
+      error
+    );
+
     return [];
   }
 }
@@ -332,32 +361,40 @@ export async function updateTeamLeaderTask(id, updates) {
     if (updates.name !== undefined || updates.title !== undefined) {
       body.TaskName = updates.name ?? updates.title;
     }
-    if (updates.description !== undefined) {
-      body.description = updates.description;
+
+    if (updates.assigneeName !== undefined) {
+      body.AssigneeName = updates.assigneeName;
     }
-    if (updates.dueDate !== undefined) {
-      body.dueDate = normalizeDateForApi(updates.dueDate);
+
+    if (updates.assignee !== undefined) {
+      body.AssigneeName = updates.assignee;
     }
+
     if (updates.priority !== undefined) {
-      body.priority = toBackendPriority(updates.priority);
+      body.Priority =
+        PRIORITY_TO_BACKEND[updates.priority] ||
+        String(updates.priority).toLowerCase();
     }
-    if (updates.status !== undefined) {
-      body.status = toBackendStatus(updates.status);
-    }
-    if (updates.assigneeId !== undefined) {
-      body.assigneeId = updates.assigneeId;
+
+    if (updates.dueDate !== undefined) {
+      body.DueDate = normalizeDateForApi(updates.dueDate);
     }
 
     console.log("📤 Updating Team Leader task:", id, body);
 
-    const response = await put(`/team-leader/tasks/${id}`, body);
+    const response = await put(
+      `/team-leader/tasks/${id}`,
+      body
+    );
+
+    console.log("✅ Team Leader task updated:", response);
+
     return transformTask(response?.data);
   } catch (error) {
     console.error("❌ Error updating Team Leader task:", error);
     throw error;
   }
 }
-
 // =====================================================
 // UPDATE TASK STATUS ONLY
 // =====================================================
@@ -377,16 +414,43 @@ export async function updateTaskStatus(id, status) {
 // =====================================================
 // DELETE TASK
 // =====================================================
+// =====================================================
+// DELETE TASK
+// =====================================================
 export async function deleteTask(id) {
   try {
-    console.log("🗑️ Deleting task:", id);
-    await del(`${BASE}/${id}`);
+    if (!id) {
+      throw new Error("Task ID is required.");
+    }
+
+    console.log("🗑️ Deleting Team Leader task:", id);
+
+    // Project Leader ke liye correct backend endpoint
+    const response = await del(
+      `/team-leader/tasks/${id}`
+    );
+
+    console.log(
+      "✅ TASK DELETED FROM BACKEND:",
+      id,
+      response
+    );
+
     return true;
   } catch (error) {
-    console.error("❌ Error deleting task:", error);
-    alert(
-      `Delete failed: ${error.data?.message || error.message || "Unknown error"}`
+    console.error(
+      "❌ DELETE TASK ERROR:",
+      error
     );
+
+    const message =
+      error?.data?.message ||
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to delete task.";
+
+    alert(`Delete failed: ${message}`);
+
     return false;
   }
 }

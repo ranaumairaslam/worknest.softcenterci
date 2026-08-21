@@ -1,10 +1,19 @@
-import { getCurrentUser } from "./authContext.js";
-import { getTasksByAssignee, getAllTasks } from "./taskService.js";
-import { getAllProjects } from "./projectService.js";
 import { get, post } from "./apiClient.js";
 
 function mapTaskForKanban(task) {
   const statusMap = {
+    todo: "todo",
+    pending: "todo",
+
+    in_progress: "in_progress",
+
+    under_review: "under_review",
+
+    done: "completed",
+    completed: "completed",
+
+    blocked: "in_progress",
+
     Pending: "todo",
     "To Do": "todo",
     "In Progress": "in_progress",
@@ -14,46 +23,102 @@ function mapTaskForKanban(task) {
     Rejected: "in_progress",
   };
 
-  const initials = (task.assignee || "?")
+  const assigneeName =
+    task.assigneeName ||
+    task.assignee_name ||
+    task.assignee ||
+    "Unassigned";
+
+  const initials = assigneeName
     .split(" ")
-    .map((w) => w[0])
+    .filter(Boolean)
+    .map((word) => word[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
   return {
-    id: task.id,
-    title: task.name,
+    id: task.taskId ?? task.id,
+    title: task.title || task.name || "",
+
+    // IMPORTANT:
+    // backend "under_review" => frontend "under_review"
     status: statusMap[task.status] || "todo",
-    project: task.project,
-    assignee: { name: task.assignee, avatar: initials },
+
+    project:
+      task.projectName ||
+      task.project_name ||
+      task.project ||
+      "Unassigned",
+
+    assignee: {
+      name: assigneeName,
+      avatar: initials,
+    },
   };
 }
 
-export async function getMyTasks(role) {
-  const user = getCurrentUser(role);
-  const tasks = await getTasksByAssignee(user.employeeId, role);
-  return tasks.map(mapTaskForKanban);
+
+// =====================================================
+// GET MY ASSIGNED TASKS
+// =====================================================
+export async function getMyTasks() {
+  try {
+    const response = await get("/team-member/tasks/assigned", {
+      limit: 100,
+    });
+
+    const tasks = response?.data || [];
+
+    console.log("📥 MY ASSIGNED TASKS:", tasks);
+
+    return tasks.map(mapTaskForKanban);
+  } catch (error) {
+    console.error("❌ Error fetching assigned tasks:", error);
+    throw error;
+  }
 }
 
-export async function getTeamTasks(role) {
-  const user = getCurrentUser(role);
-  const projects = await getAllProjects(role);
-  const myProjectIds = projects.map((p) => p.id);
-  const allTasks = await getAllTasks(role);
-  const teamTasks = allTasks.filter((t) => myProjectIds.includes(t.projectId));
-  return teamTasks.map(mapTaskForKanban);
+
+// =====================================================
+// GET TEAM TASKS
+// =====================================================
+export async function getTeamTasks() {
+  try {
+    const response = await get("/team-member/tasks/assigned", {
+      limit: 100,
+    });
+
+    const tasks = response?.data || [];
+
+    return tasks.map(mapTaskForKanban);
+  } catch (error) {
+    console.error("❌ Error fetching team tasks:", error);
+    throw error;
+  }
 }
 
+
+// =====================================================
+// SUBMIT TASK
+// =====================================================
 export async function submitTaskWork(taskId, payload = {}) {
   const token = localStorage.getItem("worknest_token");
 
+  if (!token) {
+    throw new Error("Authentication token not found. Please login again.");
+  }
+
   const formData = new FormData();
 
-  // REQUIRED
-  formData.append("description", payload.description || "");
+  // REQUIRED BY BACKEND
+  formData.append("taskId", String(taskId));
 
-  // File
+  formData.append(
+    "description",
+    String(payload.description || "").trim()
+  );
+
   if (payload.file) {
     formData.append("file", payload.file);
   }
@@ -63,8 +128,11 @@ export async function submitTaskWork(taskId, payload = {}) {
   console.log("Description:", payload.description);
   console.log("File:", payload.file);
 
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/team-member/submit`,
+    `${API_BASE_URL}/team-member/submit`,
     {
       method: "POST",
       headers: {
@@ -76,7 +144,11 @@ export async function submitTaskWork(taskId, payload = {}) {
 
   const result = await response.json().catch(() => null);
 
-  console.log("📥 Submit response:", response.status, result);
+  console.log(
+    "📥 Submit response:",
+    response.status,
+    result
+  );
 
   if (!response.ok) {
     const error = new Error(

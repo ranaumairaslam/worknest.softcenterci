@@ -63,18 +63,23 @@ export default function EditTaskModal({ task, team = [], onClose, onSave }) {
 
   if (!validate()) return;
 
-  const payload = {
-    name: name.trim(),
-    priority,
-    status,
-    assigneeId: Number(assigneeId),
-    dueDate: dueDate || null,
-  };
+  const member = team.find(
+  (m) => String(m.id) === String(assigneeId)
+);
 
-  console.log("📤 Saving task:", task.id, payload);
+const payload = {
+  name: name.trim(),
+  priority,
+  status,
+  assigneeId: Number(assigneeId),
+  assigneeName: member?.name || "",
+  dueDate: dueDate || null,
+};
 
-  onSave(task.id, payload);
-  onClose();
+console.log("📤 Saving task:", task.id, payload);
+
+onSave(task.id, payload);
+onClose();
 }
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
