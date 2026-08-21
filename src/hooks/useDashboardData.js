@@ -1,6 +1,32 @@
 import { useState, useEffect } from "react";
 import { get } from "../services/apiClient";
 
+// Employees page jaisi list (already team_leader + team_member filter)
+async function fetchEmployeeCount() {
+  try {
+    // try common company employees endpoints
+    const res = await get("/company/employees", { limit: 100 });
+    const list = res?.data || res?.employees || [];
+    if (!Array.isArray(list)) return 0;
+
+    // safety: only count real staff roles (exclude company admin)
+    return list.filter((e) => {
+      const role = String(e.role || "").toLowerCase();
+      return (
+        role === "team_leader" ||
+        role === "team_member" ||
+        role === "team leader" ||
+        role === "team member" ||
+        role.includes("leader") ||
+        role.includes("member")
+      );
+    }).length;
+  } catch (err) {
+    console.warn("Employee count fetch failed:", err?.message || err);
+    return null; // fallback to dashboard field
+  }
+}
+
 export function useDashboardData() {
   const [company, setCompany] = useState(null);
   const [stats, setStats] = useState([]);
@@ -17,14 +43,31 @@ export function useDashboardData() {
         setLoading(true);
         setError("");
 
-        const res = await get("/company/dashboard");
+        // dashboard + employees parallel
+        const [res, employeeCount] = await Promise.all([
+          get("/company/dashboard"),
+          fetchEmployeeCount(),
+        ]);
 
         console.log("Full Response:", res);
 
-        // ✅ FIX: API response ke andar 'data' object hai
         const d = res?.data?.data || res?.data || {};
 
         console.log("Extracted Data:", d);
+
+        // ✅ Real employees count (matches Employees page)
+        // backend d.employees often includes company admin → wrong (3)
+        const backendEmp =
+          d.employees?.total_employees ??
+          d.employees?.total ??
+          d.employees ??
+          d.total_employees ??
+          0;
+
+        const totalEmployees =
+          employeeCount !== null && employeeCount !== undefined
+            ? employeeCount
+            : Number(backendEmp) || 0;
 
         setCompany(d.company);
 
@@ -43,11 +86,12 @@ export function useDashboardData() {
             value: d.teams?.total_teams ?? 0,
             note: `${d.teams?.teams_with_leader ?? 0} led teams`,
           },
+          // ✅ FIXED: employees list count, not backend all-users count
           {
             id: "total-employees",
             label: "Total Employees",
-            value: d.employees?.total_employees ?? 0,
-            note: `${d.employees?.active_employees ?? 0} active personnel`,
+            value: totalEmployees,
+            note: `${totalEmployees} active personnel`,
           },
           {
             id: "total-clients",
