@@ -18,25 +18,27 @@ const sectionLinks = [
 ];
 
 export default function ProjectOversightFull() {
-  const { projects, selectedProjectId, setSelectedProjectId, data, loading, error } = useProjectOversightData();
+  const { projects = [], selectedProjectId, setSelectedProjectId, data, loading, error } = useProjectOversightData();
   const [taskList, setTaskList] = useState([]);
   const [showRoster, setShowRoster] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
-  // Sync local editable task list whenever the underlying project data
-  // changes (e.g. switching projects). This is the single source of
-  // truth for create/edit/delete — no more separate extraTasks array.
+  // Sync local editable task list whenever the underlying project data changes
   useEffect(() => {
-    if (data) {
+    if (data && Array.isArray(data.tasks)) {
       setTaskList(data.tasks);
+    } else {
+      setTaskList([]);
     }
   }, [data]);
 
   if (loading) return <div className="p-6 text-slate-500 text-sm">Loading project oversight…</div>;
   if (error) return <div className="p-6 text-rose-500 text-sm">Failed to load project data.</div>;
+  if (!data) return <div className="p-6 text-slate-500 text-sm">No project data available.</div>;
 
-  const { summary, stats, team } = data;
+  // Safe destructuring with fallback values to prevent undefined errors
+  const { summary = {}, stats = [], team = [] } = data;
 
   const liveStats = computeLiveStats(stats, taskList);
   const liveSummary = computeLiveSummary(summary, taskList);
@@ -56,9 +58,6 @@ export default function ProjectOversightFull() {
   }
 
   function handleCreateTask(newTask) {
-    // Only add to the visible list if it belongs to the project
-    // currently being viewed — see note in CreateTaskModal about
-    // cross-project creation being a mock-data limitation.
     if (newTask.projectId === selectedProjectId) {
       setTaskList((prev) => [newTask, ...prev]);
     }
@@ -89,7 +88,7 @@ export default function ProjectOversightFull() {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {liveStats.map((s) => (
+        {Array.isArray(liveStats) && liveStats.map((s) => (
           <StatCardTrend key={s.id} {...s} />
         ))}
       </div>
@@ -121,7 +120,7 @@ export default function ProjectOversightFull() {
 
       <TeamRosterModal open={showRoster} team={team} onClose={() => setShowRoster(false)} />
 
-     <CreateTaskModal
+      <CreateTaskModal
         open={showCreateTask}
         team={team}
         projects={projects}

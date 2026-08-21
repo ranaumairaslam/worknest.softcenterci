@@ -26,11 +26,16 @@ const STAT_CALCULATORS = {
  * calculator gets a live, recalculated value. Stats without a
  * calculator pass through unchanged.
  */
-export function computeLiveStats(baseStats, tasks) {
-  return baseStats.map((stat) => {
+export function computeLiveStats(baseStats = [], tasks = []) {
+  // Ensure we are dealing with arrays to prevent map/filter errors
+  const safeBaseStats = Array.isArray(baseStats) ? baseStats : [];
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+
+  return safeBaseStats.map((stat) => {
+    if (!stat) return stat;
     const calculate = STAT_CALCULATORS[stat.id];
     if (!calculate) return stat;
-    return { ...stat, value: String(calculate(tasks)) };
+    return { ...stat, value: String(calculate(safeTasks)) };
   });
 }
 
@@ -38,13 +43,16 @@ export function computeLiveStats(baseStats, tasks) {
  * Returns a new project summary object with tasksTotal,
  * tasksCompleted, and progress recalculated from the live task list.
  */
-export function computeLiveSummary(summary, tasks) {
-  const total = tasks.length;
-  const completed = tasks.filter((t) => t.status === "Completed").length;
+export function computeLiveSummary(summary = {}, tasks = []) {
+  const safeSummary = summary || {};
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+
+  const total = safeTasks.length;
+  const completed = safeTasks.filter((t) => t.status === "Completed").length;
   const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return {
-    ...summary,
+    ...safeSummary,
     tasksTotal: total,
     tasksCompleted: completed,
     progress,
