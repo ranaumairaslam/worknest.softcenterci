@@ -83,8 +83,11 @@ export default function TeamMemberDashboard() {
       <TaskDetailModal
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
-        onSubmit={(payload) => {
-          submitTask(selectedTask.id, payload);
+        onSubmit={async (payload) => {
+          await submitTask(selectedTask.id, {
+            ...payload,
+            previousStatus: selectedTask.status,
+          });
           setSelectedTask(null);
         }}
       />
