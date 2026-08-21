@@ -27,24 +27,52 @@ export function useProjectLeaderData() {
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([getDashboard(), getProjects(), getMembers(), getProgress()])
+    Promise.all([
+      getDashboard(),
+      getProjects(),
+      getMembers(),
+      getProgress(),
+    ])
       .then(([dashboard, projectList, members, progress]) => {
-        if (isMounted) {
-          setProjects(projectList);
-          setTeamMembers(members.map((member) => ({
+        if (!isMounted) return;
+
+        setProjects(projectList || []);
+
+        setTeamMembers(
+          (members || []).map((member) => ({
             id: member.id,
             name: member.name,
-            avatar: member.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
-          })));
-          setStats(progress || dashboard.stats);
-          setSelectedProjectId(projectList[0]?.id ?? null);
-        }
+            avatar: member.name
+              ? member.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()
+              : "?",
+          }))
+        );
+
+        setStats(progress || dashboard?.stats || null);
+
+        setSelectedProjectId(
+          projectList?.[0]?.id ?? null
+        );
       })
       .catch((err) => {
-        if (isMounted) setError(err);
+        console.error(
+          "Failed to load project leader data:",
+          err
+        );
+
+        if (isMounted) {
+          setError(err);
+        }
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       });
 
     return () => {
@@ -54,103 +82,274 @@ export function useProjectLeaderData() {
 
   useEffect(() => {
     if (!selectedProjectId) return;
+
     let isMounted = true;
 
-    Promise.all([getTasks({ projectId: selectedProjectId }), getSubmittedTasks()]).then(([taskList, submitted]) => {
-      if (isMounted) {
-        setTasks(taskList.map((task) => ({
-          ...task,
-          assignee: {
-            id: task.assigneeId,
-            name: task.assigneeName,
-            avatar: task.assignee,
-          },
-        })));
-        setDeliverables(submitted.map((task) => ({
+    Promise.all([
+      getTasks({
+        projectId: selectedProjectId,
+      }),
+      getSubmittedTasks(),
+    ])
+      .then(([taskList, submitted]) => {
+        if (!isMounted) return;
+
+        const formattedTasks = (taskList || []).map(
+          (task) => ({
+            ...task,
+
+            assignee: {
+              id: task.assigneeId,
+              name: task.assigneeName,
+              avatar: task.assignee,
+            },
+          })
+        );
+
+        setTasks(formattedTasks);
+
+        const formattedDeliverables = (
+          submitted || []
+        ).map((task) => ({
           id: task.id,
           taskId: task.id,
-          member: { name: task.assigneeName, avatar: task.assignee },
+
+          task: {
+            ...task,
+
+            assignee: {
+              id: task.assigneeId,
+              name: task.assigneeName,
+              avatar: task.assignee,
+            },
+          },
+
+          member: {
+            name:
+              task.assigneeName ||
+              "Unknown",
+            avatar:
+              task.assignee || "?",
+          },
+
           linkLabel: "View task",
-          url: `/project/tasks?taskId=${task.id}`,
-        })));
-      }
-    });
+        }));
+
+        setDeliverables(
+          formattedDeliverables
+        );
+      })
+      .catch((err) => {
+        console.error(
+          "Failed to load tasks:",
+          err
+        );
+
+        if (isMounted) {
+          setError(err);
+        }
+      });
 
     return () => {
       isMounted = false;
     };
   }, [selectedProjectId]);
 
-  const handleApprove = useCallback(async (item) => {
-    setDeliverables((prev) => prev.filter((d) => d.id !== item.id));
-    setTasks((prev) =>
-      prev.map((t) => (t.id === item.taskId ? { ...t, status: "completed" } : t))
-    );
-    try {
-      await approveTask(item.taskId);
-    } catch (err) {
-      setError(err);
-    }
-  }, []);
+  const handleApprove = useCallback(
+    async (item) => {
+      setDeliverables((prev) =>
+        prev.filter(
+          (d) => d.id !== item.id
+        )
+      );
 
-  const handleReject = useCallback(async (item, comment) => {
-    setDeliverables((prev) => prev.filter((d) => d.id !== item.id));
-    setTasks((prev) =>
-      prev.map((t) => (t.id === item.taskId ? { ...t, status: "in_progress" } : t))
-    );
-    try {
-      await returnTaskForRevision(item.taskId, comment);
-    } catch (err) {
-      setError(err);
-    }
-  }, []);
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === item.taskId
+            ? {
+                ...task,
+                status: "completed",
+              }
+            : task
+        )
+      );
 
-  const handleReassign = useCallback(async (taskId, memberId) => {
-    const member = teamMembers.find((m) => String(m.id) === String(memberId));
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, assignee: member } : t))
-    );
-    try {
-      await assignTask(taskId, memberId);
-    } catch (err) {
-      setError(err);
-    }
-  }, [teamMembers]);
+      try {
+        await approveTask(item.taskId);
+      } catch (err) {
+        console.error(
+          "Failed to approve task:",
+          err
+        );
 
-  const handleUpdateTask = useCallback(async (taskId, updates) => {
-    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...updates } : task)));
-    try {
-      if (updates.status && updates.status !== "completed") {
-        await editTask(taskId, { ...updates, priority: updates.priority });
-      } else if (updates.status === "completed") {
-        await approveTask(taskId);
-      } else {
-        await editTask(taskId, updates);
+        setError(err);
       }
-    } catch (err) {
-      setError(err);
-    }
-  }, []);
+    },
+    []
+  );
 
-  const handleDeleteTask = useCallback(async (taskId) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    try {
-      await deleteTask(taskId);
-    } catch (err) {
-      setError(err);
-    }
-  }, []);
+  const handleReject = useCallback(
+    async (item, comment) => {
+      setDeliverables((prev) =>
+        prev.filter(
+          (d) => d.id !== item.id
+        )
+      );
 
-  const handleCreateProject = useCallback(async (projectInput) => {
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === item.taskId
+            ? {
+                ...task,
+                status: "in_progress",
+              }
+            : task
+        )
+      );
+
+      try {
+        await returnTaskForRevision(
+          item.taskId,
+          comment
+        );
+      } catch (err) {
+        console.error(
+          "Failed to return task:",
+          err
+        );
+
+        setError(err);
+      }
+    },
+    []
+  );
+
+  const handleReassign = useCallback(
+    async (taskId, memberId) => {
+      const member = teamMembers.find(
+        (m) =>
+          String(m.id) ===
+          String(memberId)
+      );
+
+      setTasks((prev) =>
+        prev.map((task) =>
+          String(task.id) ===
+          String(taskId)
+            ? {
+                ...task,
+                assignee: member,
+                assigneeId:
+                  member?.id,
+                assigneeName:
+                  member?.name,
+              }
+            : task
+        )
+      );
+
+      try {
+        await assignTask(
+          taskId,
+          memberId
+        );
+      } catch (err) {
+        console.error(
+          "Failed to reassign task:",
+          err
+        );
+
+        setError(err);
+      }
+    },
+    [teamMembers]
+  );
+
+  const handleUpdateTask = useCallback(
+  async (taskId, updates) => {
+    console.log("🔄 Updating task:", taskId);
+    console.log("📦 Updates:", updates);
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        String(task.id) === String(taskId)
+          ? {
+              ...task,
+              ...updates,
+              assigneeId:
+                updates.assigneeId ??
+                task.assigneeId,
+            }
+          : task
+      )
+    );
+
     try {
-      const saved = await createProject(projectInput);
-      setProjects((prev) => [...prev, saved]);
-      return saved;
+      await editTask(taskId, updates);
+
+      console.log("✅ Task updated successfully");
     } catch (err) {
+      console.error(
+        "❌ Failed to update task:",
+        err
+      );
+
       setError(err);
-      return null;
     }
-  }, []);
+  },
+  []
+);
+
+  const handleDeleteTask = useCallback(
+    async (taskId) => {
+      setTasks((prev) =>
+        prev.filter(
+          (task) =>
+            String(task.id) !==
+            String(taskId)
+        )
+      );
+
+      try {
+        await deleteTask(taskId);
+      } catch (err) {
+        console.error(
+          "Failed to delete task:",
+          err
+        );
+
+        setError(err);
+      }
+    },
+    []
+  );
+
+  const handleCreateProject = useCallback(
+    async (projectInput) => {
+      try {
+        const saved =
+          await createProject(
+            projectInput
+          );
+
+        setProjects((prev) => [
+          ...prev,
+          saved,
+        ]);
+
+        return saved;
+      } catch (err) {
+        console.error(
+          "Failed to create project:",
+          err
+        );
+
+        setError(err);
+        return null;
+      }
+    },
+    []
+  );
 
   return {
     projects,

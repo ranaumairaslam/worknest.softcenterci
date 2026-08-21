@@ -59,7 +59,13 @@ export function useTeamMemberTasks() {
     try {
       await submitTaskWork(taskId, payload);
     } catch (err) {
-      setError(err);
+      setMyTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: payload.previousStatus || t.status } : t))
+      );
+      setTeamTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: payload.previousStatus || t.status } : t))
+      );
+      throw err;
     }
   }, []);
 
