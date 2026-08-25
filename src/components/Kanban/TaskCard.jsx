@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  FileText,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { FileText, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export default function TaskCard({
   task,
@@ -20,7 +15,28 @@ export default function TaskCard({
   const showMenu = Boolean(onEdit || onDelete);
 
   const taskTitle = task?.title || "Untitled Task";
-  const assigneeName = task?.assignee_name || "Unassigned";
+
+  // ✅ FIX: supports camelCase, snake_case & nested shapes
+  const assigneeName =
+    task?.assignee?.name ||
+    task?.assigneeName ||
+    task?.assignee_name ||
+    task?.assignedTo?.name ||
+    (typeof task?.assignee === "string" ? task.assignee : null) ||
+    "Unassigned";
+
+  const initials =
+    task?.assignee?.avatar ||
+    task?.assigneeInitials ||
+    assigneeName
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+  const isUnassigned = assigneeName === "Unassigned";
 
   function handleCardClick() {
     if (isDragging) return;
@@ -47,7 +63,6 @@ export default function TaskCard({
   function handleDragStart(e) {
     e.dataTransfer.setData("text/plain", String(task.id));
     e.dataTransfer.effectAllowed = "move";
-
     setIsDragging(true);
     onDragStart?.(task);
   }
@@ -66,14 +81,10 @@ export default function TaskCard({
       onDragEnd={handleDragEnd}
       onClick={handleCardClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          handleCardClick();
-        }
+        if (e.key === "Enter" || e.key === " ") handleCardClick();
       }}
       className={`relative w-full text-left bg-white rounded-xl border border-slate-100 shadow-sm p-3 transition-shadow cursor-grab active:cursor-grabbing ${
-        isDragging
-          ? "opacity-40"
-          : "hover:shadow-md"
+        isDragging ? "opacity-40" : "hover:shadow-md"
       }`}
     >
       {/* Actions */}
@@ -118,11 +129,7 @@ export default function TaskCard({
 
       {/* Task title */}
       <div className="flex items-start gap-2 mb-3 pr-5">
-        <FileText
-          size={14}
-          className="text-slate-400 mt-0.5 shrink-0"
-        />
-
+        <FileText size={14} className="text-slate-400 mt-0.5 shrink-0" />
         <p className="text-sm font-medium text-slate-700 leading-snug">
           {taskTitle}
         </p>
@@ -130,11 +137,22 @@ export default function TaskCard({
 
       {/* Assignee */}
       <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-[10px] font-medium flex items-center justify-center">
-          {assigneeName.charAt(0).toUpperCase()}
+        <div
+          className={`w-6 h-6 rounded-full text-[10px] font-semibold flex items-center justify-center ${
+            isUnassigned
+              ? "bg-slate-100 text-slate-400"
+              : "bg-blue-100 text-blue-600"
+          }`}
+          title={assigneeName}
+        >
+          {isUnassigned ? "U" : initials}
         </div>
 
-        <span className="text-xs text-slate-500">
+        <span
+          className={`text-xs ${
+            isUnassigned ? "text-slate-400 italic" : "text-slate-600"
+          }`}
+        >
           {assigneeName}
         </span>
       </div>
