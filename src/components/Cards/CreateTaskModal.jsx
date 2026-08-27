@@ -1,176 +1,348 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { createTask } from "../../services/taskService";
 
-export default function CreateTaskModal({ open, team, projects, currentProjectId, onClose, onCreate }) {
+export default function CreateTaskModal({
+  open,
+  team = [],
+  projects = [],
+  currentProjectId,
+  onClose,
+  onCreate,
+}) {
   const [name, setName] = useState("");
-  const [projectId, setProjectId] = useState(currentProjectId ?? "");
-  const [priority, setPriority] = useState("Medium");
+  const [description, setDescription] = useState("");
+  const [projectId, setProjectId] = useState(
+    currentProjectId || ""
+  );
   const [assigneeId, setAssigneeId] = useState("");
+  const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
-  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  // Keep the project field defaulted to whichever project is
-  // currently being viewed, each time the modal opens.
+  // =====================================================
+  // SET CURRENT PROJECT
+  // =====================================================
   useEffect(() => {
-    if (open) {
-      setProjectId(currentProjectId ?? "");
+    if (currentProjectId) {
+      setProjectId(currentProjectId);
+    }
+  }, [currentProjectId]);
+
+  // =====================================================
+  // RESET WHEN MODAL OPENS
+  // =====================================================
+  useEffect(() => {
+    if (!open) return;
+
+    setName("");
+    setDescription("");
+    setAssigneeId("");
+    setPriority("Medium");
+    setDueDate("");
+    setError("");
+
+    if (currentProjectId) {
+      setProjectId(currentProjectId);
     }
   }, [open, currentProjectId]);
 
-  if (!open) return null;
-
-  function validate() {
-    const next = {};
-    if (!name.trim()) next.name = "Task name is required.";
-    if (!projectId) next.projectId = "Please select a project.";
-    if (!assigneeId) next.assigneeId = "Please select an assignee.";
-    setErrors(next);
-    return Object.keys(next).length === 0;
+  if (!open) {
+    return null;
   }
 
-  function handleSubmit(e) {
+  // =====================================================
+  // NORMALIZE TEAM MEMBERS
+  // =====================================================
+  const members = Array.isArray(team)
+    ? team
+        .map((member) => ({
+          id: member.id,
+          name:
+            member.name ||
+            member.full_name ||
+            member.EmployeeName ||
+            member.employee_name ||
+            "Unknown Member",
+        }))
+        .filter((member) => member.id)
+    : [];
+
+  // =====================================================
+  // SUBMIT
+  // =====================================================
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!validate()) return;
 
-    const member = team.find((m) => m.id === assigneeId);
-    const project = projects.find((p) => p.id === projectId);
+    setError("");
 
-    onCreate({
-      id: `TASK-${Math.floor(Math.random() * 900 + 100)}`,
-      name: name.trim(),
-      projectId,
-      projectName: project?.name ?? "",
-      priority,
-      status: "Pending",
-      assignee: member.name.split(" ").map((n) => n[0]).join(""),
-      dueDate: dueDate || "TBD",
-      progress: 0,
-      category: "New",
-    });
+    if (!name.trim()) {
+      setError("Task name is required.");
+      return;
+    }
 
-    setName("");
-    setPriority("Medium");
-    setAssigneeId("");
-    setDueDate("");
-    setErrors({});
-    onClose();
+    if (!projectId) {
+      setError("Please select a project.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const selectedMember = members.find(
+        (member) =>
+          String(member.id) ===
+          String(assigneeId)
+      );
+
+      const payload = {
+        name: name.trim(),
+        description: description.trim(),
+        projectId,
+        priority,
+        dueDate,
+
+        assigneeId:
+          selectedMember?.id || null,
+
+        assignee:
+          selectedMember?.name ||
+          "Unassigned",
+      };
+
+      console.log(
+        "📤 CREATING TASK:",
+        payload
+      );
+
+      const savedTask =
+        await createTask(payload);
+
+      console.log(
+        "✅ TASK CREATED:",
+        savedTask
+      );
+
+      if (savedTask) {
+        onCreate?.(savedTask);
+      }
+
+      onClose?.();
+
+    } catch (err) {
+      console.error(
+        "❌ CREATE TASK ERROR:",
+        err
+      );
+
+      setError(
+        err?.message ||
+          "Failed to create task."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-800">Create Task</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-3">
-          <div>
-            <label htmlFor="task-name" className="text-xs font-medium text-slate-500 block mb-1">
-              Task Name
-            </label>
-            <input
-              id="task-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Fix login bug"
-              className={
-                errors.name
-                  ? "w-full border border-rose-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-                  : "w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-              }
-            />
-            {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name}</p>}
-          </div>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
 
-          {projects && projects.length > 0 && (
-            <div>
-              <label htmlFor="task-project" className="text-xs font-medium text-slate-500 block mb-1">
-                Project
-              </label>
-              <select
-                id="task-project"
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                className={
-                  errors.projectId
-                    ? "w-full border border-rose-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-                    : "w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                }
-              >
-                <option value="" disabled>Select project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              {errors.projectId && <p className="text-xs text-rose-500 mt-1">{errors.projectId}</p>}
-              {projectId && projectId !== currentProjectId && (
-                <p className="text-xs text-amber-600 mt-1">
-                  You're viewing a different project — this task won't appear here until you switch to it.
-                </p>
-              )}
-            </div>
-          )}
+        {/* =================================================
+            HEADER
+        ================================================= */}
+        <div className="flex items-center justify-between mb-5">
 
-          <div>
-            <label htmlFor="task-assignee" className="text-xs font-medium text-slate-500 block mb-1">
-              Assignee
-            </label>
-            <select
-              id="task-assignee"
-              value={assigneeId}
-              onChange={(e) => setAssigneeId(e.target.value)}
-              className={
-                errors.assigneeId
-                  ? "w-full border border-rose-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-                  : "w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-              }
-            >
-              <option value="" disabled>Select team member</option>
-              {team.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-            {errors.assigneeId && <p className="text-xs text-rose-500 mt-1">{errors.assigneeId}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="task-priority" className="text-xs font-medium text-slate-500 block mb-1">
-              Priority
-            </label>
-            <select
-              id="task-priority"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            >
-              <option>High</option>
-              <option>Medium</option>
-              <option>Low</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="task-due" className="text-xs font-medium text-slate-500 block mb-1">
-              Due Date
-            </label>
-            <input
-              id="task-due"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            />
-          </div>
+          <h2 className="text-xl font-semibold text-slate-800">
+            Create Task
+          </h2>
 
           <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg mt-2"
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600"
           >
-            Create Task
+            <X size={20} />
           </button>
+
+        </div>
+
+        {/* =================================================
+            ERROR
+        ================================================= */}
+        {error && (
+          <div className="mb-4 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-sm text-rose-600">
+            {error}
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
+
+          {/* TASK NAME */}
+          <div>
+            <label className="text-sm font-medium text-slate-500 block mb-2">
+              Task Name
+            </label>
+
+            <input
+              type="text"
+              value={name}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
+              placeholder="Enter task name"
+              className="w-full border border-slate-200 rounded-lg text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+          </div>
+
+          {/* DESCRIPTION */}
+          <div>
+            <label className="text-sm font-medium text-slate-500 block mb-2">
+              Description
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(e) =>
+                setDescription(e.target.value)
+              }
+              rows={4}
+              placeholder="Enter task description"
+              className="w-full border border-slate-200 rounded-lg text-sm px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+          </div>
+
+          {/* PROJECT */}
+          <div>
+            <label className="text-sm font-medium text-slate-500 block mb-2">
+              Project
+            </label>
+
+            <select
+              value={projectId || ""}
+              onChange={(e) =>
+                setProjectId(e.target.value)
+              }
+              className="w-full border border-slate-200 rounded-lg text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            >
+              <option value="">
+                Select project
+              </option>
+
+              {projects.map((project) => (
+                <option
+                  key={project.id}
+                  value={project.id}
+                >
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* ASSIGNEE */}
+          <div>
+            <label className="text-sm font-medium text-slate-500 block mb-2">
+              Assignee
+            </label>
+
+            <select
+              value={assigneeId}
+              onChange={(e) =>
+                setAssigneeId(e.target.value)
+              }
+              className="w-full border border-slate-200 rounded-lg text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            >
+              <option value="">
+                Select team member
+              </option>
+
+              {members.length > 0 ? (
+                members.map((member) => (
+                  <option
+                    key={member.id}
+                    value={member.id}
+                  >
+                    {member.name}
+                  </option>
+                ))
+              ) : (
+                <option
+                  value=""
+                  disabled
+                >
+                  No team members available
+                </option>
+              )}
+            </select>
+
+            {/* DEBUG INFO */}
+            {members.length === 0 && (
+              <p className="text-xs text-rose-500 mt-1">
+                No team members loaded.
+              </p>
+            )}
+          </div>
+
+          {/* PRIORITY */}
+          <div>
+            <label className="text-sm font-medium text-slate-500 block mb-2">
+              Priority
+            </label>
+
+            <select
+              value={priority}
+              onChange={(e) =>
+                setPriority(e.target.value)
+              }
+              className="w-full border border-slate-200 rounded-lg text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            >
+              <option value="Low">
+                Low
+              </option>
+
+              <option value="Medium">
+                Medium
+              </option>
+
+              <option value="High">
+                High
+              </option>
+            </select>
+          </div>
+
+          {/* DUE DATE */}
+          <div>
+            <label className="text-sm font-medium text-slate-500 block mb-2">
+              Due Date
+            </label>
+
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) =>
+                setDueDate(e.target.value)
+              }
+              className="w-full border border-slate-200 rounded-lg text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+          </div>
+
+          {/* CREATE BUTTON */}
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
+          >
+            {saving
+              ? "Creating..."
+              : "Create Task"}
+          </button>
+
         </form>
       </div>
     </div>

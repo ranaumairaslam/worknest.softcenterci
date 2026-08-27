@@ -1,152 +1,317 @@
-import { normalizeFilters, getActor } from "./authContext";
-import { filterMeetings } from "../utils/roleFilter";
-import { onMeetingScheduled } from "./syncService";
+import { get, post, put, del } from './apiClient.js';
 
-let meetings = [
-  {
-    id: "m1",
-    title: "Project Review Meeting",
-    project: "CRM Dashboard",
-    projectId: "p2",
-    clientId: "c2",
-    date: "2026-07-30",
-    time: "2:00 PM",
-    platform: "Google Meet",
-    organizer: "Ahmed Khan",
-    organizerId: "e2",
-    meetingLink: "https://meet.google.com/abc-defg-hij",
-    status: "Scheduled",
-    type: "Client",
-    participants: ["Sarah Khan", "Ahmed Ali", "Client Rep"],
-    participantIds: ["e1", "e2", "c1"],
-  },
-  {
-    id: "m2",
-    title: "Sprint Planning",
-    project: "AI Recommendation Engine",
-    projectId: "p6",
-    teamId: "tm5",
-    date: "2026-07-31",
-    time: "11:00 AM",
-    platform: "Microsoft Teams",
-    organizer: "Waleed Hassan",
-    organizerId: "e5",
-    meetingLink: "https://teams.microsoft.com/l/meetup-join/xxxx",
-    status: "Scheduled",
-    type: "Team",
-    participants: ["Waleed Hassan", "Areeba Noor", "Ahmed Ali"],
-    participantIds: ["e5", "e3", "e2"],
-  },
-  {
-    id: "m3",
-    title: "Weekly Team Standup",
-    project: "Alpha Platform Rebrand",
-    projectId: "p1",
-    teamId: "tm1",
-    date: "2026-08-01",
-    time: "10:00 AM",
-    platform: "Zoom",
-    organizer: "Sarah Khan",
-    organizerId: "e1",
-    meetingLink: "https://zoom.us/j/123456789",
-    status: "Scheduled",
-    type: "Team",
-    participants: ["Sarah Khan"],
-    participantIds: ["e1", "e7", "e8"],
-  },
-];
+const BASE = '/company/meetings';
 
-export async function getAllMeetings(roleOrFilters) {
-  const filters = normalizeFilters(roleOrFilters);
-  return filterMeetings(meetings, filters).map((m) => ({
-    ...m,
-    participants: [...m.participants],
-    participantIds: [...(m.participantIds || [])],
-  }));
+// =====================================================
+// Meeting Type Mapping (Updated for new backend)
+// =====================================================
+const TYPE_TO_BACKEND = {
+  Team: 'Team Meeting',
+  'Team Meeting': 'Team Meeting',
+  Client: 'Client',
+  Leaders: 'Project Leader',
+  'Project Leader': 'Project Leader',
+  'Team Leads': 'Project Leader',
+};
+
+const TYPE_TO_FRONTEND = {
+  'Team Meeting': 'Team',
+  Client: 'Client',
+  'Project Leader': 'Leaders',
+  'Team Leads': 'Leaders',
+};
+
+const STATUS_TO_FRONTEND = {
+  scheduled: 'Scheduled',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  live: 'Live',
+};
+
+// =====================================================
+// GET ALL MEETINGS
+// =====================================================
+export async function getAllMeetings() {
+  try {
+    const response = await get(BASE);
+    const meetings = response?.data || [];
+    return meetings.map(transformMeeting);
+  } catch (error) {
+    console.error('Error fetching meetings:', error);
+    return [];
+  }
 }
 
+// =====================================================
+// GET SINGLE MEETING
+// =====================================================
 export async function getMeetingById(id) {
-  const meeting = meetings.find((m) => m.id === id);
-  return meeting ? { ...meeting, participants: [...meeting.participants] } : null;
+  try {
+    const response = await get(`${BASE}/${id}`);
+    return transformMeeting(response?.data);
+  } catch (error) {
+    console.error('Error fetching meeting:', error);
+    return null;
+  }
 }
 
-export async function createMeeting(payload, roleOrActor) {
-  const actor = typeof roleOrActor === "object" && roleOrActor?.role
-    ? roleOrActor
-    : getActor(typeof roleOrActor === "string" ? roleOrActor : "companyAdmin");
+// =====================================================
+// CREATE MEETING (Smart Handling)
+// =====================================================
+export async function createMeeting(payload) {
+  try {
+    const audience = TYPE_TO_BACKEND[payload.type] || 'Team Meeting';
 
-  const newMeeting = {
-    id: `m${Date.now()}`,
-    title: payload.title,
-    project: payload.project || "Unassigned",
-    projectId: payload.projectId || null,
-    teamId: payload.teamId || null,
-    clientId: payload.clientId || null,
-    date: payload.date || "TBD",
-    time: payload.time || "TBD",
-    platform: payload.platform || "Online",
-    organizer: payload.organizer || actor.name,
-    organizerId: payload.organizerId || actor.employeeId || actor.id,
-    meetingLink: payload.meetingLink || "",
-    status: payload.status || "Scheduled",
-    type: payload.type || "Team",
-    participants: payload.participants || [],
-    participantIds: payload.participantIds || [],
-  };
+    const body = {
+      Title: payload.title,
+      toWhome: audience,
+      ProjectName: payload.project || null,  // Always send project
+      date: payload.date,
+      time: payload.time ? convertTo24Hour(payload.time) : null,
+      MeetingSource: payload.platform || 'Google Meet',
+      MeetingLink: payload.meetingLink || '',
+      description: payload.description || '',
+    };
 
-  meetings.push(newMeeting);
-  await onMeetingScheduled(newMeeting, actor);
+    // Handle audience-specific fields
+    if (audience === 'Client') {
+      body.ClientName = payload.meetingWith;
+    } else if (audience === 'Project Leader') {
+      // For Project Leader: meetingWith can be project name (use it!)
+      if (payload.meetingWith) {
+        body.ProjectName = payload.meetingWith;
+      }
+      // Backend will auto-find the leader from project
+    } else {
+      // Team Meeting
+      body.Teams = payload.meetingWith ? [payload.meetingWith] : [];
+    }
 
-  return { ...newMeeting, participants: [...newMeeting.participants], participantIds: [...newMeeting.participantIds] };
+    console.log('📤 Creating meeting with body:', body);
+
+    const response = await post(BASE, body);
+    return transformMeeting(response?.data);
+  } catch (error) {
+    console.error('Error creating meeting:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
+    throw new Error(error.data?.message || error.message || 'Failed to create meeting');
+  }
 }
 
-export async function updateMeeting(id, updates, role) {
-  const index = meetings.findIndex((m) => m.id === id);
-  if (index === -1) return null;
+// =====================================================
+// UPDATE MEETING
+// =====================================================
+export async function updateMeeting(id, updates) {
+  try {
+    const body = {};
+    
+    if (updates.title !== undefined) body.Title = updates.title;
+    if (updates.type !== undefined) body.toWhome = TYPE_TO_BACKEND[updates.type];
+    if (updates.project !== undefined) body.ProjectName = updates.project;
+    if (updates.date !== undefined) body.date = updates.date;
+    if (updates.time !== undefined) body.time = convertTo24Hour(updates.time);
+    if (updates.platform !== undefined) body.MeetingSource = updates.platform;
+    if (updates.meetingLink !== undefined) body.MeetingLink = updates.meetingLink;
+    if (updates.description !== undefined) body.description = updates.description;
+    if (updates.status !== undefined) body.status = updates.status.toLowerCase();
+    
+    if (updates.type && updates.meetingWith !== undefined) {
+      const audience = TYPE_TO_BACKEND[updates.type];
+      if (audience === 'Client') {
+        body.ClientName = updates.meetingWith;
+      } else if (audience === 'Project Leader') {
+        body.ProjectName = updates.meetingWith;
+      } else {
+        body.Teams = updates.meetingWith ? [updates.meetingWith] : [];
+      }
+    }
 
-  meetings[index] = {
-    ...meetings[index],
-    ...updates,
-    participants: updates.participants || meetings[index].participants,
-    lastModifiedByRole: role || meetings[index].lastModifiedByRole,
-  };
+    console.log('📤 Updating meeting:', id, body);
 
-  console.log("API call: updateMeeting", { id, updates, role });
-
-  return { ...meetings[index], participants: [...meetings[index].participants] };
+    const response = await put(`${BASE}/${id}`, body);
+    return transformMeeting(response?.data);
+  } catch (error) {
+    console.error('Error updating meeting:', error);
+    
+    if (error.data?.errors && Array.isArray(error.data.errors)) {
+      const errorMessages = error.data.errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join('\n');
+      const newError = new Error(errorMessages);
+      newError.backendErrors = error.data.errors;
+      throw newError;
+    }
+    
+    throw error;
+  }
 }
 
-export async function deleteMeeting(id, role) {
-  const index = meetings.findIndex((m) => m.id === id);
-  if (index === -1) return false;
-
-  meetings.splice(index, 1);
-  console.log("API call: deleteMeeting", { id, role });
-  return true;
+// =====================================================
+// DELETE MEETING
+// =====================================================
+export async function deleteMeeting(id) {
+  try {
+    console.log('🗑️ Deleting meeting:', id);
+    await del(`${BASE}/${id}`);
+    return true;
+  } catch (error) {
+    console.error('Error deleting meeting:', error);
+    alert(`Delete failed: ${error.data?.message || error.message || 'Unknown error'}`);
+    return false;
+  }
 }
 
-export async function cancelMeeting(id, role) {
-  return updateMeeting(id, { status: "Cancelled" }, role);
+// =====================================================
+// CANCEL MEETING
+// =====================================================
+export async function cancelMeeting(id) {
+  try {
+    const response = await put(`${BASE}/${id}`, { status: 'cancelled' });
+    return transformMeeting(response?.data);
+  } catch (error) {
+    console.error('Error cancelling meeting:', error);
+    throw error;
+  }
 }
 
-export async function inviteParticipants(id, newParticipants, role) {
-  const meeting = meetings.find((m) => m.id === id);
+// =====================================================
+// INVITE MEMBERS
+// =====================================================
+export async function inviteParticipants(meetingId, participants) {
+  try {
+    const body = {};
+    
+    if (Array.isArray(participants)) {
+      body.Members = participants;
+    } else if (typeof participants === 'object') {
+      if (participants.members) body.Members = participants.members;
+      if (participants.teams) body.Teams = participants.teams;
+      if (participants.clientName) body.ClientName = participants.clientName;
+    } else {
+      body.Members = [participants];
+    }
+
+    const response = await post(`${BASE}/${meetingId}/invite`, body);
+    return transformMeeting(response?.data);
+  } catch (error) {
+    console.error('Error inviting to meeting:', error);
+    throw error;
+  }
+}
+
+// =====================================================
+// REMOVE PARTICIPANT
+// =====================================================
+export async function removeParticipant(meetingId, participants) {
+  try {
+    const body = {};
+    if (Array.isArray(participants)) {
+      body.Members = participants;
+    } else {
+      body.Members = [participants];
+    }
+    const response = await del(`${BASE}/${meetingId}/invite`, body);
+    return transformMeeting(response?.data);
+  } catch (error) {
+    console.error('Error removing participant:', error);
+    throw error;
+  }
+}
+
+// =====================================================
+// HELPERS
+// =====================================================
+function convertTo24Hour(timeString) {
+  if (!timeString) return null;
+  const trimmed = String(timeString).trim();
+  if (/^\d{1,2}:\d{2}$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const period = match[3]?.toUpperCase();
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  }
+  return trimmed;
+}
+
+function formatTime12(timeString) {
+  if (!timeString) return '';
+  try {
+    const [hours, minutes] = timeString.split(':');
+    const h = parseInt(hours, 10);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${period}`;
+  } catch {
+    return timeString;
+  }
+}
+
+function formatDate(dateString) {
+  if (!dateString) return 'TBD';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+function transformMeeting(meeting) {
   if (!meeting) return null;
 
-  const combined = [...new Set([...meeting.participants, ...newParticipants])];
-  return updateMeeting(id, { participants: combined }, role);
-}
+  const teams = meeting.Teams || [];
+  const members = meeting.Members || [];
+  const backendType = meeting.toWhom || meeting.toWhome || 'Team Meeting';
+  const frontendType = TYPE_TO_FRONTEND[backendType] || 'Team';
+  
+  let meetingWith = '';
+  if (backendType === 'Client') {
+    meetingWith = members[0]?.name || '';
+  } else if (backendType === 'Project Leader' || backendType === 'Team Leads') {
+    meetingWith = meeting.ProjectName || '';
+  } else {
+    meetingWith = teams[0]?.name || '';
+  }
 
-export async function getUpcomingMeetings(role) {
-  console.log("API call: getUpcomingMeetings", { role });
-  return meetings
-    .filter((m) => m.status === "Scheduled")
-    .map((m) => ({ ...m, participants: [...m.participants], role: role || undefined }));
-}
-
-export async function getMeetingsByType(type, role) {
-  if (type === "All") return getAllMeetings(role);
-  return meetings
-    .filter((m) => m.type === type)
-    .map((m) => ({ ...m, participants: [...m.participants], role: role || undefined }));
+  return {
+    id: meeting.id,
+    title: meeting.Title || meeting.title || '',
+    type: frontendType,
+    typeBackend: backendType,
+    project: meeting.ProjectName || 'Unassigned',
+    projectId: meeting.project_id || null,
+    date: meeting.date ? String(meeting.date).slice(0, 10) : '',
+    dateFormatted: formatDate(meeting.date),
+    time: meeting.time || '',
+    timeFormatted: formatTime12(meeting.time),
+    platform: meeting.MeetingSource || 'Google Meet',
+    meetingLink: meeting.MeetingLink || '',
+    organizer: 'Company Admin',
+    status: STATUS_TO_FRONTEND[meeting.status] || 'Scheduled',
+    description: meeting.description || '',
+    meetingWith: meetingWith,
+    teams: teams,
+    members: members,
+    participants: members,
+    createdAt: formatDate(meeting.created_at),
+    updatedAt: formatDate(meeting.updated_at),
+  };
 }

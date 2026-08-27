@@ -1,73 +1,216 @@
 import { useEffect, useState } from "react";
 import {
   getProjects,
-  getProjectSummary,
-  getStats,
-  getTimeline,
-  getTeamPerformance,
-  getTaskOverview,
-  getKanbanPreview,
-} from "../services/projectOversightService";
+  getProjectTasks,
+  getTeamMembers,
+  getTeamProgressStats,
+} from "../services/projectLeaderService";
 
 export function useProjectOversightData() {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [data, setData] = useState(null);
+
+  const [data, setData] = useState({
+    summary: {},
+    team: [],
+    tasks: [],
+  });
+
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load the project list once, pick the first one as default.
-  useEffect(() => {
-    let isMounted = true;
+  /* =====================================================
+     LOAD PROJECTS
+  ===================================================== */
 
-    getProjects()
-      .then((list) => {
-        if (isMounted) {
-          setProjects(list);
-          setSelectedProjectId(list[0]?.id ?? null);
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadProjects() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log("📡 Loading projects...");
+
+        const result = await getProjects();
+
+        console.log("📁 PROJECTS FROM API:", result);
+
+        if (!mounted) return;
+
+        const projectList = Array.isArray(result)
+          ? result
+          : [];
+
+        setProjects(projectList);
+
+        if (projectList.length > 0) {
+          const firstProjectId = projectList[0].id;
+
+          console.log(
+            "🎯 FIRST PROJECT:",
+            firstProjectId
+          );
+
+          setSelectedProjectId(firstProjectId);
+        } else {
+          setData({
+            summary: {},
+            team: [],
+            tasks: [],
+          });
+
+          setLoading(false);
         }
-      })
-      .catch((err) => {
-        if (isMounted) setError(err);
-      });
+      } catch (err) {
+        console.error(
+          "❌ FAILED TO LOAD PROJECTS:",
+          err
+        );
+
+        if (mounted) {
+          setError(err);
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProjects();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, []);
 
-  // Re-fetch everything whenever the selected project changes.
-  // No setState is called synchronously here — only inside the
-  // resolved promise callback, which the React Compiler allows.
-  useEffect(() => {
-    if (!selectedProjectId) return;
-    let isMounted = true;
+  /* =====================================================
+     LOAD SELECTED PROJECT DATA
+  ===================================================== */
 
-    Promise.all([
-      getProjectSummary(selectedProjectId),
-      getStats(),
-      getTimeline(selectedProjectId),
-      getTeamPerformance(selectedProjectId),
-      getTaskOverview(selectedProjectId),
-      getKanbanPreview(selectedProjectId),
-    ])
-      .then(([summary, stats, timeline, team, tasks, kanban]) => {
-        if (isMounted) {
-          setData({ summary, stats, timeline, team, tasks, kanban });
+  useEffect(() => {
+    if (!selectedProjectId) {
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadProjectData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log(
+          "🔍 Loading tasks for project:",
+          selectedProjectId
+        );
+
+        /*
+         * Load independently.
+         *
+         * Agar ek API fail ho jaye to poora page
+         * forever loading nahi rahega.
+         */
+
+        const tasksPromise = getProjectTasks(
+          selectedProjectId
+        );
+
+        const teamPromise = getTeamMembers(
+          selectedProjectId
+        );
+
+        const statsPromise = getTeamProgressStats(
+          selectedProjectId
+        );
+
+        const [tasksResult, teamResult, statsResult] =
+          await Promise.all([
+            tasksPromise,
+            teamPromise,
+            statsPromise,
+          ]);
+
+        if (!mounted) return;
+
+        console.log(
+          "📦 TASKS API RESPONSE:",
+          tasksResult
+        );
+
+        console.log(
+          "👥 TEAM API RESPONSE:",
+          teamResult
+        );
+
+        console.log(
+          "📊 STATS API RESPONSE:",
+          statsResult
+        );
+
+        const project = projects.find(
+          (p) =>
+            String(p.id) ===
+            String(selectedProjectId)
+        );
+
+        setData({
+          summary: {
+            ...(project || {}),
+            ...(statsResult?.summary || {}),
+          },
+
+          team: Array.isArray(teamResult)
+            ? teamResult
+            : [],
+
+          tasks: Array.isArray(tasksResult)
+            ? tasksResult
+            : [],
+        });
+
+        console.log(
+          "✅ TASKS FOR PROJECT:",
+          selectedProjectId,
+          tasksResult
+        );
+      } catch (err) {
+        console.error(
+          "❌ FAILED TO LOAD PROJECT DATA:",
+          err
+        );
+
+        if (mounted) {
+          setError(err);
+
+          /*
+           * IMPORTANT:
+           * Error ke baad bhi loading false hoga.
+           */
+          setData((prev) => ({
+            ...prev,
+            tasks: [],
+          }));
         }
-      })
-      .catch((err) => {
-        if (isMounted) setError(err);
-      });
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProjectData();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [selectedProjectId]);
+  }, [selectedProjectId, projects]);
 
-  // Derived, not stored: loading is true whenever we don't yet have
-  // data for the CURRENTLY selected project (e.g. right after
-  // switching projects, before the new fetch resolves).
-  const loading = !data || data.summary.id !== selectedProjectId;
-
-  return { projects, selectedProjectId, setSelectedProjectId, data, loading, error };
+  return {
+    projects,
+    selectedProjectId,
+    setSelectedProjectId,
+    data,
+    loading,
+    error,
+  };
 }

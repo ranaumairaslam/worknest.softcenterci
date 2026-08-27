@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getAllEmployees,
   createEmployee,
@@ -14,54 +14,44 @@ export function useEmployees() {
   const [error, setError] = useState(null);
   const [teams, setTeams] = useState([]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadEmployees() {
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getAllEmployees();
+      let availableTeams = [];
       try {
-        const data = await getAllEmployees();
-        let availableTeams = [];
-        try {
-          availableTeams = await getCompanyTeams();
-        } catch {
-          // Do not hide the employee list if the optional team lookup fails.
-        }
-        if (!isMounted) return;
-        setError(null);
-        setEmployees(data);
-        setTeams(availableTeams);
-      } catch (err) {
-        if (!isMounted) return;
-        setError(err);
-      } finally {
-        if (isMounted) setLoading(false);
+        availableTeams = await getCompanyTeams();
+      } catch {
+        // Continue
       }
+      setError(null);
+      setEmployees(data);
+      setTeams(availableTeams);
+    } catch (err) {
+      console.error(err);
+      setError(err);
+    } finally {
+      setLoading(false);
     }
-
-    loadEmployees();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
   const addEmployee = async (payload) => {
-    setLoading(true);
     try {
       const created = await createEmployee(payload);
       const { credentials, ...employee } = created;
       setError(null);
       setEmployees((prev) => [employee, ...prev]);
-      return { employee, credentials };
+      return { ...employee, credentials };
     } catch (err) {
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const editEmployee = async (id, updates) => {
-    setLoading(true);
     try {
       const employee = await updateEmployee(id, updates);
       setError(null);
@@ -71,13 +61,10 @@ export function useEmployees() {
       return employee;
     } catch (err) {
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const removeEmployee = async (id) => {
-    setLoading(true);
     try {
       const deleted = await deleteEmployee(id);
       if (deleted) {
@@ -87,13 +74,10 @@ export function useEmployees() {
       return deleted;
     } catch (err) {
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const assignEmployeeToTeam = async (employeeId, teamName) => {
-    setLoading(true);
     try {
       const employee = await assignToTeam(employeeId, teamName);
       if (employee) {
@@ -105,8 +89,6 @@ export function useEmployees() {
       return employee;
     } catch (err) {
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -119,5 +101,6 @@ export function useEmployees() {
     editEmployee,
     removeEmployee,
     assignEmployeeToTeam,
+    refresh: load,
   };
 }

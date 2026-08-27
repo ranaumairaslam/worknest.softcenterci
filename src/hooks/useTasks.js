@@ -4,54 +4,52 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  updateTaskStatus,
   getTaskStatistics,
 } from "../services/taskService";
-import { getActor } from "../services/authContext";
-import { subscribeDataChange } from "../utils/eventBus";
-import useRole from "./useRole";
 
 export function useTasks() {
-  const role = useRole();
   const [tasks, setTasks] = useState([]);
   const [statistics, setStatistics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const loadStats = useCallback(async () => {
-    const stats = await getTaskStatistics(role);
+    const stats = await getTaskStatistics();
     setStatistics(stats);
-  }, [role]);
+  }, []);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const [data, stats] = await Promise.all([getAllTasks(role), getTaskStatistics(role)]);
+      const [data, stats] = await Promise.all([
+        getAllTasks(),
+        getTaskStatistics(),
+      ]);
       setTasks(data);
       setStatistics(stats);
       setError(null);
     } catch (err) {
+      console.error(err);
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, [role]);
+  }, []);
 
   useEffect(() => {
     load();
-    return subscribeDataChange(load);
   }, [load]);
 
-  const actor = getActor(role);
-
   const addTask = async (payload) => {
-    const task = await createTask(payload, actor);
+    const task = await createTask(payload);
     setTasks((prev) => [task, ...prev]);
     await loadStats();
     return task;
   };
 
   const editTask = async (id, updates) => {
-    const task = await updateTask(id, updates, actor);
+    const task = await updateTask(id, updates);
     if (task) {
       setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
       await loadStats();
@@ -60,12 +58,21 @@ export function useTasks() {
   };
 
   const removeTask = async (id) => {
-    const deleted = await deleteTask(id, actor);
+    const deleted = await deleteTask(id);
     if (deleted) {
       setTasks((prev) => prev.filter((t) => t.id !== id));
       await loadStats();
     }
     return deleted;
+  };
+
+  const changeTaskStatus = async (id, status) => {
+    const task = await updateTaskStatus(id, status);
+    if (task) {
+      setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
+      await loadStats();
+    }
+    return task;
   };
 
   return {
@@ -76,6 +83,7 @@ export function useTasks() {
     addTask,
     editTask,
     removeTask,
+    changeTaskStatus,
     refresh: load,
   };
 }

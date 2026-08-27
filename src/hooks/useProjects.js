@@ -7,12 +7,8 @@ import {
   markProjectCompleted,
   assignProjectLeader,
 } from "../services/projectService";
-import { getActor } from "../services/authContext";
-import { subscribeDataChange } from "../utils/eventBus";
-import useRole from "./useRole";
 
 export function useProjects() {
-  const role = useRole();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,31 +16,29 @@ export function useProjects() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllProjects(role);
+      const data = await getAllProjects();
       setProjects(data);
       setError(null);
     } catch (err) {
+      console.error(err);
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, [role]);
+  }, []);
 
   useEffect(() => {
     load();
-    return subscribeDataChange(load);
   }, [load]);
 
-  const actor = getActor(role);
-
   const addProject = async (payload) => {
-    const project = await createProject(payload, actor);
+    const project = await createProject(payload);
     setProjects((prev) => [project, ...prev]);
     return project;
   };
 
   const editProject = async (id, updates) => {
-    const project = await updateProject(id, updates, actor);
+    const project = await updateProject(id, updates);
     if (project) {
       setProjects((prev) => prev.map((p) => (p.id === id ? project : p)));
     }
@@ -52,7 +46,7 @@ export function useProjects() {
   };
 
   const removeProject = async (id) => {
-    const deleted = await deleteProject(id, actor);
+    const deleted = await deleteProject(id);
     if (deleted) {
       setProjects((prev) => prev.filter((p) => p.id !== id));
     }
@@ -60,7 +54,7 @@ export function useProjects() {
   };
 
   const completeProject = async (id) => {
-    const project = await markProjectCompleted(id, actor);
+    const project = await markProjectCompleted(id);
     if (project) {
       setProjects((prev) => prev.map((p) => (p.id === id ? project : p)));
     }
@@ -68,7 +62,7 @@ export function useProjects() {
   };
 
   const setProjectLeader = async (id, leaderName) => {
-    const project = await assignProjectLeader(id, leaderName, actor);
+    const project = await assignProjectLeader(id, leaderName);
     if (project) {
       setProjects((prev) => prev.map((p) => (p.id === id ? project : p)));
     }

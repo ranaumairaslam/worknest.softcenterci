@@ -126,11 +126,12 @@ export const navigation = {
       icon: LayoutDashboard,
       path: "/dashboard-leader",
     },
+   
     {
       title: "Projects",
       icon: FolderKanban,
       path: "/project",
-    },
+    }, 
      {
     title: "Tasks",
     icon: CheckSquare,
@@ -146,7 +147,7 @@ export const navigation = {
     icon: Clock3,
     path: "/project/timeline",
   },
-  
+ /* 
   {
     title: "Kanban Board",
     icon: Briefcase,
@@ -156,7 +157,7 @@ export const navigation = {
     title: "Calendar",
     icon: CalendarDays,
     path: "/calendar",
-  },
+  },*/
     {
       title: "Reports",
       icon: BarChart3,
@@ -227,7 +228,7 @@ export const getRoleFromPath = (pathname) => {
     "/subscriptions": "superAdmin",
     "/reports": "superAdmin",
     "/pending": "superAdmin",
-   "/revenue-super-admin": "superAdmin",
+    "/revenue-super-admin": "superAdmin",
 
     // Company Admin
     "/dashboard-company": "companyAdmin",
@@ -266,5 +267,10 @@ export const getRoleFromPath = (pathname) => {
     "/chat": "client",
   };
 
-  return routes[pathname] || "superAdmin";
+  // Settings ka role localStorage se lo
+  if (pathname === "/settings") {
+  return null;
+}
+
+return routes[pathname] || null;
 };

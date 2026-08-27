@@ -4,16 +4,12 @@ import {
   createTeam,
   updateTeam,
   deleteTeam,
-  addTeamMember,
-  assignProjectLeader,
+  addExistingMemberToTeam,
+  assignTeamLeader,
+  removeTeamMember,
 } from "../services/teamService";
-import { getActor } from "../services/authContext";
-import { filterTeams } from "../utils/roleFilter";
-import { subscribeDataChange } from "../utils/eventBus";
-import useRole from "./useRole";
 
 export function useTeams() {
-  const role = useRole();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,60 +17,96 @@ export function useTeams() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAllTeams(role);
-      const user = getActor(role);
-      setTeams(filterTeams(data, { role, user }));
+      const data = await getAllTeams();
+      setTeams(data);
       setError(null);
     } catch (err) {
+      console.error(err);
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, [role]);
+  }, []);
 
   useEffect(() => {
     load();
-    return subscribeDataChange(load);
   }, [load]);
 
-  const actor = getActor(role);
-
   const addTeam = async (payload) => {
-    const team = await createTeam(payload, role, actor);
-    setTeams((prev) => [team, ...prev]);
+    const team = await createTeam(payload);
+    
+    // If members were selected, add them
+    if (team && payload.memberNames && payload.memberNames.length > 0) {
+      for (const memberName of payload.memberNames) {
+        try {
+          await addExistingMemberToTeam(team.id, memberName);
+        } catch (err) {
+          console.warn(`Could not add member ${memberName}:`, err);
+        }
+      }
+    }
+    
+    // If leader was selected, assign as leader
+    if (team && payload.leaderId) {
+      try {
+        await assignTeamLeader(team.id, payload.leaderId);
+      } catch (err) {
+        console.warn('Could not auto-assign leader:', err);
+      }
+    }
+    
+    await load();
     return team;
   };
 
   const editTeam = async (id, updates) => {
-    const team = await updateTeam(id, updates, role);
+    const team = await updateTeam(id, updates);
     if (team) {
       setTeams((prev) => prev.map((t) => (t.id === id ? team : t)));
+    }
+    if (updates.leaderId) {
+      try {
+        await assignTeamLeader(id, updates.leaderId);
+        await load();
+      } catch (err) {
+        console.warn('Could not assign leader:', err);
+      }
     }
     return team;
   };
 
   const removeTeam = async (id) => {
-    const deleted = await deleteTeam(id, role);
+    const deleted = await deleteTeam(id);
     if (deleted) {
       setTeams((prev) => prev.filter((t) => t.id !== id));
     }
     return deleted;
   };
 
-  const assignMember = async (teamId, employeeId) => {
-    const team = await addTeamMember(teamId, employeeId, role);
-    if (team) {
-      setTeams((prev) => prev.map((t) => (t.id === teamId ? team : t)));
+  const assignMember = async (teamId, employeeName) => {
+    try {
+      await addExistingMemberToTeam(teamId, employeeName);
+      await load(); // Refresh to get updated member count
+      return true;
+    } catch (err) {
+      throw err;
     }
-    return team;
   };
 
-  const setTeamLeader = async (teamId, leaderName) => {
-    const team = await assignProjectLeader(teamId, leaderName, role);
-    if (team) {
-      setTeams((prev) => prev.map((t) => (t.id === teamId ? team : t)));
+  const removeMember = async (teamId, employeeId) => {
+    try {
+      await removeTeamMember(teamId, employeeId);
+      await load();
+      return true;
+    } catch (err) {
+      throw err;
     }
-    return team;
+  };
+
+  const setTeamLeader = async (teamId, userId) => {
+    const result = await assignTeamLeader(teamId, userId);
+    await load();
+    return result;
   };
 
   return {
@@ -85,6 +117,7 @@ export function useTeams() {
     editTeam,
     removeTeam,
     assignMember,
+    removeMember,
     setTeamLeader,
     refresh: load,
   };

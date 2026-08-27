@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { X, FileText } from "lucide-react";
 
-export default function DeliverablesReviewModal({ items, onClose, onApprove, onReject }) {
+export default function DeliverablesReviewModal({
+  items,
+  onClose,
+  onApprove,
+  onReject,
+  onViewTask,
+}) {
   const [activeAction, setActiveAction] = useState(null);
   const [comment, setComment] = useState("");
 
@@ -68,15 +74,21 @@ export default function DeliverablesReviewModal({ items, onClose, onApprove, onR
 
                   <div className="flex items-center gap-3">
 
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                    >
-                      <FileText size={12} />
-                      {item.linkLabel}
-                    </a>
+                  <button
+  type="button"
+  onClick={() => {
+    console.log("========== VIEW TASK ==========");
+    console.log("ITEM:", item);
+    console.log("ITEM TASK:", item?.task);
+    console.log("ITEM TASK ID:", item?.taskId);
+
+    onViewTask?.(item);
+  }}
+  className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+>
+  <FileText size={12} />
+  View task
+</button>
 
                     <button
                       onClick={function () {

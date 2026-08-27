@@ -1,10 +1,42 @@
 import { useState } from "react";
 import { FileText, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-export default function TaskCard({ task, onClick, onEdit, onDelete, onDragStart, onDragEnd }) {
+export default function TaskCard({
+  task,
+  onClick,
+  onEdit,
+  onDelete,
+  onDragStart,
+  onDragEnd,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
   const showMenu = Boolean(onEdit || onDelete);
+
+  const taskTitle = task?.title || "Untitled Task";
+
+  // ✅ FIX: supports camelCase, snake_case & nested shapes
+  const assigneeName =
+    task?.assignee?.name ||
+    task?.assigneeName ||
+    task?.assignee_name ||
+    task?.assignedTo?.name ||
+    (typeof task?.assignee === "string" ? task.assignee : null) ||
+    "Unassigned";
+
+  const initials =
+    task?.assignee?.avatar ||
+    task?.assigneeInitials ||
+    assigneeName
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+  const isUnassigned = assigneeName === "Unassigned";
 
   function handleCardClick() {
     if (isDragging) return;
@@ -29,7 +61,7 @@ export default function TaskCard({ task, onClick, onEdit, onDelete, onDragStart,
   }
 
   function handleDragStart(e) {
-    e.dataTransfer.setData("text/plain", task.id);
+    e.dataTransfer.setData("text/plain", String(task.id));
     e.dataTransfer.effectAllowed = "move";
     setIsDragging(true);
     onDragStart?.(task);
@@ -55,6 +87,7 @@ export default function TaskCard({ task, onClick, onEdit, onDelete, onDragStart,
         isDragging ? "opacity-40" : "hover:shadow-md"
       }`}
     >
+      {/* Actions */}
       {showMenu && (
         <div className="absolute top-2 right-2">
           <button
@@ -65,6 +98,7 @@ export default function TaskCard({ task, onClick, onEdit, onDelete, onDragStart,
           >
             <MoreHorizontal size={14} />
           </button>
+
           {menuOpen && (
             <div className="absolute right-0 mt-1 w-28 bg-white border border-slate-200 rounded-lg shadow-lg z-10 py-1">
               {onEdit && (
@@ -73,16 +107,19 @@ export default function TaskCard({ task, onClick, onEdit, onDelete, onDragStart,
                   onClick={handleEditClick}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
                 >
-                  <Pencil size={12} /> Edit
+                  <Pencil size={12} />
+                  Edit
                 </button>
               )}
+
               {onDelete && (
                 <button
                   type="button"
                   onClick={handleDeleteClick}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50"
                 >
-                  <Trash2 size={12} /> Delete
+                  <Trash2 size={12} />
+                  Delete
                 </button>
               )}
             </div>
@@ -90,15 +127,34 @@ export default function TaskCard({ task, onClick, onEdit, onDelete, onDragStart,
         </div>
       )}
 
+      {/* Task title */}
       <div className="flex items-start gap-2 mb-3 pr-5">
         <FileText size={14} className="text-slate-400 mt-0.5 shrink-0" />
-        <p className="text-sm font-medium text-slate-700 leading-snug">{task.title}</p>
+        <p className="text-sm font-medium text-slate-700 leading-snug">
+          {taskTitle}
+        </p>
       </div>
+
+      {/* Assignee */}
       <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-[10px] font-medium flex items-center justify-center">
-          {task.assignee.avatar}
+        <div
+          className={`w-6 h-6 rounded-full text-[10px] font-semibold flex items-center justify-center ${
+            isUnassigned
+              ? "bg-slate-100 text-slate-400"
+              : "bg-blue-100 text-blue-600"
+          }`}
+          title={assigneeName}
+        >
+          {isUnassigned ? "U" : initials}
         </div>
-        <span className="text-xs text-slate-500">{task.assignee.name}</span>
+
+        <span
+          className={`text-xs ${
+            isUnassigned ? "text-slate-400 italic" : "text-slate-600"
+          }`}
+        >
+          {assigneeName}
+        </span>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ export function useTeamMemberTasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch data on mount
   useEffect(() => {
     let isMounted = true;
 
@@ -47,8 +48,15 @@ export function useTeamMemberTasks() {
   );
 
   const submitTask = useCallback(async (taskId, payload) => {
-    // Optimistic update in both lists so the change is reflected
-    // no matter which view the user is on.
+    // 1. CAPTURE ORIGINAL STATUS BEFORE OPTIMISTIC UPDATE
+    // Yeh zaroori hai kyunki payload me previousStatus nahi aa raha
+    const currentTaskInMyList = myTasks.find(t => t.id === taskId);
+    const currentTaskInTeamList = teamTasks.find(t => t.id === taskId);
+    
+    // Fallback to "todo" agar task na mile (edge case)
+    const previousStatus = currentTaskInMyList?.status || currentTaskInTeamList?.status || "todo";
+
+    // 2. Optimistic update in both lists
     setMyTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: "under_review" } : t))
     );
@@ -58,10 +66,24 @@ export function useTeamMemberTasks() {
 
     try {
       await submitTaskWork(taskId, payload);
+      
+      // Optional: Agar success ho gaya, to backend se fresh data fetch kar sakte ho
+      // Par optimistic update usually kaafi hota hai
+      
     } catch (err) {
-      setError(err);
+      console.error("Submission failed, reverting status:", err);
+      
+      // 3. REVERT TO ORIGINAL STATUS (Captured in Step 1)
+      setMyTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+      );
+      setTeamTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+      );
+      
+      throw err; // Error upar propagate karega taaki Modal me dikhai de
     }
-  }, []);
+  }, [myTasks, teamTasks]); // Dependencies add kiye hain taaki latest list access ho sake
 
   return {
     tasks,

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Plus, Edit3, Trash2, DollarSign, TrendingUp } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, DollarSign } from "lucide-react";
 
 import { useRevenue } from "../hooks/useRevenue";
 import { useProjects } from "../hooks/useProjects";
@@ -9,39 +9,56 @@ import ConfirmationModal from "../components/Modals/ConfirmationModal";
 import SuccessToast from "../components/Modals/SuccessToast";
 
 export default function Revenue() {
-  const { records, summary, loading, error, addRevenue, editRevenue, removeRevenue } = useRevenue();
-  const { projects } = useProjects();
-  const { clients } = useClients();
+  const {
+    revenues = [],
+    summary = { totalRevenue: 0, completedRevenue: 0, pendingRevenue: 0, totalEntries: 0 },
+    loading,
+    error,
+    addRevenue,
+    editRevenue,
+    removeRevenue,
+  } = useRevenue();
+
+  const { projects = [] } = useProjects();
+  const { clients = [] } = useClients();
 
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [selectedRevenue, setSelectedRevenue] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "" });
 
-  const filteredRecords = useMemo(() => {
-    return records.filter((record) =>
-      record.projectName.toLowerCase().includes(search.toLowerCase()) ||
-      record.client.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [records, search]);
+  const filteredRevenues = useMemo(() => {
+    if (!Array.isArray(revenues)) return [];
+    return revenues.filter((revenue) => {
+      const project = (revenue.project || "").toLowerCase();
+      const client = (revenue.client || "").toLowerCase();
+      const matchesSearch =
+        project.includes(search.toLowerCase()) ||
+        client.includes(search.toLowerCase());
+      const matchesStatus =
+        statusFilter === "All" || revenue.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [revenues, search, statusFilter]);
 
   const showSuccess = (message) => {
     setToast({ show: true, message });
     setTimeout(() => setToast({ show: false, message: "" }), 2500);
   };
 
-  const handleSubmit = async (record) => {
+  const handleSubmit = async (revenue) => {
     try {
-      if (selectedRecord) {
-        await editRevenue(selectedRecord.id, record);
+      if (selectedRevenue) {
+        await editRevenue(selectedRevenue.id, revenue);
         showSuccess("Revenue updated successfully.");
       } else {
-        await addRevenue(record);
+        await addRevenue(revenue);
         showSuccess("Revenue added successfully.");
       }
       setShowModal(false);
-      setSelectedRecord(null);
+      setSelectedRevenue(null);
     } catch (err) {
       console.error(err);
     }
@@ -51,7 +68,7 @@ export default function Revenue() {
     if (!deleteItem) return;
     try {
       await removeRevenue(deleteItem.id);
-      showSuccess("Revenue record deleted.");
+      showSuccess("Revenue deleted successfully.");
     } catch (err) {
       console.error(err);
     } finally {
@@ -60,94 +77,128 @@ export default function Revenue() {
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-slate-500">Loading revenue data...</div>;
+    return <div className="p-6 text-sm text-slate-500">Loading revenue...</div>;
   }
 
   if (error) {
-    return <div className="p-6 text-sm text-rose-500">Failed to load revenue data.</div>;
+    return (
+      <div className="p-6 text-sm text-rose-500">
+        Failed to load revenue data.
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Revenue Management</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">
+            Revenue Management
+          </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Track project revenue and total company earnings.
+            Track project revenue, payments, and financial summaries.
           </p>
         </div>
         <button
-          onClick={() => { setSelectedRecord(null); setShowModal(true); }}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+          onClick={() => {
+            setSelectedRevenue(null);
+            setShowModal(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#016472] px-5 py-3 text-sm font-semibold text-white hover:bg-[#014b55]"
         >
           <Plus size={16} />
           Add Revenue
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
-              <DollarSign className="text-emerald-600" size={22} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+              <DollarSign className="text-emerald-600" size={20} />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Total Company Revenue</p>
-              <p className="text-3xl font-bold text-slate-900">
-                ${((summary?.totalRevenue || 0) / 1000).toFixed(0)}K
+              <p className="text-sm font-medium text-slate-500">Total Revenue</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                ${Number(summary.totalRevenue || 0).toLocaleString()}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
-              <TrendingUp className="text-blue-600" size={22} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+              <DollarSign className="text-green-600" size={20} />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Revenue Records</p>
-              <p className="text-3xl font-bold text-slate-900">{records.length}</p>
+              <p className="text-sm font-medium text-slate-500">Completed</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                ${Number(summary.completedRevenue || 0).toLocaleString()}
+              </p>
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">Received</p>
-          <p className="mt-2 text-3xl font-bold text-green-600">
-            {records.filter((r) => r.status === "Received").length}
-          </p>
-          <p className="text-xs text-slate-400">Pending: {records.filter((r) => r.status === "Pending").length}</p>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+              <DollarSign className="text-amber-600" size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Pending</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                ${Number(summary.pendingRevenue || 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+              <DollarSign className="text-blue-600" size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Total Entries</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {summary.totalEntries || 0}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {summary?.revenuePerProject && (
-        <div className="rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Revenue per Project</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {summary.revenuePerProject.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-100 p-4">
-                <p className="text-sm font-medium text-slate-700">{item.name}</p>
-                <p className="mt-1 text-xl font-bold text-emerald-600">
-                  ${(item.value / 1000).toFixed(0)}K
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Search + Filter */}
       <div className="rounded-2xl bg-white p-5 shadow-sm">
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-4 text-slate-400" size={18} />
-          <input
-            type="text"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 outline-none"
-            placeholder="Search revenue records..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search
+              className="absolute left-4 top-4 text-slate-400"
+              size={18}
+            />
+            <input
+              type="text"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 outline-none"
+              placeholder="Search revenue..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-2xl border border-slate-200 px-4 py-3 outline-none"
+          >
+            <option>All</option>
+            <option>Pending</option>
+            <option>Complete</option>
+          </select>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Table */}
+        <div className="mt-6 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-xs uppercase tracking-wide text-slate-400">
@@ -160,36 +211,54 @@ export default function Revenue() {
               </tr>
             </thead>
             <tbody>
-              {filteredRecords.length === 0 ? (
+              {filteredRevenues.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">No revenue records found.</td>
+                  <td
+                    colSpan={6}
+                    className="py-8 text-center text-sm text-slate-500"
+                  >
+                    No revenue entries found. Click "Add Revenue" to create one.
+                  </td>
                 </tr>
               ) : (
-                filteredRecords.map((record) => (
-                  <tr key={record.id} className="border-t border-slate-100">
-                    <td className="py-4 font-medium text-slate-700">{record.projectName}</td>
-                    <td className="py-4 text-slate-500">{record.client}</td>
-                    <td className="py-4 font-semibold text-emerald-600">
-                      ${record.amount.toLocaleString()}
+                filteredRevenues.map((revenue) => (
+                  <tr key={revenue.id} className="border-t border-slate-100">
+                    <td className="py-4 font-medium text-slate-700">
+                      {revenue.project || "N/A"}
                     </td>
-                    <td className="py-4 text-slate-500">{record.date}</td>
+                    <td className="py-4 text-slate-500">
+                      {revenue.client || "N/A"}
+                    </td>
+                    <td className="py-4 font-semibold text-slate-900">
+                      ${Number(revenue.amount || 0).toLocaleString()}
+                    </td>
+                    <td className="py-4 text-slate-500">
+                      {revenue.dateFormatted || revenue.date || "N/A"}
+                    </td>
                     <td className="py-4">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        record.status === "Received" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-                      }`}>
-                        {record.status}
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          revenue.status === "Complete"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {revenue.status || "Pending"}
                       </span>
                     </td>
                     <td className="py-4 text-right">
                       <div className="inline-flex items-center gap-2">
                         <button
-                          onClick={() => { setSelectedRecord(record); setShowModal(true); }}
+                          onClick={() => {
+                            setSelectedRevenue(revenue);
+                            setShowModal(true);
+                          }}
                           className="rounded-lg bg-blue-100 p-2 text-blue-600 hover:bg-blue-200"
                         >
                           <Edit3 size={16} />
                         </button>
                         <button
-                          onClick={() => setDeleteItem(record)}
+                          onClick={() => setDeleteItem(revenue)}
                           className="rounded-lg bg-red-100 p-2 text-red-600 hover:bg-red-200"
                         >
                           <Trash2 size={16} />
@@ -206,17 +275,20 @@ export default function Revenue() {
 
       <RevenueModal
         open={showModal}
-        record={selectedRecord}
+        revenue={selectedRevenue}
         projects={projects}
         clients={clients}
-        onClose={() => { setShowModal(false); setSelectedRecord(null); }}
+        onClose={() => {
+          setShowModal(false);
+          setSelectedRevenue(null);
+        }}
         onSubmit={handleSubmit}
       />
 
       <ConfirmationModal
         open={!!deleteItem}
-        title="Delete Revenue Record"
-        message={`Delete revenue record for ${deleteItem?.projectName}?`}
+        title="Delete Revenue"
+        message={`Are you sure you want to delete this revenue entry?`}
         onCancel={() => setDeleteItem(null)}
         onConfirm={handleConfirmDelete}
       />

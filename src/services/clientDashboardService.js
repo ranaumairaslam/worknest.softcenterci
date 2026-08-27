@@ -1,46 +1,191 @@
-import { getCurrentUser } from "./authContext";
-import { getAllProjects } from "./projectService";
-import { getAllMeetings } from "./meetingService";
-import { getTasksByProject } from "./taskService";
-import { filterMeetings } from "../utils/roleFilter";
+import {
+  getClientDashboard as fetchClientDashboard,
+  getClientProjects,
+  getClientMeetings,
+} from "./clientApiService";
 
+/**
+ * Get client dashboard data
+ */
 export async function getClientDashboard(role = "client") {
-  const user = getCurrentUser(role);
-  const clientId = user.clientId;
+  try {
+    // Dashboard API
+    const dashboardData = await fetchClientDashboard();
 
-  const [projects, meetings] = await Promise.all([
-    getAllProjects(role),
-    getAllMeetings(role),
-  ]);
+    const {
+      client = {},
+      statistics = {},
+      projects: dashboardProjects = [],
+      upcoming_meetings = [],
+    } = dashboardData || {};
 
-  const filteredMeetings = filterMeetings(meetings, { role, user });
+    // IMPORTANT:
+    // /client/projects is already returning the correct projects.
+    // Use it as fallback/source for dashboard projects.
+    let projects = dashboardProjects;
 
-  const taskGroups = await Promise.all(
-    projects.map((p) => getTasksByProject(p.id, role))
-  );
-  const allTasks = taskGroups.flat();
+    if (!projects || projects.length === 0) {
+      try {
+        projects = await getClientProjects();
+      } catch (projectError) {
+        console.error(
+          "Could not fetch projects for dashboard:",
+          projectError
+        );
+        projects = [];
+      }
+    }
 
-  const avgProgress =
-    projects.length === 0
-      ? 0
-      : Math.round(projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length);
+    // Meetings fallback
+    let meetings = upcoming_meetings;
 
-  const stats = [
-    { id: 1, title: "Projects", value: projects.length, color: "bg-cyan-600" },
-    { id: 2, title: "Progress", value: `${avgProgress}%`, color: "bg-blue-600" },
-    { id: 3, title: "Meetings", value: filteredMeetings.length, color: "bg-violet-600" },
-    { id: 4, title: "Tasks", value: allTasks.length, color: "bg-green-600" },
-  ];
+    if (!meetings || meetings.length === 0) {
+      try {
+        meetings = await getClientMeetings();
+      } catch (meetingError) {
+        console.error(
+          "Could not fetch meetings for dashboard:",
+          meetingError
+        );
+        meetings = [];
+      }
+    }
 
-  const mappedProjects = projects.map((p) => ({
-    ...p,
-    deadline: p.dueDate || p.deadline || "TBD",
-  }));
+    // Calculate project count from actual projects
+    const projectCount =
+      projects.length > 0
+        ? projects.length
+        : Number(statistics.projects || 0);
 
-  return { stats, projects: mappedProjects, meetings: filteredMeetings, clientId };
+    // Calculate average progress if project data contains progress
+    let progress = Number(statistics.progress || 0);
+
+    if (projects.length > 0) {
+      const progressValues = projects
+        .map((project) => {
+          return Number(
+            project.progress ??
+              project.progress_percentage ??
+              project.completion ??
+              0
+          );
+        })
+        .filter((value) => !Number.isNaN(value));
+
+      if (progressValues.length > 0) {
+        progress =
+          progressValues.reduce((sum, value) => sum + value, 0) /
+          progressValues.length;
+      }
+    }
+
+    const stats = [
+      {
+        id: 1,
+        title: "Projects",
+        value: projectCount,
+        color: "bg-cyan-600",
+      },
+      {
+        id: 2,
+        title: "Progress",
+        value: `${Math.round(progress)}%`,
+        color: "bg-blue-600",
+      },
+      {
+        id: 3,
+        title: "Meetings",
+        value:
+          statistics.meetings !== undefined
+            ? statistics.meetings
+            : meetings.length,
+        color: "bg-violet-600",
+      },
+      {
+        id: 4,
+        title: "Tasks",
+        value: statistics.tasks || 0,
+        color: "bg-green-600",
+      },
+    ];
+
+    const mappedProjects = projects.map((project) => ({
+      ...project,
+      deadline:
+        project.end_date ||
+        project.deadline ||
+        "TBD",
+    }));
+
+    return {
+      stats,
+      projects: mappedProjects,
+      meetings,
+      client,
+      clientId: client.id,
+      statistics,
+    };
+  } catch (error) {
+    console.error("Error loading client dashboard:", error);
+
+    return {
+      stats: [
+        {
+          id: 1,
+          title: "Projects",
+          value: 0,
+          color: "bg-cyan-600",
+        },
+        {
+          id: 2,
+          title: "Progress",
+          value: "0%",
+          color: "bg-blue-600",
+        },
+        {
+          id: 3,
+          title: "Meetings",
+          value: 0,
+          color: "bg-violet-600",
+        },
+        {
+          id: 4,
+          title: "Tasks",
+          value: 0,
+          color: "bg-green-600",
+        },
+      ],
+      projects: [],
+      meetings: [],
+      client: {},
+      clientId: null,
+      statistics: {},
+    };
+  }
 }
 
-export async function getClientProjects(role = "client") {
-  const { projects } = await getClientDashboard(role);
-  return projects;
+/**
+ * Get all client projects
+ */
+export async function getClientProjectsList() {
+  try {
+    const projects = await getClientProjects();
+    return projects || [];
+  } catch (error) {
+    console.error("Error loading client projects:", error);
+    return [];
+  }
+}
+
+/**
+ * Get all client meetings
+ */
+export async function getClientMeetingsList() {
+  try {
+    const meetings = await getClientMeetings();
+    return meetings || [];
+  } catch (error) {
+    console.error("Error loading client meetings:", error);
+    return [];
+  }
 }
