@@ -95,9 +95,9 @@ export default function Contact() {
                   <p className="font-semibold text-slate-900">
                     Email
                   </p>
-                  <p className="text-slate-600">
-                    Softcenteric@gmail.com
-                  </p>
+                 <p className="text-slate-600">
+                  info@softcenteric.com
+                </p>
                 </div>
               </div>
 
