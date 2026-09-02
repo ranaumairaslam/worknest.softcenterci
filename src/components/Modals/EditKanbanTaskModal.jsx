@@ -1,40 +1,34 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-
-const STATUS_OPTIONS = [
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "under_review", label: "Under Review" },
-  { value: "completed", label: "Completed" },
-];
 
 export default function EditKanbanTaskModal({
   task,
-  teamMembers,
+  teamMembers = [],
   onClose,
   onSave,
 }) {
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState("todo");
   const [assigneeId, setAssigneeId] = useState("");
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     if (!task) return;
 
-    setTitle(task.title || "");
+    setTitle(task.title ?? task.name ?? "");
 
-    setStatus(task.status || "todo");
-
-    // Get assignee ID directly first
+    // Support both raw API snake_case and UI camelCase fields.
     const currentAssigneeId =
-      task.assigneeId ||
-      task.assignee?.id ||
+      task.assignee_id ??
+      task.assigneeId ??
+      task.assignee?.id ??
       "";
 
     setAssigneeId(String(currentAssigneeId));
 
     setErrors({});
+    setSaveError("");
   }, [task]);
 
   if (!task) return null;
@@ -61,35 +55,57 @@ export default function EditKanbanTaskModal({
     if (!validate()) return;
 
     const selectedMember = teamMembers.find(
-      (member) =>
-        String(member.id) === String(assigneeId)
+      (member) => String(member.id) === String(assigneeId)
     );
 
+    if (!selectedMember) {
+      setErrors({
+        assigneeId: "Selected assignee was not found.",
+      });
+      return;
+    }
+
+    /*
+      MUST match backend updateTask controller.
+
+      Backend accepts:
+        taskName
+        assigneeName
+        priority
+        dueDate
+
+      Backend currently DOES NOT save status.
+    */
     const updates = {
-      title: title.trim(),
-      status,
-      assigneeId: Number(assigneeId),
+      taskName: title.trim(),
+      assigneeName: selectedMember.name,
     };
 
     console.log("📤 Saving task:", task.id, updates);
-    console.log("👤 Selected member:", selectedMember);
 
     try {
+      setSaving(true);
+      setSaveError("");
+
       await onSave(task.id, updates);
+
+      // Close only when API/database save succeeds.
       onClose();
     } catch (error) {
       console.error("❌ Failed to save task:", error);
+
+      setSaveError(
+        error?.message || "Could not save task. Please try again."
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
-
           <h2 className="text-sm font-semibold text-slate-800">
             Edit Task
           </h2>
@@ -97,12 +113,12 @@ export default function EditKanbanTaskModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
+            disabled={saving}
+            className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
             aria-label="Close"
           >
             <X size={18} />
           </button>
-
         </div>
 
         <form
@@ -110,10 +126,8 @@ export default function EditKanbanTaskModal({
           noValidate
           className="space-y-3"
         >
-
-          {/* Task Title */}
+          {/* Task title */}
           <div>
-
             <label
               htmlFor="edit-task-title"
               className="text-xs font-medium text-slate-500 block mb-1"
@@ -123,10 +137,10 @@ export default function EditKanbanTaskModal({
 
             <input
               id="edit-task-title"
+              type="text"
               value={title}
-              onChange={(e) =>
-                setTitle(e.target.value)
-              }
+              disabled={saving}
+              onChange={(e) => setTitle(e.target.value)}
               className={
                 errors.title
                   ? "w-full border border-rose-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
@@ -139,42 +153,10 @@ export default function EditKanbanTaskModal({
                 {errors.title}
               </p>
             )}
-
-          </div>
-
-          {/* Status */}
-          <div>
-
-            <label
-              htmlFor="edit-task-status"
-              className="text-xs font-medium text-slate-500 block mb-1"
-            >
-              Status
-            </label>
-
-            <select
-              id="edit-task-status"
-              value={status}
-              onChange={(e) =>
-                setStatus(e.target.value)
-              }
-              className="w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              ))}
-            </select>
-
           </div>
 
           {/* Assignee */}
           <div>
-
             <label
               htmlFor="edit-task-assignee"
               className="text-xs font-medium text-slate-500 block mb-1"
@@ -185,16 +167,14 @@ export default function EditKanbanTaskModal({
             <select
               id="edit-task-assignee"
               value={assigneeId}
-              onChange={(e) =>
-                setAssigneeId(e.target.value)
-              }
+              disabled={saving}
+              onChange={(e) => setAssigneeId(e.target.value)}
               className={
                 errors.assigneeId
                   ? "w-full border border-rose-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
                   : "w-full border border-slate-200 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               }
             >
-
               <option value="" disabled>
                 Select a team member
               </option>
@@ -207,7 +187,6 @@ export default function EditKanbanTaskModal({
                   {member.name}
                 </option>
               ))}
-
             </select>
 
             {errors.assigneeId && (
@@ -215,19 +194,22 @@ export default function EditKanbanTaskModal({
                 {errors.assigneeId}
               </p>
             )}
-
           </div>
 
-          {/* Save */}
+          {saveError && (
+            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
+              {saveError}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg mt-2"
+            disabled={saving}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2 rounded-lg mt-2"
           >
-            Save Changes
+            {saving ? "Saving..." : "Save Changes"}
           </button>
-
         </form>
-
       </div>
     </div>
   );

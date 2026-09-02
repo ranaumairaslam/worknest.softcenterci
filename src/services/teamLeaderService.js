@@ -1,3 +1,4 @@
+import { PureComponent } from "react";
 import { get, post, put, patch, del } from "./apiClient.js";
 
 const BASE = "/team-leader";
@@ -207,21 +208,13 @@ export const returnTaskForRevision =
    ASSIGN TASK
 ========================================================= */
 
-export const assignTeamLeaderTask = async (
-  taskId,
-  memberId
-) => {
-  console.log(
-    "👤 ASSIGNING TASK:",
-    taskId,
-    "TO MEMBER:",
-    memberId
-  );
+export const assignTeamLeaderTask = async (taskId, memberId) => {
+  console.log("👤 ASSIGNING TASK:", taskId, "TO MEMBER:", memberId);
 
-  const response = await post(
+  const response = await put(
     `${BASE}/tasks/${taskId}/assign`,
     {
-      memberId,
+      assignedTo: Number(memberId),
     }
   );
 
@@ -230,7 +223,7 @@ export const assignTeamLeaderTask = async (
   return extractData(response, {});
 };
 
-export const assignTask = assignTeamLeaderTask;
+export const assignTask = assignTeamLeaderTask;   
 
 /* =========================================================
    EDIT TASK
