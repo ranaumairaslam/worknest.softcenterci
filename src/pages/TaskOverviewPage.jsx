@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
-import { deleteTask } from "../services/taskService";
+import {
+  deleteTask,
+  updateTeamLeaderTask,
+} from "../services/taskService";
 
 import TaskOverviewTable from "../components/Cards/TaskOverviewTable";
 import CreateTaskModal from "../components/Cards/CreateTaskModal";
@@ -144,13 +147,23 @@ export default function TaskOverviewPage() {
   // =====================================================
   // UPDATE TASK
   // =====================================================
-  function handleUpdateTask(taskId, updates) {
+  async function handleUpdateTask(taskId, updates) {
+    const updatedTask = await updateTeamLeaderTask(taskId, {
+      name: updates.taskName,
+      assigneeName: updates.assigneeName,
+      priority: updates.priority,
+      ...(updates.dueDate !== undefined
+        ? { dueDate: updates.dueDate }
+        : {}),
+    });
+
     setTaskList((prev) =>
       prev.map((task) =>
         String(task.id) === String(taskId)
           ? {
               ...task,
               ...updates,
+              ...(updatedTask || {}),
             }
           : task
       )
