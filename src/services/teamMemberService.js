@@ -28,6 +28,7 @@ const STATUS_MAP = {
 // =====================================================
 function getInitials(name) {
   if (!name) return "U";
+
   return name
     .trim()
     .split(/\s+/)
@@ -40,8 +41,9 @@ function getInitials(name) {
 
 /**
  * Backend har endpoint pe alag shape bhejta hai:
- *  - team-member API : assigneeName / assigneeId   (flat)
- *  - team-leader API : assignedTo { id, name }     (nested)
+ *  - team-member API : assigneeName / assigneeId (flat)
+ *  - team-leader API : assignedTo { id, name } (nested)
+ *
  * Ye function dono ko handle karta hai.
  */
 function resolveAssignee(task) {
@@ -87,7 +89,7 @@ function resolveProject(task) {
 }
 
 // =====================================================
-// TASK MAPPER  (Kanban ready)
+// TASK MAPPER (Kanban ready)
 // =====================================================
 function mapTaskForKanban(task) {
   const assignee = resolveAssignee(task);
@@ -97,7 +99,7 @@ function mapTaskForKanban(task) {
   const initials = assignee.name ? getInitials(assignee.name) : "U";
 
   return {
-    // keep everything original (nothing lost)
+    // Keep everything original
     ...task,
 
     // ---- IDs ----
@@ -116,16 +118,16 @@ function mapTaskForKanban(task) {
     status: STATUS_MAP[task.status] || "todo",
     rawStatus: task.status,
 
-    // ---- Project (flat + nested aliases) ----
+    // ---- Project ----
     project: project.name,
     projectName: project.name,
     projectId: project.id,
 
-    // ---- Assignee (flat) ----
+    // ---- Assignee ----
     assigneeId: assignee.id,
-    assigneeName: assignee.name, // null if truly unassigned
+    assigneeName: assignee.name,
 
-    // ---- Assignee (nested aliases so ANY UI key works) ----
+    // ---- Assignee nested aliases ----
     assignee: {
       id: assignee.id,
       name: displayName,
@@ -134,10 +136,14 @@ function mapTaskForKanban(task) {
     },
 
     assignedTo: assignee.name
-      ? { id: assignee.id, name: assignee.name, avatar: initials }
+      ? {
+          id: assignee.id,
+          name: assignee.name,
+          avatar: initials,
+        }
       : null,
 
-    // ---- Convenience for direct render ----
+    // ---- Convenience ----
     assigneeDisplayName: displayName,
     assigneeInitials: initials,
   };
@@ -148,7 +154,11 @@ function mapTaskForKanban(task) {
 // =====================================================
 export async function getMyTasks() {
   try {
-    const response = await get("/team-member/tasks/assigned", { limit: 100 });
+    const response = await get(
+      "/team-member/tasks/assigned",
+      { limit: 100 }
+    );
+
     const tasks = response?.data || [];
 
     console.log("📥 RAW MY TASKS:", tasks);
@@ -168,7 +178,11 @@ export async function getMyTasks() {
 
     return mapped;
   } catch (error) {
-    console.error("❌ Error fetching assigned tasks:", error);
+    console.error(
+      "❌ Error fetching assigned tasks:",
+      error
+    );
+
     throw error;
   }
 }
@@ -178,12 +192,20 @@ export async function getMyTasks() {
 // =====================================================
 export async function getTeamTasks() {
   try {
-    const response = await get("/team-member/tasks/assigned", { limit: 100 });
+    const response = await get(
+      "/team-member/tasks/assigned",
+      { limit: 100 }
+    );
+
     const tasks = response?.data || [];
 
     return tasks.map(mapTaskForKanban);
   } catch (error) {
-    console.error("❌ Error fetching team tasks:", error);
+    console.error(
+      "❌ Error fetching team tasks:",
+      error
+    );
+
     throw error;
   }
 }
@@ -191,50 +213,113 @@ export async function getTeamTasks() {
 // =====================================================
 // SUBMIT TASK
 // =====================================================
-export async function submitTaskWork(taskId, payload = {}) {
-  const token = localStorage.getItem("worknest_token");
+export async function submitTaskWork(
+  taskId,
+  payload = {}
+) {
+  const token = localStorage.getItem(
+    "worknest_token"
+  );
 
   if (!token) {
-    throw new Error("Authentication token not found. Please login again.");
+    throw new Error(
+      "Authentication token not found. Please login again."
+    );
   }
 
   if (!taskId) {
-    throw new Error("Task ID is missing. Cannot submit.");
+    throw new Error(
+      "Task ID is missing. Cannot submit."
+    );
   }
 
+  // ===================================================
+  // CREATE MULTIPART FORM DATA
+  // ===================================================
   const formData = new FormData();
-  formData.append("taskId", String(taskId));
-  formData.append("description", String(payload.description || "").trim());
 
+  // Required: connect submission to task
+  formData.append(
+    "taskId",
+    String(taskId)
+  );
+
+  // Submission description
+  formData.append(
+    "description",
+    String(
+      payload.description || ""
+    ).trim()
+  );
+
+  // Submitted file
   if (payload.file) {
-    formData.append("file", payload.file);
+    formData.append(
+      "file",
+      payload.file
+    );
   }
 
-  console.log("📤 SUBMIT TASK →", {
-    taskId,
-    description: payload.description,
-    file: payload.file?.name,
-  });
+  console.log(
+    "📤 SUBMIT TASK →",
+    {
+      taskId,
+      description: payload.description,
+      file: payload.file?.name,
+    }
+  );
 
   const API_BASE_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api";
 
-  const response = await fetch(`${API_BASE_URL}/team-member/submit`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  });
+  // ===================================================
+  // IMPORTANT:
+  // Use /team-member/submit
+  //
+  // This endpoint uses createSubmission()
+  // and stores the submission in member_submissions.
+  // ===================================================
+  const response = await fetch(
+    `${API_BASE_URL}/team-member/submit`,
+    {
+      method: "POST",
 
-  const result = await response.json().catch(() => null);
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
 
-  console.log("📥 Submit response:", response.status, result);
+      // DO NOT manually set Content-Type.
+      // Browser automatically sets multipart/form-data
+      // boundary for FormData.
+      body: formData,
+    }
+  );
+
+  const result =
+    await response
+      .json()
+      .catch(() => null);
+
+  console.log(
+    "📥 Submit response:",
+    response.status,
+    result
+  );
 
   if (!response.ok) {
     const error = new Error(
-      result?.message || result?.error || "Failed to submit task"
+      result?.message ||
+        result?.error ||
+        "Failed to submit task"
     );
-    error.status = response.status;
-    error.data = result;
+
+    error.status =
+      response.status;
+
+    error.data =
+      result;
+
     throw error;
   }
 

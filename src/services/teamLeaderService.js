@@ -192,7 +192,8 @@ export const returnTeamLeaderTaskForRevision = async (
   const response = await post(
     `${BASE}/tasks/${taskId}/return`,
     {
-      comment,
+      reviewNote: comment,
+
     }
   );
 
